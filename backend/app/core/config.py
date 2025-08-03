@@ -9,9 +9,9 @@ class Settings(BaseSettings):
     VERSION: str = "1.0.0"
     LOG_LEVEL: str = "INFO"
     JWT_ALGORITHM: str = "HS256"
-    APP_NAME: str = "React Kit BE"
     CORS_ORIGINS: Sequence[str] = ["*"]
     JWT_EXPIRATION_MINUTES: int = 60 * 24
+    APP_NAME: str = "Find a Freelancer BE"
 
     class Config:
         env_file = ".env"

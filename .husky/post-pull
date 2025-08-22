@@ -1,0 +1,11 @@
+echo "🔄 Running post-pull tasks…"
+
+# Backend
+cd backend || exit 1
+ruff check . --fix
+
+# Frontend
+cd ../frontend || exit 1
+pnpm run lint
+
+echo "✅ post-pull hooks completed."

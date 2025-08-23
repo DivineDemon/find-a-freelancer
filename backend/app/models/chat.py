@@ -1,6 +1,8 @@
 
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text
-from sqlalchemy.orm import relationship
+from typing import Optional
+
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.base import BaseModel
 
@@ -10,24 +12,32 @@ class Chat(BaseModel):
     __tablename__ = "chats"
 
     # Chat participants
-    initiator_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    participant_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    initiator_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id"), nullable=False)
+    participant_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id"), nullable=False)
 
     # Chat metadata
     # Auto-generated or user-defined title
-    title = Column(String, nullable=True)
-    is_archived = Column(Boolean, default=False, nullable=False)
-    is_deleted = Column(Boolean, default=False, nullable=False)
+    title: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    is_archived: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False)
+    is_deleted: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False)
 
     # Project context (optional)
-    project_title = Column(String, nullable=True)
-    project_description = Column(Text, nullable=True)
-    project_budget = Column(String, nullable=True)
+    project_title: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    project_description: Mapped[Optional[str]
+                                ] = mapped_column(Text, nullable=True)
+    project_budget: Mapped[Optional[str]
+                           ] = mapped_column(String, nullable=True)
 
     # Chat status
     # "active", "archived", "deleted"
-    status = Column(String, default="active", nullable=False)
-    last_message_at = Column(DateTime, nullable=True)
+    status: Mapped[str] = mapped_column(
+        String, default="active", nullable=False)
+    last_message_at: Mapped[Optional[DateTime]
+                            ] = mapped_column(DateTime, nullable=True)
 
     # Relationships
     initiator = relationship(

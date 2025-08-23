@@ -1,7 +1,8 @@
 from datetime import datetime, timezone
+from typing import Optional
 
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text
-from sqlalchemy.orm import relationship
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.base import BaseModel
 
@@ -11,27 +12,37 @@ class Message(BaseModel):
     __tablename__ = "messages"
 
     # Message content
-    content = Column(Text, nullable=False)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
     # "text", "image", "file"
-    content_type = Column(String, default="text", nullable=False)
+    content_type: Mapped[str] = mapped_column(
+        String, default="text", nullable=False)
 
     # Message metadata
-    chat_id = Column(Integer, ForeignKey("chats.id"), nullable=False)
-    sender_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    chat_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("chats.id"), nullable=False)
+    sender_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id"), nullable=False)
 
     # Content moderation
-    is_flagged = Column(Boolean, default=False, nullable=False)
-    flag_reason = Column(String, nullable=True)  # Reason for flagging
-    is_edited = Column(Boolean, default=False, nullable=False)
+    is_flagged: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False)
+    flag_reason: Mapped[Optional[str]] = mapped_column(
+        String, nullable=True)  # Reason for flagging
+    is_edited: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False)
     # Store original content if edited
-    original_content = Column(Text, nullable=True)
+    original_content: Mapped[Optional[str]
+                             ] = mapped_column(Text, nullable=True)
 
     # Message status
-    is_deleted = Column(Boolean, default=False, nullable=False)
-    deleted_at = Column(DateTime, nullable=True)
+    is_deleted: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False)
+    deleted_at: Mapped[Optional[DateTime]] = mapped_column(
+        DateTime, nullable=True)
 
     # Timestamps for message operations
-    edited_at = Column(DateTime, nullable=True)
+    edited_at: Mapped[Optional[DateTime]] = mapped_column(
+        DateTime, nullable=True)
 
     # Relationships
     chat = relationship("Chat", back_populates="messages")

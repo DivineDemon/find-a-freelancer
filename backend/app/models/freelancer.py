@@ -43,7 +43,7 @@ class Freelancer(BaseModel):
     total_reviews = Column(Integer, default=0, nullable=False)
 
     # Relationships
-    user = relationship("User", backref="freelancer_profile")
+    user = relationship("User", back_populates="freelancer_profile")
 
     def __repr__(self):
         return f"<Freelancer(id={self.id}, user_id={self.user_id}, title={self.title})>"

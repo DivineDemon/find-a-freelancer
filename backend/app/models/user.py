@@ -1,8 +1,9 @@
 import enum
+from typing import Optional
 
 from passlib.context import CryptContext
-from sqlalchemy import Boolean, Column, Enum, String
-from sqlalchemy.orm import relationship
+from sqlalchemy import Boolean, Enum, String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.base import BaseModel
 
@@ -25,16 +26,20 @@ class User(BaseModel):
     __tablename__ = "users"
     
     # Basic user information
-    email = Column(String, unique=True, index=True, nullable=False)
-    password_hash = Column(String, nullable=False)
-    first_name = Column(String, nullable=False)
-    last_name = Column(String, nullable=False)
-    profile_picture = Column(String, nullable=True)
+    email: Mapped[str] = mapped_column(
+        String, unique=True, index=True, nullable=False)
+    password_hash: Mapped[str] = mapped_column(String, nullable=False)
+    first_name: Mapped[str] = mapped_column(String, nullable=False)
+    last_name: Mapped[str] = mapped_column(String, nullable=False)
+    profile_picture: Mapped[Optional[str]
+                            ] = mapped_column(String, nullable=True)
     
     # User type and status
-    user_type = Column(Enum(UserType), nullable=False)
-    is_active = Column(Boolean, default=True, nullable=False)
-    is_verified = Column(Boolean, default=False, nullable=False)
+    user_type: Mapped[UserType] = mapped_column(Enum(UserType), nullable=False)
+    is_active: Mapped[bool] = mapped_column(
+        Boolean, default=True, nullable=False)
+    is_verified: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False)
     
     # Relationships
     chats_as_initiator = relationship(
@@ -50,6 +55,12 @@ class User(BaseModel):
     messages = relationship("Message", back_populates="sender")
     notifications = relationship("Notification", back_populates="user")
     
+    # Profile relationships
+    client_hunter_profile = relationship(
+        "ClientHunter", back_populates="user", uselist=False)
+    freelancer_profile = relationship(
+        "Freelancer", back_populates="user", uselist=False)
+
     def __repr__(self):
         return f"<User(id={self.id}, email={self.email}, type={self.user_type})>"
     

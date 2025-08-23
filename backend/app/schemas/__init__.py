@@ -4,6 +4,8 @@ from app.schemas.chat_schema import (
     ChatCreate,
     ChatList,
     ChatRead,
+    ChatSearch,
+    ChatStats,
     ChatUpdate,
     ChatWithParticipants,
 )
@@ -19,9 +21,12 @@ from app.schemas.message_schema import (
     MessageCreate,
     MessageFilter,
     MessageList,
+    MessageReaction,
     MessageRead,
+    MessageSearch,
     MessageUpdate,
     MessageWithSender,
+    WebSocketMessage,
 )
 from app.schemas.user_schema import (
     UserBase,
@@ -42,8 +47,9 @@ __all__ = [
     "FreelancerRead", "FreelancerSearch",
     # Chat schemas
     "ChatBase", "ChatCreate", "ChatUpdate", "ChatRead",
-    "ChatWithParticipants", "ChatList",
+    "ChatWithParticipants", "ChatList", "ChatSearch", "ChatStats",
     # Message schemas
     "MessageBase", "MessageCreate", "MessageUpdate", "MessageRead",
     "MessageWithSender", "MessageList", "MessageFilter",
+    "WebSocketMessage", "MessageReaction", "MessageSearch",
 ]

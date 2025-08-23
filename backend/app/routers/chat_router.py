@@ -30,8 +30,15 @@ async def get_chat_participant(
     session: Annotated[AsyncSession, Depends(get_session)]
 ) -> Chat:
     """Get chat and verify current user is a participant."""
+    from sqlalchemy.orm import selectinload
+
     result = await session.execute(
-        select(Chat).where(
+        select(Chat)
+        .options(
+            selectinload(Chat.initiator),
+            selectinload(Chat.participant)
+        )
+        .where(
             and_(
                 Chat.id == chat_id,
                 or_(
@@ -158,7 +165,14 @@ async def list_user_chats(
     query = query.order_by(desc(Chat.last_message_at), desc(Chat.updated_at))
     query = query.offset((page - 1) * size).limit(size)
 
-    # Execute query
+    # Execute query with relationships loaded
+    from sqlalchemy.orm import selectinload
+
+    query = query.options(
+        selectinload(Chat.initiator),
+        selectinload(Chat.participant)
+    )
+
     result = await session.execute(query)
     chats = result.scalars().all()
 
@@ -184,7 +198,7 @@ async def list_user_chats(
                     Message.chat_id == chat.id,
                     Message.sender_id != current_user.id,
                     Message.is_deleted.is_(False)
-                    # Note: We'll need to add read status tracking later
+                    # TODO: Add read status tracking when MessageRead model is implemented
                 )
             )
         )

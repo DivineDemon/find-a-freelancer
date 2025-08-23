@@ -17,6 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.db import get_session
 from app.core.logger import get_logger
 from app.core.websocket_manager import manager
+from app.core.jwt import verify_access_token, JWTError
 from app.models.chat import Chat
 from app.models.message import Message
 from app.models.user import User
@@ -31,20 +32,40 @@ router = APIRouter(tags=["WebSocket Chat"])
 
 async def get_user_from_token(token: str, session: AsyncSession) -> User:
     """Extract user from JWT token."""
-    # This is a simplified version - in production, you'd want proper JWT validation
     try:
-        # For now, we'll use a simple approach - in production, 
-        # use proper JWT validation
-        # This is just for demonstration - implement proper JWT validation here
-        # TODO: Implement proper JWT validation
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="JWT validation not implemented yet"
+        # Validate JWT token
+        payload = verify_access_token(token)
+        user_id = payload.get("sub")
+
+        if not user_id:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token payload"
+            )
+
+        # Get user from database
+        user_result = await session.execute(
+            select(User).where(User.id == user_id)
         )
-    except Exception:
+        user = user_result.scalar_one_or_none()
+
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found"
+            )
+
+        return user
+
+    except JWTError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication token"
+            detail="Invalid or expired token"
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Authentication error: {str(e)}"
         )
 
 
@@ -67,15 +88,9 @@ async def websocket_endpoint(
         
         # Get user from token
         try:
-            # For now, we'll use a simple approach - in production, 
-            # use proper JWT validation
-            # This is just for demonstration - implement proper JWT validation here
-            # For now, we'll skip token validation and just get the user
-            user_result = await session.execute(
-                select(User).where(User.id == user_id)
-            )
-            user = user_result.scalar_one_or_none()
-            if not user:
+            user = await get_user_from_token(token, session)
+            # Verify the user_id in the URL matches the token
+            if user.id != user_id:
                 await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
                 return
         except Exception:

@@ -51,7 +51,7 @@ export default function PaymentModal({ isOpen, onClose, onSuccess }: PaymentModa
     },
   });
 
-  const onSubmit = async (data: z.infer<typeof paymentSchema>) => {
+  const onSubmit = async (_data: z.infer<typeof paymentSchema>) => {
     setIsProcessing(true);
 
     try {

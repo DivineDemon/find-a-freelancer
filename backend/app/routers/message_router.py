@@ -126,8 +126,12 @@ async def get_chat_messages(
     total_result = await session.execute(count_query)
     total = total_result.scalar() or 0
 
-    # Get messages with pagination
-    query = select(Message).where(
+    # Get messages with pagination and sender information
+    from sqlalchemy.orm import selectinload
+
+    query = select(Message).options(
+        selectinload(Message.sender)
+    ).where(
         and_(
             Message.chat_id == chat.id,
             Message.is_deleted.is_(False)
@@ -141,16 +145,10 @@ async def get_chat_messages(
     # Build response with sender information
     message_list = []
     for msg in messages:
-        # Get sender info
-        sender_result = await session.execute(
-            select(User).where(User.id == msg.sender_id)
-        )
-        sender = sender_result.scalar_one()
-
         message_with_sender = MessageWithSender(
             **msg.__dict__,
-            sender_name=sender.full_name if sender else "Unknown",
-            sender_type=sender.user_type if sender else UserType.CLIENT_HUNTER,
+            sender_name=msg.sender.full_name if msg.sender else "Unknown",
+            sender_type=msg.sender.user_type if msg.sender else UserType.CLIENT_HUNTER,
             sender_avatar=None  # Will be implemented later
         )
         message_list.append(message_with_sender)
@@ -172,9 +170,13 @@ async def get_message(
     session: Annotated[AsyncSession, Depends(get_session)]
 ):
     """Get a specific message by ID."""
-    # Get message
+    # Get message with sender information
+    from sqlalchemy.orm import selectinload
+
     result = await session.execute(
-        select(Message).where(
+        select(Message).options(
+            selectinload(Message.sender)
+        ).where(
             and_(
                 Message.id == message_id,
                 Message.is_deleted.is_(False)
@@ -210,16 +212,10 @@ async def get_message(
             detail="Access denied to this message"
         )
 
-    # Get sender info
-    sender_result = await session.execute(
-        select(User).where(User.id == message.sender_id)
-    )
-    sender = sender_result.scalar_one()
-
     return MessageWithSender(
         **message.__dict__,
-        sender_name=sender.full_name if sender else "Unknown",
-        sender_type=sender.user_type if sender else UserType.CLIENT_HUNTER,
+        sender_name=message.sender.full_name if message.sender else "Unknown",
+        sender_type=message.sender.user_type if message.sender else UserType.CLIENT_HUNTER,
         sender_avatar=None  # Will be implemented later
     )
 
@@ -313,23 +309,21 @@ async def search_messages(
     message_query = message_query.order_by(desc(Message.created_at))
     message_query = message_query.offset((page - 1) * size).limit(size)
 
-    # Execute query
+    # Execute query with sender information
+    message_query = message_query.options(
+        selectinload(Message.sender)
+    )
+
     result = await session.execute(message_query)
     messages = result.scalars().all()
 
     # Build response with sender information
     message_list = []
     for msg in messages:
-        # Get sender info
-        sender_result = await session.execute(
-            select(User).where(User.id == msg.sender_id)
-        )
-        sender = sender_result.scalar_one()
-
         message_with_sender = MessageWithSender(
             **msg.__dict__,
-            sender_name=sender.full_name if sender else "Unknown",
-            sender_type=sender.user_type if sender else UserType.CLIENT_HUNTER,
+            sender_name=msg.sender.full_name if msg.sender else "Unknown",
+            sender_type=msg.sender.user_type if msg.sender else UserType.CLIENT_HUNTER,
             sender_avatar=None  # Will be implemented later
         )
         message_list.append(message_with_sender)

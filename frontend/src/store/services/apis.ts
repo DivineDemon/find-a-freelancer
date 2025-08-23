@@ -66,6 +66,14 @@ const injectedRtkApi = api
             user_type: queryArg.userType,
             is_active: queryArg.isActive,
             is_verified: queryArg.isVerified,
+            min_hourly_rate: queryArg.minHourlyRate,
+            max_hourly_rate: queryArg.maxHourlyRate,
+            min_experience: queryArg.minExperience,
+            max_experience: queryArg.maxExperience,
+            skills: queryArg.skills,
+            technologies: queryArg.technologies,
+            work_type: queryArg.workType,
+            search_query: queryArg.searchQuery,
             skip: queryArg.skip,
             limit: queryArg.limit,
           },
@@ -101,6 +109,13 @@ const injectedRtkApi = api
         query: (queryArg) => ({
           url: `/users/${queryArg.userId}/freelancer-profile`,
         }),
+        providesTags: ["User Management"],
+      }),
+      getFilterOptionsUsersFiltersOptionsGet: build.query<
+        GetFilterOptionsUsersFiltersOptionsGetApiResponse,
+        GetFilterOptionsUsersFiltersOptionsGetApiArg
+      >({
+        query: () => ({ url: `/users/filters/options` }),
         providesTags: ["User Management"],
       }),
       verifyUserUsersUserIdVerifyPost: build.mutation<
@@ -311,6 +326,22 @@ export type ListUsersUsersGetApiArg = {
   isActive?: boolean | null;
   /** Filter by verification status */
   isVerified?: boolean | null;
+  /** Minimum hourly rate (0-10000) */
+  minHourlyRate?: number | null;
+  /** Maximum hourly rate (0-10000) */
+  maxHourlyRate?: number | null;
+  /** Minimum years of experience (0-100) */
+  minExperience?: number | null;
+  /** Maximum years of experience (0-100) */
+  maxExperience?: number | null;
+  /** Comma-separated list of skills to filter by */
+  skills?: string | null;
+  /** Comma-separated list of technologies to filter by */
+  technologies?: string | null;
+  /** Preferred work type (remote, onsite, hybrid) */
+  workType?: string | null;
+  /** Search query for name, title, or bio */
+  searchQuery?: string | null;
   /** Number of records to skip */
   skip?: number;
   /** Maximum number of records to return */
@@ -334,6 +365,8 @@ export type GetFreelancerProfileUsersUserIdFreelancerProfileGetApiResponse =
 export type GetFreelancerProfileUsersUserIdFreelancerProfileGetApiArg = {
   userId: number;
 };
+export type GetFilterOptionsUsersFiltersOptionsGetApiResponse = /** status 200 Successful Response */ object;
+export type GetFilterOptionsUsersFiltersOptionsGetApiArg = void;
 export type VerifyUserUsersUserIdVerifyPostApiResponse = /** status 200 Successful Response */ UserRead;
 export type VerifyUserUsersUserIdVerifyPostApiArg = {
   userId: number;
@@ -677,6 +710,7 @@ export const {
   useUpdateUserUsersUserIdPutMutation,
   useDeleteUserUsersUserIdDeleteMutation,
   useGetFreelancerProfileUsersUserIdFreelancerProfileGetQuery,
+  useGetFilterOptionsUsersFiltersOptionsGetQuery,
   useVerifyUserUsersUserIdVerifyPostMutation,
   useGetUserStatsUsersStatsSummaryGetQuery,
   useCreateChatChatsPostMutation,

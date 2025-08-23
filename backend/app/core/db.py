@@ -1,13 +1,11 @@
 from pathlib import Path
 
-from passlib.context import CryptContext
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.core.config import settings
 from app.core.logger import get_logger
 
 logger = get_logger(__name__)
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 connection_string = settings.DATABASE_URL
 seed_file = Path(__file__).resolve().parent.parent / \
@@ -30,4 +28,15 @@ async def get_db():
     try:
         yield db
     finally:
+        await db.close()
+
+
+async def get_session():
+    """Get database session dependency."""
+    # Use the same pattern as get_db
+    db = AsyncSessionLocal()
+    try:
+        yield db
+    finally:
+        # Close the session
         await db.close()

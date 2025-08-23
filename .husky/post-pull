@@ -6,6 +6,7 @@ ruff check . --fix
 
 # Frontend
 cd ../frontend || exit 1
+pnpm run generate:api
 pnpm run lint
 
 echo "✅ post-pull hooks completed."

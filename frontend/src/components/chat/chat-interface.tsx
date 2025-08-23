@@ -1,4 +1,4 @@
-import { Loader2, Paperclip, Send, Smile } from "lucide-react";
+import { Paperclip, Send, Smile, Wifi, WifiOff } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -6,11 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useRealtimeChat } from "@/hooks/use-realtime-chat";
 import type { ChatWithParticipants } from "@/store/services/apis";
-import {
-  useGetChatMessagesMessagesChatChatIdGetQuery,
-  useSendMessageMessagesPostMutation,
-} from "@/store/services/apis";
+import { useGetChatMessagesMessagesChatChatIdGetQuery } from "@/store/services/apis";
 
 interface ChatInterfaceProps {
   chat: ChatWithParticipants;
@@ -20,42 +18,59 @@ interface ChatInterfaceProps {
 
 export default function ChatInterface({ chat, currentUserId, onMessageSent }: ChatInterfaceProps) {
   const [message, setMessage] = useState("");
-  const [isTyping, _setIsTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const [sendMessage, { isLoading: sending }] = useSendMessageMessagesPostMutation();
-  const { data: messagesData, refetch } = useGetChatMessagesMessagesChatChatIdGetQuery({
+  // Get initial messages from API
+  const { data: messagesData } = useGetChatMessagesMessagesChatChatIdGetQuery({
     chatId: chat.id,
     page: 1,
     size: 50,
   });
 
-  const messages = messagesData?.messages || [];
+  // Use real-time chat hook
+  const {
+    messages,
+    isConnected,
+    typingUsers,
+    sendMessage: sendRealtimeMessage,
+    sendTypingIndicator,
+    initializeMessages,
+  } = useRealtimeChat(chat);
 
+  // Initialize messages when API data loads
+  useEffect(() => {
+    if (messagesData?.messages) {
+      initializeMessages(messagesData.messages);
+    }
+  }, [messagesData?.messages, initializeMessages]);
+
+  // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, []);
 
+  // Send typing indicator when user types
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      sendTypingIndicator(false);
+    }, 1000);
+
+    return () => clearTimeout(timeout);
+  }, [sendTypingIndicator]);
+
   const handleSendMessage = async () => {
     if (!message.trim()) return;
 
     try {
-      const response = await sendMessage({
-        messageCreate: {
-          content: message.trim(),
-          content_type: "text",
-          chat_id: chat.id,
-        },
-      });
-
-      if (response.data) {
+      const success = await sendRealtimeMessage(message.trim(), "text");
+      if (success) {
         setMessage("");
         onMessageSent?.();
         toast.success("Message sent!");
-        // Refresh messages to show the new one
-        refetch();
+      } else {
+        toast.error("Failed to send message - not connected");
       }
     } catch (_error) {
       toast.error("Failed to send message");
@@ -66,6 +81,9 @@ export default function ChatInterface({ chat, currentUserId, onMessageSent }: Ch
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
+    } else {
+      // Send typing indicator when user starts typing
+      sendTypingIndicator(true);
     }
   };
 
@@ -80,33 +98,43 @@ export default function ChatInterface({ chat, currentUserId, onMessageSent }: Ch
     return chat.initiator_id === currentUserId ? chat.participant_name : chat.initiator_name;
   };
 
-  const getOtherParticipantType = () => {
-    return chat.initiator_id === currentUserId ? chat.participant_type : chat.initiator_type;
-  };
+  // Removed unused function
 
   return (
     <div className="flex h-full flex-col">
       {/* Chat Header */}
       <div className="border-b px-4 py-3">
-        <div className="flex items-center gap-3">
-          <Avatar className="h-10 w-10">
-            <AvatarImage src="" alt={getOtherParticipantName()} />
-            <AvatarFallback>
-              {getOtherParticipantName()
-                .split(" ")
-                .map((n) => n[0])
-                .join("")}
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex-1">
-            <h3 className="font-semibold text-lg">{getOtherParticipantName()}</h3>
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary" className="text-xs capitalize">
-                {getOtherParticipantType().replace("_", " ")}
-              </Badge>
-              {chat.project_title && (
-                <span className="text-muted-foreground text-sm">Project: {chat.project_title}</span>
-              )}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Avatar className="h-10 w-10">
+              <AvatarImage src="" alt={getOtherParticipantName()} />
+              <AvatarFallback>
+                {getOtherParticipantName()
+                  .split(" ")
+                  .map((n) => n[0])
+                  .join("")}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <h3 className="font-semibold">{getOtherParticipantName()}</h3>
+              <div className="flex items-center gap-2">
+                <Badge variant={isConnected ? "default" : "secondary"}>
+                  {isConnected ? (
+                    <>
+                      <Wifi className="mr-1 h-3 w-3" />
+                      Connected
+                    </>
+                  ) : (
+                    <>
+                      <WifiOff className="mr-1 h-3 w-3" />
+                      Disconnected
+                    </>
+                  )}
+                </Badge>
+                {typingUsers.size > 0 && (
+                  <span className="text-muted-foreground text-sm">{getOtherParticipantName()} is typing...</span>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -146,6 +174,7 @@ export default function ChatInterface({ chat, currentUserId, onMessageSent }: Ch
                   </div>
                   <p className="text-sm">{msg.content}</p>
                   {msg.is_edited && <span className="text-xs opacity-70">(edited)</span>}
+                  {msg.isLocal && <span className="text-blue-500 text-xs opacity-70">(sending...)</span>}
                 </div>
 
                 {msg.sender_id === currentUserId && (
@@ -157,7 +186,7 @@ export default function ChatInterface({ chat, currentUserId, onMessageSent }: Ch
               </div>
             ))}
 
-            {isTyping && (
+            {typingUsers.size > 0 && (
               <div className="flex justify-start gap-3">
                 <Avatar className="h-8 w-8 flex-shrink-0">
                   <AvatarFallback className="text-xs">
@@ -203,15 +232,15 @@ export default function ChatInterface({ chat, currentUserId, onMessageSent }: Ch
             onKeyPress={handleKeyPress}
             placeholder="Type your message..."
             className="flex-1"
-            disabled={sending}
+            disabled={!isConnected}
           />
           <Button
             onClick={handleSendMessage}
-            disabled={!message.trim() || sending}
+            disabled={!message.trim() || !isConnected}
             size="icon"
             className="flex-shrink-0"
           >
-            {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            {!isConnected ? <WifiOff className="h-4 w-4" /> : <Send className="h-4 w-4" />}
           </Button>
         </div>
       </div>

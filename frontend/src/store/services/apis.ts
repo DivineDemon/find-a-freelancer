@@ -4,6 +4,7 @@ export const addTagTypes = [
   "User Management",
   "Chat Management",
   "Message Management",
+  "Payments",
   "WebSocket Chat",
 ] as const;
 const injectedRtkApi = api
@@ -282,6 +283,48 @@ const injectedRtkApi = api
         }),
         invalidatesTags: ["Message Management"],
       }),
+      createPaymentOrderPaymentsCreateOrderPost: build.mutation<
+        CreatePaymentOrderPaymentsCreateOrderPostApiResponse,
+        CreatePaymentOrderPaymentsCreateOrderPostApiArg
+      >({
+        query: (queryArg) => ({
+          url: `/payments/create-order`,
+          method: "POST",
+          body: queryArg.paymentCreate,
+        }),
+        invalidatesTags: ["Payments"],
+      }),
+      capturePaymentPaymentsCapturePaymentIdPost: build.mutation<
+        CapturePaymentPaymentsCapturePaymentIdPostApiResponse,
+        CapturePaymentPaymentsCapturePaymentIdPostApiArg
+      >({
+        query: (queryArg) => ({
+          url: `/payments/capture/${queryArg.paymentId}`,
+          method: "POST",
+        }),
+        invalidatesTags: ["Payments"],
+      }),
+      getPaymentPaymentsPaymentIdGet: build.query<
+        GetPaymentPaymentsPaymentIdGetApiResponse,
+        GetPaymentPaymentsPaymentIdGetApiArg
+      >({
+        query: (queryArg) => ({ url: `/payments/${queryArg.paymentId}` }),
+        providesTags: ["Payments"],
+      }),
+      getUserPaymentsPaymentsUserPaymentsGet: build.query<
+        GetUserPaymentsPaymentsUserPaymentsGetApiResponse,
+        GetUserPaymentsPaymentsUserPaymentsGetApiArg
+      >({
+        query: () => ({ url: `/payments/user/payments` }),
+        providesTags: ["Payments"],
+      }),
+      paypalWebhookPaymentsWebhookPaypalPost: build.mutation<
+        PaypalWebhookPaymentsWebhookPaypalPostApiResponse,
+        PaypalWebhookPaymentsWebhookPaypalPostApiArg
+      >({
+        query: () => ({ url: `/payments/webhook/paypal`, method: "POST" }),
+        invalidatesTags: ["Payments"],
+      }),
       getOnlineUsersOnlineUsersGet: build.query<
         GetOnlineUsersOnlineUsersGetApiResponse,
         GetOnlineUsersOnlineUsersGetApiArg
@@ -455,6 +498,24 @@ export type FlagMessageMessagesMessageIdFlagPostApiArg = {
   /** Flag reason */
   reason: string;
 };
+export type CreatePaymentOrderPaymentsCreateOrderPostApiResponse =
+  /** status 200 Successful Response */ PayPalOrderResponse;
+export type CreatePaymentOrderPaymentsCreateOrderPostApiArg = {
+  paymentCreate: PaymentCreate;
+};
+export type CapturePaymentPaymentsCapturePaymentIdPostApiResponse =
+  /** status 200 Successful Response */ PaymentCaptureResponse;
+export type CapturePaymentPaymentsCapturePaymentIdPostApiArg = {
+  paymentId: number;
+};
+export type GetPaymentPaymentsPaymentIdGetApiResponse = /** status 200 Successful Response */ PaymentRead;
+export type GetPaymentPaymentsPaymentIdGetApiArg = {
+  paymentId: number;
+};
+export type GetUserPaymentsPaymentsUserPaymentsGetApiResponse = /** status 200 Successful Response */ PaymentRead[];
+export type GetUserPaymentsPaymentsUserPaymentsGetApiArg = void;
+export type PaypalWebhookPaymentsWebhookPaypalPostApiResponse = /** status 200 Successful Response */ WebhookResponse;
+export type PaypalWebhookPaymentsWebhookPaypalPostApiArg = void;
 export type GetOnlineUsersOnlineUsersGetApiResponse = /** status 200 Successful Response */ OnlineUsersResponse;
 export type GetOnlineUsersOnlineUsersGetApiArg = void;
 export type GetUserStatusUserStatusUserIdGetApiResponse = /** status 200 Successful Response */ UserStatusResponse;
@@ -690,6 +751,46 @@ export type MessageUpdate = {
   /** New message content */
   content: string;
 };
+export type PayPalOrderResponse = {
+  payment_id: number;
+  paypal_order_id: string;
+  approval_url: string;
+  amount: string;
+  currency: string;
+};
+export type PaymentMethod = "paypal" | "stripe" | "bank_transfer";
+export type PaymentCreate = {
+  /** Payment amount */
+  amount: number | string;
+  /** Payment currency */
+  currency?: string;
+  /** Payment description */
+  description: string;
+  payment_method?: PaymentMethod;
+};
+export type PaymentStatus = "pending" | "approved" | "completed" | "failed" | "cancelled" | "refunded";
+export type PaymentCaptureResponse = {
+  message: string;
+  payment_id: number;
+  status: PaymentStatus;
+};
+export type PaymentRead = {
+  id: number;
+  user_id: number;
+  amount: string;
+  currency: string;
+  payment_method: PaymentMethod;
+  status: PaymentStatus;
+  description: string;
+  paypal_order_id?: string | null;
+  paypal_capture_id?: string | null;
+  created_at: string;
+  updated_at: string;
+  completed_at?: string | null;
+};
+export type WebhookResponse = {
+  status: string;
+};
 export type OnlineUsersResponse = {
   online_users: number[];
   total_online: number;
@@ -728,6 +829,11 @@ export const {
   useDeleteMessageMessagesMessageIdDeleteMutation,
   useSearchMessagesMessagesSearchGetQuery,
   useFlagMessageMessagesMessageIdFlagPostMutation,
+  useCreatePaymentOrderPaymentsCreateOrderPostMutation,
+  useCapturePaymentPaymentsCapturePaymentIdPostMutation,
+  useGetPaymentPaymentsPaymentIdGetQuery,
+  useGetUserPaymentsPaymentsUserPaymentsGetQuery,
+  usePaypalWebhookPaymentsWebhookPaypalPostMutation,
   useGetOnlineUsersOnlineUsersGetQuery,
   useGetUserStatusUserStatusUserIdGetQuery,
 } = injectedRtkApi;

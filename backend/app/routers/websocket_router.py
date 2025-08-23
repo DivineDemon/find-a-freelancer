@@ -137,6 +137,8 @@ async def websocket_endpoint(
                     await handle_typing_indicator(message_data, user)
                 elif message_data.get("type") == "read":
                     await handle_read_receipt(message_data, user)
+                elif message_data.get("type") == "connection":
+                    await handle_connection_message(message_data, user)
                 else:
                     # Echo back unknown message types
                     await websocket.send_text(
@@ -248,9 +250,35 @@ async def handle_chat_message(message_data: dict, user: User, session: AsyncSess
             status="sent"
         )
         
+        # Prepare message for broadcast
+        broadcast_message = {
+            "type": "chat",
+            "data": {
+                "id": message.id,
+                "content": filtered_content,
+                "content_type": content_type,
+                "chat_id": chat_id,
+                "sender_id": user.id,
+                "sender_name": user.full_name,
+                "sender_type": user.user_type,
+                "sender_avatar": user.profile_picture,
+                "timestamp": message.created_at.isoformat(),
+                "created_at": message.created_at.isoformat(),
+                "updated_at": message.updated_at.isoformat(),
+                "is_flagged": not is_clean,
+                "flag_reason": ", ".join(violations) if violations else None,
+                "is_edited": False,
+                "original_content": None,
+                "is_deleted": False,
+                "deleted_at": None,
+                "edited_at": None
+            },
+            "timestamp": message.created_at.isoformat()
+        }
+
         # Send message to all participants in the chat
         await manager.send_chat_message(
-            ws_message.dict(),
+            broadcast_message,
             chat_id,
             exclude_user=user.id
         )
@@ -282,10 +310,11 @@ async def handle_typing_indicator(message_data: dict, user: User):
         # Send typing indicator to other chat participants
         typing_message = {
             "type": "typing",
-            "chat_id": chat_id,
-            "user_id": user.id,
-            "user_name": user.full_name,
-            "is_typing": is_typing,
+            "data": {
+                "chat_id": chat_id,
+                "user_id": user.id,
+                "is_typing": is_typing
+            },
             "timestamp": "now"
         }
         
@@ -299,6 +328,28 @@ async def handle_typing_indicator(message_data: dict, user: User):
         logger.error(f"Error handling typing indicator: {e}")
 
 
+async def handle_connection_message(message_data: dict, user: User):
+    """Handle connection-related messages (join/leave chat)."""
+    try:
+        action = message_data.get("data", {}).get("action")
+        chat_id = message_data.get("data", {}).get("chat_id")
+
+        if not action or not chat_id:
+            return
+
+        if action == "join_chat":
+            # Add user to specific chat
+            manager.add_user_to_chat(user.id, chat_id)
+            logger.info(f"User {user.id} joined chat {chat_id}")
+        elif action == "leave_chat":
+            # Remove user from specific chat
+            manager.remove_user_from_chat(user.id, chat_id)
+            logger.info(f"User {user.id} left chat {chat_id}")
+
+    except Exception as e:
+        logger.error(f"Error handling connection message: {e}")
+
+
 async def handle_read_receipt(message_data: dict, user: User):
     """Handle read receipts."""
     try:
@@ -310,11 +361,12 @@ async def handle_read_receipt(message_data: dict, user: User):
         
         # Send read receipt to message sender
         read_receipt = {
-            "type": "read_receipt",
-            "chat_id": chat_id,
-            "message_id": message_id,
-            "read_by_user_id": user.id,
-            "read_by_user_name": user.full_name,
+            "type": "read",
+            "data": {
+                "message_id": message_id,
+                "chat_id": chat_id,
+                "user_id": user.id
+            },
             "timestamp": "now"
         }
         

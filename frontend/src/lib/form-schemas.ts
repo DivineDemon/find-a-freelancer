@@ -10,8 +10,11 @@ export const registerSchema = z.object({
   email: z.string().email({ message: "Invalid email address" }),
   last_name: z.string().min(1, { message: "Last name is required" }),
   first_name: z.string().min(1, { message: "First name is required" }),
-  profile_picture: z.string().url({ message: "Must be a valid URL" }),
+  profile_picture: z.string().url({ message: "Must be a valid URL" }).optional().nullable().or(z.literal("")),
   password: z.string().min(8, { message: "Password must be at least 8 characters long" }),
+  user_type: z.enum(["client_hunter", "freelancer"], {
+    required_error: "User type is required",
+  }),
 });
 
 export const loginSchema = z.object({

@@ -35,13 +35,16 @@ from app.schemas.user_schema import (
     UserRead,
     UserUpdate,
     UserWithToken,
+    UserStatsSummary,
+    OnlineUsersResponse,
+    UserStatusResponse,
 )
 
 # Export all schemas
 __all__ = [
     # User schemas
     "UserBase", "UserCreate", "UserLogin", "UserUpdate", "UserRead",
-    "UserWithToken",
+    "UserWithToken", "UserStatsSummary", "OnlineUsersResponse", "UserStatusResponse",
     # Freelancer schemas
     "FreelancerBase", "FreelancerCreate", "FreelancerUpdate",
     "FreelancerRead", "FreelancerSearch",

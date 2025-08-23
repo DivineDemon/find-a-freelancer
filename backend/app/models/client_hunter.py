@@ -1,5 +1,6 @@
-from sqlalchemy import JSON, Boolean, Column, ForeignKey, Integer, String
-from sqlalchemy.orm import relationship
+from typing import Optional
+from sqlalchemy import JSON, Boolean, ForeignKey, Integer, String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.base import BaseModel
 
@@ -9,30 +10,36 @@ class ClientHunter(BaseModel):
     __tablename__ = "client_hunters"
 
     # Link to base user
-    user_id = Column(Integer, ForeignKey("users.id"),
-                     nullable=False, unique=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id"), nullable=False, unique=True)
 
     # Business information
-    company_name = Column(String, nullable=True)
+    company_name: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     # e.g., "Agency", "Startup", "Enterprise"
-    business_type = Column(String, nullable=True)
+    business_type: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     # e.g., "Technology", "Healthcare", "Finance"
-    industry = Column(String, nullable=True)
+    industry: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
     # Project preferences
     # ["web-app", "mobile-app", "ai-ml"]
-    preferred_project_types = Column(JSON, nullable=True, default=list)
+    preferred_project_types: Mapped[Optional[list]] = mapped_column(
+        JSON, nullable=True, default=list)
     # ["$1k-$5k", "$5k-$10k", "$10k+"]
-    budget_range = Column(JSON, nullable=True, default=list)
+    budget_range: Mapped[Optional[list]] = mapped_column(
+        JSON, nullable=True, default=list)
 
     # Communication preferences
     # ["chat", "video-call", "email"]
-    preferred_communication = Column(JSON, nullable=True, default=list)
-    timezone = Column(String, nullable=True)  # e.g., "UTC-5"
+    preferred_communication: Mapped[Optional[list]] = mapped_column(
+        JSON, nullable=True, default=list)
+    timezone: Mapped[Optional[str]] = mapped_column(
+        String, nullable=True)  # e.g., "UTC-5"
 
     # Payment and verification
-    has_paid_one_time_fee = Column(Boolean, default=False, nullable=False)
-    payment_date = Column(String, nullable=True)  # Store payment confirmation
+    has_paid_one_time_fee: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False)
+    payment_date: Mapped[Optional[str]] = mapped_column(
+        String, nullable=True)  # Store payment confirmation
 
     # Relationships
     user = relationship(

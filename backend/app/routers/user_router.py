@@ -9,7 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.db import get_session
 from app.models.user import User, UserType
 from app.routers.auth_router import get_current_user
-from app.schemas.user_schema import UserRead, UserUpdate
+from app.schemas.user_schema import UserRead, UserUpdate, UserStatsSummary
+from app.schemas.freelancer_schema import FreelancerRead
 
 router = APIRouter(prefix="/users", tags=["User Management"])
 
@@ -72,7 +73,9 @@ async def get_user(
     session: Annotated[AsyncSession, Depends(get_session)]
 ):
     """Get a specific user by ID."""
-    result = await session.execute(select(User).where(User.id == user_id))
+    result = await session.execute(
+        select(User).where(User.id == user_id)
+    )
     user = result.scalar_one_or_none()
     
     if not user:
@@ -81,7 +84,29 @@ async def get_user(
             detail="User not found"
         )
     
-    return UserRead.from_orm(user)
+    return UserRead.model_validate(user)
+
+
+@router.get("/{user_id}/freelancer-profile", response_model=FreelancerRead)
+async def get_freelancer_profile(
+    user_id: int,
+    session: Annotated[AsyncSession, Depends(get_session)]
+):
+    """Get freelancer profile for a specific user."""
+    from app.models.freelancer import Freelancer
+
+    result = await session.execute(
+        select(Freelancer).where(Freelancer.user_id == user_id)
+    )
+    freelancer = result.scalar_one_or_none()
+
+    if not freelancer:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Freelancer profile not found"
+        )
+
+    return FreelancerRead.model_validate(freelancer)
 
 
 @router.put("/{user_id}", response_model=UserRead)
@@ -158,7 +183,7 @@ async def verify_user(
     return UserRead.from_orm(user)
 
 
-@router.get("/stats/summary")
+@router.get("/stats/summary", response_model=UserStatsSummary)
 async def get_user_stats(
     current_admin: Annotated[User, Depends(get_current_admin_user)],
     session: Annotated[AsyncSession, Depends(get_session)]

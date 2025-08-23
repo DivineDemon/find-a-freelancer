@@ -12,7 +12,9 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as DashboardProfileRouteImport } from './routes/dashboard/profile'
+import { Route as DashboardChatHistoryRouteImport } from './routes/dashboard/chat-history'
 import { Route as ItemsItemIdIndexRouteImport } from './routes/items/$itemId/index'
+import { Route as DashboardFreelancerProfileUserIdIndexRouteImport } from './routes/dashboard/freelancer-profile/$userId/index'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -29,49 +31,82 @@ const DashboardProfileRoute = DashboardProfileRouteImport.update({
   path: '/dashboard/profile',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DashboardChatHistoryRoute = DashboardChatHistoryRouteImport.update({
+  id: '/dashboard/chat-history',
+  path: '/dashboard/chat-history',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ItemsItemIdIndexRoute = ItemsItemIdIndexRouteImport.update({
   id: '/items/$itemId/',
   path: '/items/$itemId/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DashboardFreelancerProfileUserIdIndexRoute =
+  DashboardFreelancerProfileUserIdIndexRouteImport.update({
+    id: '/dashboard/freelancer-profile/$userId/',
+    path: '/dashboard/freelancer-profile/$userId/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/dashboard/chat-history': typeof DashboardChatHistoryRoute
   '/dashboard/profile': typeof DashboardProfileRoute
   '/dashboard': typeof DashboardIndexRoute
   '/items/$itemId': typeof ItemsItemIdIndexRoute
+  '/dashboard/freelancer-profile/$userId': typeof DashboardFreelancerProfileUserIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/dashboard/chat-history': typeof DashboardChatHistoryRoute
   '/dashboard/profile': typeof DashboardProfileRoute
   '/dashboard': typeof DashboardIndexRoute
   '/items/$itemId': typeof ItemsItemIdIndexRoute
+  '/dashboard/freelancer-profile/$userId': typeof DashboardFreelancerProfileUserIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/dashboard/chat-history': typeof DashboardChatHistoryRoute
   '/dashboard/profile': typeof DashboardProfileRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/items/$itemId/': typeof ItemsItemIdIndexRoute
+  '/dashboard/freelancer-profile/$userId/': typeof DashboardFreelancerProfileUserIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/dashboard/profile' | '/dashboard' | '/items/$itemId'
+  fullPaths:
+    | '/'
+    | '/dashboard/chat-history'
+    | '/dashboard/profile'
+    | '/dashboard'
+    | '/items/$itemId'
+    | '/dashboard/freelancer-profile/$userId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/dashboard/profile' | '/dashboard' | '/items/$itemId'
+  to:
+    | '/'
+    | '/dashboard/chat-history'
+    | '/dashboard/profile'
+    | '/dashboard'
+    | '/items/$itemId'
+    | '/dashboard/freelancer-profile/$userId'
   id:
     | '__root__'
     | '/'
+    | '/dashboard/chat-history'
     | '/dashboard/profile'
     | '/dashboard/'
     | '/items/$itemId/'
+    | '/dashboard/freelancer-profile/$userId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DashboardChatHistoryRoute: typeof DashboardChatHistoryRoute
   DashboardProfileRoute: typeof DashboardProfileRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
   ItemsItemIdIndexRoute: typeof ItemsItemIdIndexRoute
+  DashboardFreelancerProfileUserIdIndexRoute: typeof DashboardFreelancerProfileUserIdIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -97,6 +132,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard/chat-history': {
+      id: '/dashboard/chat-history'
+      path: '/dashboard/chat-history'
+      fullPath: '/dashboard/chat-history'
+      preLoaderRoute: typeof DashboardChatHistoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/items/$itemId/': {
       id: '/items/$itemId/'
       path: '/items/$itemId'
@@ -104,14 +146,24 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ItemsItemIdIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard/freelancer-profile/$userId/': {
+      id: '/dashboard/freelancer-profile/$userId/'
+      path: '/dashboard/freelancer-profile/$userId'
+      fullPath: '/dashboard/freelancer-profile/$userId'
+      preLoaderRoute: typeof DashboardFreelancerProfileUserIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DashboardChatHistoryRoute: DashboardChatHistoryRoute,
   DashboardProfileRoute: DashboardProfileRoute,
   DashboardIndexRoute: DashboardIndexRoute,
   ItemsItemIdIndexRoute: ItemsItemIdIndexRoute,
+  DashboardFreelancerProfileUserIdIndexRoute:
+    DashboardFreelancerProfileUserIdIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -103,7 +103,12 @@ async def register_user(
         )
     
     # Create new user
-    user = User(**user_data.dict(exclude={"password"}))
+    user_data_dict = user_data.dict(exclude={"password"})
+    # Ensure profile_picture is None if empty string
+    if user_data_dict.get("profile_picture") == "":
+        user_data_dict["profile_picture"] = None
+
+    user = User(**user_data_dict)
     user.set_password(user_data.password)
     session.add(user)
     await session.commit()

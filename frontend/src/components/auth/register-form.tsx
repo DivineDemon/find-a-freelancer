@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 import { registerSchema } from "@/lib/form-schemas";
-import { useRegisterUserUsersRegisterPostMutation } from "@/store/services/apis";
+import { useRegisterUserAuthRegisterPostMutation } from "@/store/services/apis";
 import { Button } from "../ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "../ui/form";
 import ImageUploader from "../ui/image-uploader";
@@ -20,18 +20,25 @@ function RegisterForm({ setIsLogin }: RegisterFormProps) {
     resolver: zodResolver(registerSchema),
   });
 
-  const [register, { isLoading: registering }] = useRegisterUserUsersRegisterPostMutation();
+  const [register, { isLoading: registering }] = useRegisterUserAuthRegisterPostMutation();
 
   const handleRegister = async (data: z.infer<typeof registerSchema>) => {
-    const response = await register({
-      userBase: data,
-    });
+    try {
+      const response = await register({
+        userCreate: data,
+      });
 
-    if (response.data) {
-      registerForm.reset();
-      setIsLogin(true);
-      toast.success(response.data.message);
-    } else {
+      if (response.data) {
+        // Store user type for payment guard
+        localStorage.setItem("user_type", data.user_type);
+
+        registerForm.reset();
+        toast.success("Registration successful! Please login.");
+        setIsLogin(true);
+      } else if (response.error) {
+        toast.error("Registration failed. Please try again.");
+      }
+    } catch (_error) {
       toast.error("An error occurred while registering.");
     }
   };
@@ -102,9 +109,29 @@ function RegisterForm({ setIsLogin }: RegisterFormProps) {
         />
         <FormField
           control={registerForm.control}
+          name="user_type"
+          render={({ field }) => (
+            <FormItem className="w-full">
+              <FormLabel>User Type</FormLabel>
+              <FormControl>
+                <select
+                  {...field}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                >
+                  <option value="">Select user type</option>
+                  <option value="client_hunter">Client Hunter (Hire Freelancers)</option>
+                  <option value="freelancer">Freelancer (Provide Services)</option>
+                </select>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={registerForm.control}
           name="profile_picture"
           render={({ field, fieldState }) => (
-            <ImageUploader field={field} error={fieldState.error} label="Item Image" />
+            <ImageUploader field={field} error={fieldState.error} label="Profile Picture (Optional)" />
           )}
         />
         <Button disabled={registering} type="submit" variant="default" size="lg" className="w-full">

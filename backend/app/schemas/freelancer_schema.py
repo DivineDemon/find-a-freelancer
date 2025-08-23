@@ -2,8 +2,6 @@ from typing import List, Optional
 
 from pydantic import BaseModel, Field, HttpUrl
 
-from app.schemas.user_schema import UserRead
-
 
 class FreelancerBase(BaseModel):
     """Base freelancer schema."""
@@ -51,7 +49,6 @@ class FreelancerRead(FreelancerBase):
     is_verified: bool
     rating: float
     total_reviews: int
-    user: UserRead
 
     class Config:
         from_attributes = True

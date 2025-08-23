@@ -2,11 +2,15 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "@tanstack/react-router";
 import { Loader2, Send } from "lucide-react";
 import type { Dispatch, SetStateAction } from "react";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
+import { useDispatch, useSelector } from "react-redux";
 import { toast } from "sonner";
 import { z } from "zod";
 import { loginSchema } from "@/lib/form-schemas";
-import { useLoginUserUsersLoginPostMutation } from "@/store/services/apis";
+import type { RootState } from "@/store";
+import { useLoginUserAuthLoginPostMutation } from "@/store/services/apis";
+import { setToken } from "@/store/slices/global";
 import { Button } from "../ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "../ui/form";
 import { Input } from "../ui/input";
@@ -17,22 +21,47 @@ interface LoginFormProps {
 
 function LoginForm({ setIsLogin }: LoginFormProps) {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const token = useSelector((state: RootState) => state.global.token);
   const loginForm = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
   });
 
-  const [login, { isLoading: logging }] = useLoginUserUsersLoginPostMutation();
+  const [login, { isLoading: logging }] = useLoginUserAuthLoginPostMutation();
+
+  // Redirect to dashboard when token is set
+  useEffect(() => {
+    if (token) {
+      loginForm.reset();
+      toast.success("Login successful!");
+      navigate({ to: "/dashboard" });
+    }
+  }, [token, navigate, loginForm]);
 
   const handleLogin = async (data: z.infer<typeof loginSchema>) => {
-    const response = await login({
-      userLogin: data,
-    });
+    try {
+      const response = await login({
+        userLogin: data,
+      });
 
-    if (response.data) {
-      loginForm.reset();
-      navigate({ to: "/dashboard" });
-      toast.success(response.data.message);
-    } else {
+      if (response.data) {
+        // Store the token in Redux (which is persisted)
+        if (response.data.access_token) {
+          dispatch(setToken(response.data.access_token));
+
+          // Store user type for payment guard
+          if (response.data.user?.user_type) {
+            localStorage.setItem("user_type", response.data.user.user_type);
+          }
+
+          // The useEffect will handle the redirect when the token is set
+        } else {
+          toast.error("No access token received");
+        }
+      } else if (response.error) {
+        toast.error("Login failed. Please check your credentials.");
+      }
+    } catch (_error) {
       toast.error("An error occurred while logging in.");
     }
   };

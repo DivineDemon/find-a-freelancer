@@ -21,6 +21,7 @@ from app.models.chat import Chat
 from app.models.message import Message
 from app.models.user import User
 from app.schemas.message_schema import WebSocketMessage
+from app.schemas.user_schema import OnlineUsersResponse, UserStatusResponse
 from app.utils.content_filter import content_filter
 
 logger = get_logger(__name__)
@@ -324,19 +325,19 @@ async def handle_read_receipt(message_data: dict, user: User):
         logger.error(f"Error handling read receipt: {e}")
 
 
-@router.get("/online-users")
+@router.get("/online-users", response_model=OnlineUsersResponse)
 async def get_online_users():
     """Get list of currently online users."""
-    return {
-        "online_users": manager.get_online_users(),
-        "total_online": len(manager.get_online_users())
-    }
+    return OnlineUsersResponse(
+        online_users=manager.get_online_users(),
+        total_online=len(manager.get_online_users())
+    )
 
 
-@router.get("/user-status/{user_id}")
+@router.get("/user-status/{user_id}", response_model=UserStatusResponse)
 async def get_user_status(user_id: int):
     """Get online status of a specific user."""
-    return {
-        "user_id": user_id,
-        "is_online": manager.is_user_online(user_id)
-    }
+    return UserStatusResponse(
+        user_id=user_id,
+        is_online=manager.is_user_online(user_id)
+    )

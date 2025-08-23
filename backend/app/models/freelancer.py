@@ -1,5 +1,6 @@
-from sqlalchemy import JSON, Boolean, Column, Float, ForeignKey, Integer, String, Text
-from sqlalchemy.orm import relationship
+from typing import Optional
+from sqlalchemy import JSON, Boolean, Float, ForeignKey, Integer, String, Text
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.base import BaseModel
 
@@ -9,38 +10,48 @@ class Freelancer(BaseModel):
     __tablename__ = "freelancers"
 
     # Link to base user
-    user_id = Column(Integer, ForeignKey("users.id"),
-                     nullable=False, unique=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id"), nullable=False, unique=True)
 
     # Professional information
     # e.g., "Senior Full-Stack Developer"
-    title = Column(String, nullable=False)
-    bio = Column(Text, nullable=True)  # Professional summary
-    hourly_rate = Column(Float, nullable=False)  # Hourly rate in USD
-    daily_rate = Column(Float, nullable=True)  # Daily rate in USD
+    title: Mapped[str] = mapped_column(String, nullable=False)
+    bio: Mapped[Optional[str]] = mapped_column(
+        Text, nullable=True)  # Professional summary
+    hourly_rate: Mapped[float] = mapped_column(
+        Float, nullable=False)  # Hourly rate in USD
+    daily_rate: Mapped[Optional[float]] = mapped_column(
+        Float, nullable=True)  # Daily rate in USD
 
     # Experience and skills
-    years_of_experience = Column(Integer, nullable=False, default=0)
+    years_of_experience: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0)
     # List of skill strings
-    skills = Column(JSON, nullable=False, default=list)
+    skills: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
     # List of tech strings
-    technologies = Column(JSON, nullable=False, default=list)
+    technologies: Mapped[list] = mapped_column(
+        JSON, nullable=False, default=list)
 
     # Portfolio and work
-    portfolio_url = Column(String, nullable=True)
-    github_url = Column(String, nullable=True)
-    linkedin_url = Column(String, nullable=True)
+    portfolio_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    github_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    linkedin_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
     # Availability and preferences
-    is_available = Column(Boolean, default=True, nullable=False)
+    is_available: Mapped[bool] = mapped_column(
+        Boolean, default=True, nullable=False)
     # ["remote", "onsite", "hybrid"]
-    preferred_work_type = Column(JSON, nullable=True, default=list)
-    timezone = Column(String, nullable=True)  # e.g., "UTC-5"
+    preferred_work_type: Mapped[Optional[list]] = mapped_column(
+        JSON, nullable=True, default=list)
+    timezone: Mapped[Optional[str]] = mapped_column(
+        String, nullable=True)  # e.g., "UTC-5"
 
     # Verification and trust
-    is_verified = Column(Boolean, default=False, nullable=False)
-    rating = Column(Float, default=0.0, nullable=False)
-    total_reviews = Column(Integer, default=0, nullable=False)
+    is_verified: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False)
+    rating: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    total_reviews: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0)
 
     # Relationships
     user = relationship("User", back_populates="freelancer_profile")

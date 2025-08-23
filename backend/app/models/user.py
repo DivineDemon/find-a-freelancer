@@ -2,7 +2,7 @@ import enum
 from typing import Optional
 
 from passlib.context import CryptContext
-from sqlalchemy import Boolean, Enum, String
+from sqlalchemy import Boolean, Enum, String, Float
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.base import BaseModel
@@ -41,6 +41,12 @@ class User(BaseModel):
     is_verified: Mapped[bool] = mapped_column(
         Boolean, default=False, nullable=False)
     
+    # Payment information
+    has_paid: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False)
+    payment_date: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    payment_amount: Mapped[Optional[float]] = mapped_column(nullable=True)
+
     # Relationships
     chats_as_initiator = relationship(
         "Chat", 

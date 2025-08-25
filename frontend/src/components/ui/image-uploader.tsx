@@ -1,3 +1,4 @@
+import { Upload } from "lucide-react";
 import { useCallback } from "react";
 import { useDropzone } from "react-dropzone";
 import type { ControllerRenderProps, FieldError } from "react-hook-form";
@@ -48,13 +49,13 @@ function ImageUploader({ field, error, label = "Upload an Image" }: ImageUploade
         ) : file ? (
           <img src={file} alt="preview" className="aspect-square size-32 rounded-md object-cover" />
         ) : (
-          <>
-            <span className="font-semibold text-lg">Drag & Drop</span>
-            <fieldset className="flex w-full items-center justify-center border-t">
-              <legend className="px-5 text-center font-light text-sm">or</legend>
-            </fieldset>
-            <span className="font-semibold text-lg">Click to Upload an Image</span>
-          </>
+          <div className="flex w-full flex-col items-center justify-center">
+            <div className="size-12 rounded-full bg-[#0F233F] p-3 text-white">
+              <Upload className="size-full" />
+            </div>
+            <span className="font mt-5 mb-2 font-medium text-[16px] leading-[16px]">Click or Drag and Drop</span>
+            <span className="font font-medium text-[16px] leading-[16px]">to upload an image.</span>
+          </div>
         )}
       </div>
       {error && <FormMessage>{error.message}</FormMessage>}

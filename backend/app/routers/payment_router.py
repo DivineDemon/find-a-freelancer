@@ -1,8 +1,10 @@
 """Payment router for PayPal integration."""
 
+from datetime import datetime, timezone
 from typing import Annotated, Dict
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from sqlalchemy import and_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_session
@@ -10,15 +12,15 @@ from app.core.logger import get_logger
 from app.models.payment import Payment
 from app.models.user import User
 from app.routers.auth_router import get_current_user
-from app.services.paypal_service import paypal_service
 from app.schemas.payment_schema import (
+    PaymentCaptureResponse,
     PaymentCreate,
     PaymentRead,
     PaymentStatus,
     PayPalOrderResponse,
-    PaymentCaptureResponse,
-    WebhookResponse
+    WebhookResponse,
 )
+from app.services.paypal_service import paypal_service
 
 logger = get_logger(__name__)
 
@@ -41,9 +43,14 @@ async def create_payment_order(
     
     # Check if user already has an active payment
     existing_payment = await session.execute(
-        "SELECT * FROM payments WHERE user_id = :user_id AND status = 'completed'"
+        select(Payment).where(
+            and_(
+                Payment.user_id == current_user.id,
+                Payment.status == PaymentStatus.COMPLETED
+            )
+        )
     )
-    if existing_payment.fetchone():
+    if existing_payment.scalar_one_or_none():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="User already has an active payment"
@@ -52,7 +59,7 @@ async def create_payment_order(
     try:
         # Create PayPal order
         paypal_order = await paypal_service.create_order(
-            amount=payment_data.amount,
+            amount=float(payment_data.amount),
             currency=payment_data.currency,
             description=f"Platform Access Fee for {current_user.email}"
         )
@@ -72,7 +79,10 @@ async def create_payment_order(
         await session.commit()
         await session.refresh(payment)
         
-        logger.info(f"Payment order created for user {current_user.id}: {paypal_order['id']}")
+        logger.info(
+            f"Payment order created for user {current_user.id}: "
+            f"{paypal_order['id']}"
+        )
         
         return PayPalOrderResponse(
             payment_id=payment.id,
@@ -99,9 +109,14 @@ async def capture_payment(
     """Capture a PayPal payment after user approval."""
     # Get payment record
     payment_result = await session.execute(
-        "SELECT * FROM payments WHERE id = :payment_id AND user_id = :user_id"
+        select(Payment).where(
+            and_(
+                Payment.id == payment_id,
+                Payment.user_id == current_user.id
+            )
+        )
     )
-    payment = payment_result.fetchone()
+    payment = payment_result.scalar_one_or_none()
     
     if not payment:
         raise HTTPException(
@@ -109,7 +124,7 @@ async def capture_payment(
             detail="Payment not found"
         )
     
-    if payment["status"] != PaymentStatus.PENDING:
+    if payment.status != PaymentStatus.PENDING:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Payment is not in pending status"
@@ -117,28 +132,26 @@ async def capture_payment(
     
     try:
         # Capture PayPal order
-        capture_data = await paypal_service.capture_order(payment["paypal_order_id"])
+        if not payment.paypal_order_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Payment has no PayPal order ID"
+            )
+
+        capture_data = await paypal_service.capture_order(payment.paypal_order_id)
         
         # Update payment status
         await session.execute(
-            """
-            UPDATE payments 
-            SET status = :status, 
-                paypal_capture_id = :capture_id,
-                completed_at = NOW()
-            WHERE id = :payment_id
-            """,
-            {
-                "status": PaymentStatus.COMPLETED,
-                "capture_id": capture_data["purchase_units"][0]["payments"]["captures"][0]["id"],
-                "payment_id": payment_id
-            }
+            update(Payment).where(Payment.id == payment_id).values(
+                status=PaymentStatus.COMPLETED,
+                paypal_transaction_id=capture_data["purchase_units"][0]["payments"]["captures"][0]["id"],
+                paid_at=datetime.now(timezone.utc).replace(tzinfo=None)
+            )
         )
         
         # Update user payment status
         await session.execute(
-            "UPDATE users SET has_paid = true WHERE id = :user_id",
-            {"user_id": current_user.id}
+            update(User).where(User.id == current_user.id).values(has_paid=True)
         )
         
         await session.commit()
@@ -167,9 +180,14 @@ async def get_payment(
 ):
     """Get payment details."""
     payment_result = await session.execute(
-        "SELECT * FROM payments WHERE id = :payment_id AND user_id = :user_id"
+        select(Payment).where(
+            and_(
+                Payment.id == payment_id,
+                Payment.user_id == current_user.id
+            )
+        )
     )
-    payment = payment_result.fetchone()
+    payment = payment_result.scalar_one_or_none()
     
     if not payment:
         raise HTTPException(
@@ -177,7 +195,7 @@ async def get_payment(
             detail="Payment not found"
         )
     
-    return PaymentRead(**payment)
+    return PaymentRead(**payment.__dict__)
 
 
 @router.get("/user/payments", response_model=list[PaymentRead])
@@ -187,11 +205,13 @@ async def get_user_payments(
 ):
     """Get all payments for the current user."""
     payments_result = await session.execute(
-        "SELECT * FROM payments WHERE user_id = :user_id ORDER BY created_at DESC"
+        select(Payment).where(
+            Payment.user_id == current_user.id
+        ).order_by(Payment.created_at.desc())
     )
-    payments = payments_result.fetchall()
+    payments = payments_result.scalars().all()
     
-    return [PaymentRead(**payment) for payment in payments]
+    return [PaymentRead(**payment.__dict__) for payment in payments]
 
 
 @router.post("/webhook/paypal", response_model=WebhookResponse)
@@ -210,7 +230,7 @@ async def paypal_webhook(
             webhook_headers
         )
         
-        if not is_valid:
+        if not is_valid or not webhook_data:
             logger.warning("Invalid PayPal webhook received")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -219,6 +239,13 @@ async def paypal_webhook(
         
         event_type = webhook_data.get("event_type")
         
+        if not webhook_data:
+            logger.warning("No webhook data received")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No webhook data"
+            )
+
         if event_type == "CHECKOUT.ORDER.APPROVED":
             # Handle order approval
             await _handle_order_approval(webhook_data, session)
@@ -248,12 +275,8 @@ async def _handle_order_approval(webhook_data: Dict, session: AsyncSession):
     
     # Update payment status to approved
     await session.execute(
-        """
-        UPDATE payments 
-        SET status = :status 
-        WHERE paypal_order_id = :order_id
-        """,
-        {"status": PaymentStatus.APPROVED, "order_id": order_id}
+        update(Payment).where(Payment.paypal_order_id ==
+                              order_id).values(status=PaymentStatus.APPROVED)
     )
     await session.commit()
 
@@ -267,30 +290,18 @@ async def _handle_payment_completion(webhook_data: Dict, session: AsyncSession):
     
     # Update payment status to completed
     await session.execute(
-        """
-        UPDATE payments 
-        SET status = :status, 
-            paypal_capture_id = :capture_id,
-            completed_at = NOW()
-        WHERE paypal_order_id = :order_id
-        """,
-        {
-            "status": PaymentStatus.COMPLETED,
-            "capture_id": capture_id,
-            "order_id": order_id
-        }
+        update(Payment).where(Payment.paypal_order_id == order_id).values(
+            status=PaymentStatus.COMPLETED,
+            paypal_transaction_id=capture_id,
+            paid_at=datetime.now(timezone.utc).replace(tzinfo=None)
+        )
     )
     
     # Update user payment status
     await session.execute(
-        """
-        UPDATE users 
-        SET has_paid = true 
-        WHERE id = (
-            SELECT user_id FROM payments WHERE paypal_order_id = :order_id
-        )
-        """,
-        {"order_id": order_id}
+        update(User).where(User.id == (
+            select(Payment.user_id).where(Payment.paypal_order_id == order_id)
+        )).values(has_paid=True)
     )
     
     await session.commit()
@@ -304,11 +315,7 @@ async def _handle_payment_denial(webhook_data: Dict, session: AsyncSession):
     
     # Update payment status to failed
     await session.execute(
-        """
-        UPDATE payments 
-        SET status = :status 
-        WHERE paypal_order_id = :order_id
-        """,
-        {"status": PaymentStatus.FAILED, "order_id": order_id}
+        update(Payment).where(Payment.paypal_order_id ==
+                              order_id).values(status=PaymentStatus.FAILED)
     )
     await session.commit()

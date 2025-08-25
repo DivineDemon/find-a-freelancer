@@ -893,6 +893,244 @@ The database is automatically seeded with comprehensive sample data including:
    - Budget: $12,000 - $18,000
    - Tech: React Native, secure auth, data visualization
 
+## Database Migrations with Alembic
+
+This project uses Alembic for database migration management. Alembic is the standard migration tool for SQLAlchemy and provides a robust way to handle database schema changes.
+
+### Quick Start
+
+#### Using the Helper Script (Recommended)
+
+We've provided a helper script `manage_migrations.py` that simplifies common migration tasks:
+
+```bash
+cd backend
+
+# Check current migration status
+python3 manage_migrations.py current
+
+# Create a new migration
+python3 manage_migrations.py create "description of changes"
+
+# Apply pending migrations
+python3 manage_migrations.py upgrade
+
+# Revert last migration
+python3 manage_migrations.py downgrade
+
+# View migration history
+python3 manage_migrations.py history
+
+# Check if database is up to date
+python3 manage_migrations.py check
+```
+
+#### Direct Alembic Commands
+
+You can also use Alembic commands directly:
+
+```bash
+cd backend
+
+# Check current status
+alembic current
+
+# Create migration
+alembic revision --autogenerate -m "description"
+
+# Apply migrations
+alembic upgrade head
+
+# Revert migration
+alembic downgrade -1
+
+# View history
+alembic history
+```
+
+### Migration Workflow
+
+#### 1. Making Schema Changes
+
+1. **Update your SQLAlchemy models** in the appropriate model files
+2. **Create a migration**: `python3 manage_migrations.py create "description"`
+3. **Review the generated migration** file in `migrations/versions/`
+4. **Apply the migration**: `python3 manage_migrations.py upgrade`
+
+#### 2. Example Workflow
+
+```bash
+cd backend
+
+# 1. Make changes to your models (e.g., add a new column)
+# 2. Create migration
+python3 manage_migrations.py create "add user preferences table"
+
+# 3. Review the generated migration file
+# 4. Apply the migration
+python3 manage_migrations.py upgrade
+
+# 5. Verify the changes
+python3 manage_migrations.py current
+```
+
+### Migration Files
+
+#### Location
+Migrations are stored in `backend/migrations/versions/` with the naming convention:
+`YYYY_MM_DD_HHMM-<revision_id>_<description>.py`
+
+#### Structure
+Each migration file contains:
+- **`upgrade()`**: Code to apply the migration
+- **`downgrade()`**: Code to revert the migration
+- **Metadata**: Revision ID, dependencies, etc.
+
+#### Example Migration
+```python
+def upgrade() -> None:
+    # Add new column
+    op.add_column('users', sa.Column('preferences', sa.JSON))
+
+def downgrade() -> None:
+    # Remove the column
+    op.drop_column('users', 'preferences')
+```
+
+### Best Practices
+
+#### 1. Always Review Generated Migrations
+- Alembic's autogenerate feature is powerful but not perfect
+- Always review generated migrations before applying them
+- Test migrations in development before production
+
+#### 2. Use Descriptive Migration Messages
+```bash
+# Good
+python3 manage_migrations.py create "add user preferences and settings"
+
+# Bad
+python3 manage_migrations.py create "update"
+```
+
+#### 3. Test Migrations
+- Test both `upgrade()` and `downgrade()` functions
+- Ensure data integrity is maintained
+- Test with realistic data volumes
+
+#### 4. Backup Before Major Changes
+- Always backup your database before applying migrations
+- Test migrations on a copy of production data
+
+### Troubleshooting
+
+#### Common Issues
+
+##### 1. Migration Conflicts
+If you encounter conflicts between migrations:
+```bash
+cd backend
+
+# Check current status
+alembic current
+
+# View migration history
+alembic history
+
+# Resolve conflicts manually in migration files
+```
+
+##### 2. Database Out of Sync
+If your database is out of sync with migrations:
+```bash
+cd backend
+
+# Check what migrations are pending
+alembic check
+
+# Stamp the database at a specific revision
+python3 manage_migrations.py stamp <revision_id>
+```
+
+##### 3. Model Import Errors
+If you get import errors in migrations:
+- Ensure all models are properly imported in `migrations/env.py`
+- Check that the Python path is correctly set
+
+#### Reset Migrations (Development Only)
+⚠️ **Warning: This will delete all migration history**
+
+```bash
+cd backend
+
+# Remove all migration files
+rm -rf migrations/versions/*
+
+# Reinitialize Alembic
+alembic init migrations
+
+# Create new initial migration
+python3 manage_migrations.py create "initial schema"
+```
+
+### Advanced Features
+
+#### Custom Migration Operations
+You can add custom operations in migration files:
+
+```python
+def upgrade() -> None:
+    # Custom SQL
+    op.execute("UPDATE users SET status = 'active' WHERE status IS NULL")
+    
+    # Standard operations
+    op.add_column('users', sa.Column('status', sa.String(20)))
+```
+
+#### Data Migrations
+For complex data transformations:
+
+```python
+def upgrade() -> None:
+    # Create temporary table
+    op.create_table('temp_users', ...)
+    
+    # Copy and transform data
+    op.execute("INSERT INTO temp_users SELECT ... FROM users")
+    
+    # Drop old table and rename
+    op.drop_table('users')
+    op.rename_table('temp_users', 'users')
+```
+
+### Current Status
+
+- **Initial Migration**: `da62520111c4` (initial database schema)
+- **Database**: Up to date with current models
+- **Status**: Ready for new migrations
+
+### File Structure
+
+```
+backend/
+├── migrations/
+│   ├── versions/           # Migration files
+│   ├── env.py             # Migration environment
+│   ├── script.py.mako     # Migration template
+│   └── README             # Alembic documentation
+├── alembic.ini            # Alembic configuration
+├── manage_migrations.py   # Helper script
+└── ...                    # Other backend files
+```
+
+### Support
+
+If you encounter issues:
+1. Check the Alembic documentation: https://alembic.sqlalchemy.org/
+2. Review the generated migration files
+3. Check the database logs for errors
+4. Ensure all models are properly imported
+
 ---
 
 ## Development Commands

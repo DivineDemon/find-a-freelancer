@@ -1,11 +1,18 @@
 import enum
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from passlib.context import CryptContext
-from sqlalchemy import Boolean, Enum, String, Float
+from sqlalchemy import Boolean, Enum, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.base import BaseModel
+
+if TYPE_CHECKING:
+    from app.models.chat import Chat
+    from app.models.client_hunter import ClientHunter
+    from app.models.freelancer import Freelancer
+    from app.models.message import Message
+    from app.models.notification import Notification
 
 # Password hashing context - using bcrypt with proper configuration
 pwd_context = CryptContext(
@@ -31,6 +38,7 @@ class User(BaseModel):
     password_hash: Mapped[str] = mapped_column(String, nullable=False)
     first_name: Mapped[str] = mapped_column(String, nullable=False)
     last_name: Mapped[str] = mapped_column(String, nullable=False)
+    phone: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     profile_picture: Mapped[Optional[str]
                             ] = mapped_column(String, nullable=True)
     
@@ -38,33 +46,27 @@ class User(BaseModel):
     user_type: Mapped[UserType] = mapped_column(Enum(UserType), nullable=False)
     is_active: Mapped[bool] = mapped_column(
         Boolean, default=True, nullable=False)
-    is_verified: Mapped[bool] = mapped_column(
-        Boolean, default=False, nullable=False)
-    
-    # Payment information
-    has_paid: Mapped[bool] = mapped_column(
-        Boolean, default=False, nullable=False)
-    payment_date: Mapped[Optional[str]] = mapped_column(String, nullable=True)
-    payment_amount: Mapped[Optional[float]] = mapped_column(nullable=True)
 
     # Relationships
-    chats_as_initiator = relationship(
+    chats_as_initiator: Mapped[list["Chat"]] = relationship(
         "Chat", 
         foreign_keys="Chat.initiator_id", 
         back_populates="initiator"
     )
-    chats_as_participant = relationship(
+    chats_as_participant: Mapped[list["Chat"]] = relationship(
         "Chat", 
         foreign_keys="Chat.participant_id", 
         back_populates="participant"
     )
-    messages = relationship("Message", back_populates="sender")
-    notifications = relationship("Notification", back_populates="user")
+    messages: Mapped[list["Message"]] = relationship(
+        "Message", back_populates="sender")
+    notifications: Mapped[list["Notification"]] = relationship(
+        "Notification", back_populates="user")
     
     # Profile relationships
-    client_hunter_profile = relationship(
+    client_hunter_profile: Mapped[Optional["ClientHunter"]] = relationship(
         "ClientHunter", back_populates="user", uselist=False)
-    freelancer_profile = relationship(
+    freelancer_profile: Mapped[Optional["Freelancer"]] = relationship(
         "Freelancer", back_populates="user", uselist=False)
 
     def __repr__(self):

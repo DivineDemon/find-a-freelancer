@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { requireAuth } from "@/lib/route-guard";
-import { useGetCurrentUserProfileAuthMeGetQuery, useListUserChatsChatsGetQuery } from "@/store/services/apis";
+import { useGetCurrentUserProfileAuthAuthMeGetQuery, useListUserChatsChatsChatsGetQuery } from "@/store/services/apis";
 
 export const Route = createFileRoute("/dashboard/chat-history")({
   component: Chats,
@@ -22,8 +22,8 @@ function Chats() {
   const [selectedChat, setSelectedChat] = useState<number | null>(null);
   const [showNewChat, setShowNewChat] = useState(false);
 
-  const { data: currentUser } = useGetCurrentUserProfileAuthMeGetQuery();
-  const { data: chatsData, isLoading } = useListUserChatsChatsGetQuery({
+  const { data: currentUser } = useGetCurrentUserProfileAuthAuthMeGetQuery();
+  const { data: chatsData, isLoading } = useListUserChatsChatsChatsGetQuery({
     statusFilter: statusFilter || undefined,
     page: 1,
     size: 20,

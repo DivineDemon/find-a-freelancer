@@ -1,22 +1,21 @@
-from typing import Optional
+from datetime import datetime
+from typing import List, Optional
 
-from pydantic import BaseModel, EmailStr, Field
-
-from app.models.user import UserType
+from pydantic import BaseModel, EmailStr
 
 
 class UserBase(BaseModel):
     """Base user schema."""
     email: EmailStr
-    first_name: str = Field(..., min_length=1, max_length=50)
-    last_name: str = Field(..., min_length=1, max_length=50)
-    profile_picture: Optional[str] = None
+    first_name: str
+    last_name: str
+    phone: Optional[str] = None
 
 
 class UserCreate(UserBase):
     """Schema for creating a new user."""
-    password: str = Field(..., min_length=8, max_length=100)
-    user_type: UserType
+    password: str
+    user_type: str
 
 
 class UserLogin(BaseModel):
@@ -27,26 +26,23 @@ class UserLogin(BaseModel):
 
 class UserUpdate(BaseModel):
     """Schema for updating user information."""
-    first_name: Optional[str] = Field(None, min_length=1, max_length=50)
-    last_name: Optional[str] = Field(None, min_length=1, max_length=50)
+    email: Optional[EmailStr] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    phone: Optional[str] = None
     profile_picture: Optional[str] = None
-    current_password: Optional[str] = None
-    new_password: Optional[str] = Field(None, min_length=8, max_length=100)
-    has_paid: Optional[bool] = None
-    payment_date: Optional[str] = None
-    payment_amount: Optional[float] = None
+    is_active: Optional[bool] = None
 
 
 class UserRead(UserBase):
     """Schema for reading user information."""
     id: int
-    user_type: UserType
+    profile_picture: Optional[str] = None
+    user_type: str
     is_active: bool
-    is_verified: bool
-    has_paid: bool
-    payment_date: Optional[str] = None
-    payment_amount: Optional[float] = None
-    
+    created_at: datetime
+    updated_at: datetime
+
     class Config:
         from_attributes = True
 
@@ -64,13 +60,11 @@ class UserStatsSummary(BaseModel):
     client_hunters: int
     freelancers: int
     active_users: int
-    verified_users: int
-    verification_rate: float
 
 
 class OnlineUsersResponse(BaseModel):
     """Schema for online users response."""
-    online_users: list[int]
+    online_users: List[int]
     total_online: int
 
 
@@ -84,6 +78,3 @@ class UserWithProfiles(UserRead):
     """Schema for user with profile information."""
     freelancer_profile: Optional[dict] = None
     client_hunter_profile: Optional[dict] = None
-
-    class Config:
-        from_attributes = True

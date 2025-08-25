@@ -17,7 +17,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { UserRead } from "@/store/services/apis";
-import { useCreateChatChatsPostMutation } from "@/store/services/apis";
+import { useCreateChatChatsChatsPostMutation } from "@/store/services/apis";
 
 const newChatSchema = z.object({
   project_title: z.string().min(1, "Project title is required").max(100, "Project title too long"),
@@ -36,7 +36,7 @@ interface NewChatDialogProps {
 export default function NewChatDialog({ user, onChatCreated }: NewChatDialogProps) {
   const [open, setOpen] = useState(false);
 
-  const [createChat, { isLoading: creating }] = useCreateChatChatsPostMutation();
+  const [createChat, { isLoading: creating }] = useCreateChatChatsChatsPostMutation();
 
   // Check if current user is a client hunter who hasn't paid
   const isUnpaidClientHunter =

@@ -10,7 +10,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { useUpdateCurrentUserProfileAuthMePutMutation } from "@/store/services/apis";
 
 const paymentSchema = z.object({
   card_number: z.string().min(16, "Card number must be 16 digits").max(16, "Card number must be 16 digits"),
@@ -38,8 +37,6 @@ export default function PaymentModal({ isOpen, onClose, onSuccess }: PaymentModa
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
-  const [updateProfile] = useUpdateCurrentUserProfileAuthMePutMutation();
-
   const form = useForm<z.infer<typeof paymentSchema>>({
     resolver: zodResolver(paymentSchema),
     defaultValues: {
@@ -58,14 +55,8 @@ export default function PaymentModal({ isOpen, onClose, onSuccess }: PaymentModa
       // Simulate payment processing
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
-      // Update user profile to mark as paid
-      await updateProfile({
-        userUpdate: {
-          has_paid: true,
-          payment_date: new Date().toISOString(),
-          payment_amount: PLATFORM_FEE,
-        },
-      }).unwrap();
+      // TODO: Update ClientHunter profile when backend supports it
+      // For now, just update localStorage
 
       // Update localStorage
       localStorage.setItem("has_paid", "true");

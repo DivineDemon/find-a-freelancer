@@ -91,8 +91,13 @@ class PaymentSummary(BaseModel):
 
 class RefundRequest(BaseModel):
     """Schema for payment refund request."""
-    reason: str = Field(..., max_length=500, description="Refund reason")
-    amount: Optional[Decimal] = Field(None, ge=0.01, description="Refund amount (full if not specified)")
+    reason: str = Field(
+        ..., max_length=500, description="Refund reason"
+    )
+    amount: Optional[Decimal] = Field(
+        None, ge=0.01,
+        description="Refund amount (full if not specified)"
+    )
 
 
 class WebhookEvent(BaseModel):

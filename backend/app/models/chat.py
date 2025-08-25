@@ -1,10 +1,14 @@
 
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.base import BaseModel
+
+if TYPE_CHECKING:
+    from app.models.message import Message
+    from app.models.user import User
 
 
 class Chat(BaseModel):
@@ -40,17 +44,17 @@ class Chat(BaseModel):
                             ] = mapped_column(DateTime, nullable=True)
 
     # Relationships
-    initiator = relationship(
+    initiator: Mapped["User"] = relationship(
         "User",
         foreign_keys=[initiator_id],
         back_populates="chats_as_initiator"
     )
-    participant = relationship(
+    participant: Mapped["User"] = relationship(
         "User",
         foreign_keys=[participant_id],
         back_populates="chats_as_participant"
     )
-    messages = relationship(
+    messages: Mapped[list["Message"]] = relationship(
         "Message",
         back_populates="chat",
         cascade="all, delete-orphan"

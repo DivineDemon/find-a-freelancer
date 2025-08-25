@@ -6,6 +6,7 @@ from typing import Annotated, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import and_, desc, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.core.db import get_session
 from app.models.chat import Chat
@@ -127,8 +128,6 @@ async def get_chat_messages(
     total = total_result.scalar() or 0
 
     # Get messages with pagination and sender information
-    from sqlalchemy.orm import selectinload
-
     query = select(Message).options(
         selectinload(Message.sender)
     ).where(
@@ -171,8 +170,6 @@ async def get_message(
 ):
     """Get a specific message by ID."""
     # Get message with sender information
-    from sqlalchemy.orm import selectinload
-
     result = await session.execute(
         select(Message).options(
             selectinload(Message.sender)
@@ -215,7 +212,8 @@ async def get_message(
     return MessageWithSender(
         **message.__dict__,
         sender_name=message.sender.full_name if message.sender else "Unknown",
-        sender_type=message.sender.user_type if message.sender else UserType.CLIENT_HUNTER,
+        sender_type=message.sender.user_type if message.sender else
+        UserType.CLIENT_HUNTER,
         sender_avatar=None  # Will be implemented later
     )
 
@@ -255,7 +253,7 @@ async def delete_message(
     await session.commit()
 
 
-@router.get("/search/", response_model=MessageList)
+@router.get("/search", response_model=MessageList)
 async def search_messages(
     current_user: Annotated[User, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_session)],

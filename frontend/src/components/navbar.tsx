@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Atom, LogOut, MessageSquare, User2 } from "lucide-react";
-import { useDispatch } from "react-redux";
-import { useGetCurrentUserProfileAuthMeGetQuery } from "@/store/services/apis";
+import { LogOut, MessageSquare, User2 } from "lucide-react";
+import Logo from "@/assets/img/logo.png";
+import { useGetCurrentUserProfileAuthAuthMeGetQuery } from "@/store/services/apis";
 import MaxWidthWrapper from "./max-width-wrapper";
 import ModeToggle from "./mode-toggle";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
@@ -9,12 +9,10 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 
 function Navbar() {
   const navigate = useNavigate();
-  const dispatch = useDispatch();
-  const { data: currentUser } = useGetCurrentUserProfileAuthMeGetQuery();
+  const { data: currentUser } = useGetCurrentUserProfileAuthAuthMeGetQuery();
 
   const logout = () => {
-    // Clear Redux state (which will clear localStorage via redux-persist)
-    dispatch({ type: "persist/PURGE" });
+    localStorage.clear();
     navigate({ to: "/" });
   };
 
@@ -22,9 +20,8 @@ function Navbar() {
     <nav className="h-16 w-full border-b py-3">
       <MaxWidthWrapper className="flex items-center justify-between">
         <Link to="/dashboard">
-          <Atom className="size-9" />
+          <img src={Logo} alt="logo-img" className="size-9" />
         </Link>
-
         <div className="flex items-center justify-center gap-2.5">
           <ModeToggle />
           <DropdownMenu>

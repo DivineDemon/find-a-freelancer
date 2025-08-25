@@ -29,15 +29,15 @@ from app.schemas.message_schema import (
     WebSocketMessage,
 )
 from app.schemas.user_schema import (
+    OnlineUsersResponse,
     UserBase,
     UserCreate,
     UserLogin,
     UserRead,
+    UserStatsSummary,
+    UserStatusResponse,
     UserUpdate,
     UserWithToken,
-    UserStatsSummary,
-    OnlineUsersResponse,
-    UserStatusResponse,
 )
 
 # Export all schemas

@@ -8,8 +8,7 @@
       "last_name": "Anderson",
       "profile_picture": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150",
       "user_type": "client_hunter",
-      "is_active": true,
-      "is_verified": true
+      "is_active": true
     },
     {
       "id": 2,
@@ -19,8 +18,7 @@
       "last_name": "Johnson",
       "profile_picture": "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150",
       "user_type": "freelancer",
-      "is_active": true,
-      "is_verified": true
+      "is_active": true
     },
     {
       "id": 3,
@@ -30,8 +28,7 @@
       "last_name": "Chen",
       "profile_picture": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150",
       "user_type": "client_hunter",
-      "is_active": true,
-      "is_verified": false
+      "is_active": true
     },
     {
       "id": 4,
@@ -41,8 +38,7 @@
       "last_name": "Rodriguez",
       "profile_picture": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150",
       "user_type": "freelancer",
-      "is_active": true,
-      "is_verified": true
+      "is_active": true
     },
     {
       "id": 5,
@@ -52,8 +48,7 @@
       "last_name": "Williams",
       "profile_picture": "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150",
       "user_type": "freelancer",
-      "is_active": true,
-      "is_verified": true
+      "is_active": true
     },
     {
       "id": 6,
@@ -63,8 +58,7 @@
       "last_name": "Thompson",
       "profile_picture": "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150",
       "user_type": "client_hunter",
-      "is_active": true,
-      "is_verified": true
+      "is_active": true
     }
   ],
   "freelancers": [
@@ -107,7 +101,6 @@
         "hybrid"
       ],
       "timezone": "UTC-5",
-      "is_verified": true,
       "rating": 4.8,
       "total_reviews": 23
     },
@@ -149,7 +142,6 @@
         "remote"
       ],
       "timezone": "UTC-8",
-      "is_verified": true,
       "rating": 4.9,
       "total_reviews": 31
     },
@@ -191,7 +183,6 @@
         "onsite"
       ],
       "timezone": "UTC+1",
-      "is_verified": true,
       "rating": 4.7,
       "total_reviews": 18
     }

@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useRealtimeChat } from "@/hooks/use-realtime-chat";
 import type { ChatWithParticipants } from "@/store/services/apis";
-import { useGetChatMessagesMessagesChatChatIdGetQuery } from "@/store/services/apis";
+import { useGetChatMessagesMessagesMessagesChatChatIdGetQuery } from "@/store/services/apis";
 
 interface ChatInterfaceProps {
   chat: ChatWithParticipants;
@@ -21,7 +21,7 @@ export default function ChatInterface({ chat, currentUserId, onMessageSent }: Ch
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Get initial messages from API
-  const { data: messagesData } = useGetChatMessagesMessagesChatChatIdGetQuery({
+  const { data: messagesData } = useGetChatMessagesMessagesMessagesChatChatIdGetQuery({
     chatId: chat.id,
     page: 1,
     size: 50,

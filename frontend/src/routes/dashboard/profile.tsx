@@ -13,8 +13,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { requireAuth } from "@/lib/route-guard";
 import {
-  useGetCurrentUserProfileAuthMeGetQuery,
-  useUpdateCurrentUserProfileAuthMePutMutation,
+  useGetCurrentUserProfileAuthAuthMeGetQuery,
+  useUpdateCurrentUserProfileAuthAuthMePutMutation,
 } from "@/store/services/apis";
 
 export const Route = createFileRoute("/dashboard/profile")({
@@ -45,8 +45,8 @@ function Profile() {
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
 
-  const { data: user, isLoading, refetch } = useGetCurrentUserProfileAuthMeGetQuery();
-  const [updateProfile, { isLoading: updatingProfile }] = useUpdateCurrentUserProfileAuthMePutMutation();
+  const { data: user, isLoading, refetch } = useGetCurrentUserProfileAuthAuthMeGetQuery();
+  const [updateProfile, { isLoading: updatingProfile }] = useUpdateCurrentUserProfileAuthAuthMePutMutation();
 
   const profileForm = useForm<z.infer<typeof profileSchema>>({
     resolver: zodResolver(profileSchema),
@@ -90,14 +90,11 @@ function Profile() {
     }
   };
 
-  const handlePasswordChange = async (data: z.infer<typeof passwordSchema>) => {
+  const handlePasswordChange = async (_data: z.infer<typeof passwordSchema>) => {
     try {
-      await updateProfile({
-        userUpdate: {
-          current_password: data.current_password,
-          new_password: data.new_password,
-        },
-      });
+      // TODO: Implement password change when backend supports it
+      toast.error("Password change not yet implemented");
+      setIsChangingPassword(false);
 
       toast.success("Password changed successfully!");
       setIsChangingPassword(false);

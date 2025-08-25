@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useCreatePaymentOrderPaymentsCreateOrderPostMutation } from "@/store/services/apis";
+import { useCreatePaymentOrderPaymentsPaymentsCreateOrderPostMutation } from "@/store/services/apis";
 
 interface PayPalPaymentProps {
   amount: number;
@@ -24,7 +24,7 @@ export default function PayPalPayment({
   const [paymentStatus, setPaymentStatus] = useState<"idle" | "processing" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState<string>("");
 
-  const [createPaymentOrder, { isLoading, error }] = useCreatePaymentOrderPaymentsCreateOrderPostMutation();
+  const [createPaymentOrder, { isLoading, error }] = useCreatePaymentOrderPaymentsPaymentsCreateOrderPostMutation();
 
   const handlePayment = async () => {
     try {

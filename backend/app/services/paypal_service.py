@@ -1,8 +1,7 @@
 """PayPal service for handling payments and webhooks."""
 
 import json
-import logging
-from typing import Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 from urllib.parse import urlencode
 
 import requests
@@ -218,7 +217,7 @@ class PayPalService:
         """Refund a PayPal payment."""
         access_token = await self.get_access_token()
         
-        refund_data = {
+        refund_data: Dict[str, Any] = {
             "reason": reason
         }
         

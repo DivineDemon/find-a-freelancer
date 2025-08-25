@@ -1,10 +1,12 @@
 import enum
 from datetime import datetime, timezone
+from typing import Optional
 
-from sqlalchemy import Column, DateTime, Enum, Float, ForeignKey, Integer, String, Text
-from sqlalchemy.orm import relationship
+from sqlalchemy import DateTime, Enum, Float, ForeignKey, Integer, String, Text
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.base import BaseModel
+from app.models.user import User
 
 
 class PaymentStatus(str, enum.Enum):
@@ -28,26 +30,35 @@ class Payment(BaseModel):
     __tablename__ = "payments"
     
     # Payment details
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    amount = Column(Float, nullable=False)
-    currency = Column(String, default="USD", nullable=False)
-    payment_type = Column(Enum(PaymentType), nullable=False)
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id"), nullable=False)
+    amount: Mapped[float] = mapped_column(Float, nullable=False)
+    currency: Mapped[str] = mapped_column(
+        String, default="USD", nullable=False)
+    payment_type: Mapped[PaymentType] = mapped_column(
+        Enum(PaymentType), nullable=False)
     
     # PayPal integration
-    paypal_payment_id = Column(String, nullable=True, unique=True)
-    paypal_order_id = Column(String, nullable=True, unique=True)
-    paypal_transaction_id = Column(String, nullable=True, unique=True)
+    paypal_payment_id: Mapped[Optional[str]] = mapped_column(
+        String, nullable=True, unique=True)
+    paypal_order_id: Mapped[Optional[str]] = mapped_column(
+        String, nullable=True, unique=True)
+    paypal_transaction_id: Mapped[Optional[str]] = mapped_column(
+        String, nullable=True, unique=True)
     
     # Payment status and metadata
-    status = Column(Enum(PaymentStatus), default=PaymentStatus.PENDING, nullable=False)
-    description = Column(Text, nullable=True)
+    status: Mapped[PaymentStatus] = mapped_column(
+        Enum(PaymentStatus), default=PaymentStatus.PENDING, nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     
     # Timestamps
-    paid_at = Column(DateTime, nullable=True)
-    expires_at = Column(DateTime, nullable=True)
+    paid_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime, nullable=True)
+    expires_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime, nullable=True)
     
     # Relationships
-    user = relationship("User", backref="payments")
+    user: Mapped["User"] = relationship("User", backref="payments")
     
     def __repr__(self):
         return (

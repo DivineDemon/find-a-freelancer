@@ -1,16 +1,22 @@
 import { createSlice } from "@reduxjs/toolkit";
+import type { UserRead } from "../services/apis";
+
+type GlobalState = {
+  token: string | null;
+  user: UserRead | null;
+};
 
 const initialState: GlobalState = {
+  user: null,
   token: null,
-  profile_picture: null,
 };
 
 const globalSlice = createSlice({
   name: "global",
   initialState,
   reducers: {
-    setProfilePicture: (state, action) => {
-      state.profile_picture = action.payload;
+    setUser: (state, action) => {
+      state.user = action.payload;
     },
     setToken: (state, action) => {
       state.token = action.payload;
@@ -18,5 +24,5 @@ const globalSlice = createSlice({
   },
 });
 
-export const { setProfilePicture, setToken } = globalSlice.actions;
+export const { setUser, setToken } = globalSlice.actions;
 export default globalSlice.reducer;

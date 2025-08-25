@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { requireAuth } from "@/lib/route-guard";
 import {
-  useGetCurrentUserProfileAuthMeGetQuery,
+  useGetCurrentUserProfileAuthAuthMeGetQuery,
   useGetFilterOptionsUsersFiltersOptionsGetQuery,
   useListUsersUsersGetQuery,
 } from "@/store/services/apis";
@@ -19,8 +19,7 @@ import {
 type FilterOptions = {
   skills: string[];
   technologies: string[];
-  work_types: string[];
-  price_range: { min: number; max: number };
+  hourly_rate_range: { min: number; max: number };
   experience_range: { min: number; max: number };
 };
 
@@ -32,7 +31,6 @@ export const Route = createFileRoute("/dashboard/")({
 });
 
 function Index() {
-  const [isActive, _setIsActive] = useState<boolean | undefined>(undefined);
   const [currentPage, setCurrentPage] = useState(0);
   const [pageSize] = useState(50);
 
@@ -42,10 +40,9 @@ function Index() {
   const [experienceRange, setExperienceRange] = useState<[number, number]>([0, 50]);
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [selectedTechnologies, setSelectedTechnologies] = useState<string[]>([]);
-  const [selectedWorkType, setSelectedWorkType] = useState<string>("");
   const [showFilters, setShowFilters] = useState(false);
 
-  const { data: currentUser } = useGetCurrentUserProfileAuthMeGetQuery();
+  const { data: currentUser } = useGetCurrentUserProfileAuthAuthMeGetQuery();
   const {
     data: filterOptions,
     isLoading: filterOptionsLoading,
@@ -56,7 +53,7 @@ function Index() {
   useEffect(() => {
     if (filterOptions) {
       const options = filterOptions as FilterOptions;
-      setPriceRange([options.price_range.min, options.price_range.max]);
+      setPriceRange([options.hourly_rate_range.min, options.hourly_rate_range.max]);
       setExperienceRange([options.experience_range.min, options.experience_range.max]);
     }
   }, [filterOptions]);
@@ -65,11 +62,10 @@ function Index() {
   const resetFilters = () => {
     if (filterOptions) {
       const options = filterOptions as FilterOptions;
-      setPriceRange([options.price_range.min, options.price_range.max]);
+      setPriceRange([options.hourly_rate_range.min, options.hourly_rate_range.max]);
       setExperienceRange([options.experience_range.min, options.experience_range.max]);
       setSelectedSkills([]);
       setSelectedTechnologies([]);
-      setSelectedWorkType("");
       setSearchQuery("");
     }
   };
@@ -80,8 +76,6 @@ function Index() {
   }, []);
 
   const { data: usersData, isLoading } = useListUsersUsersGetQuery({
-    userType: currentUser?.user_type === "client_hunter" ? "freelancer" : undefined,
-    isActive: isActive,
     skip: currentPage * pageSize,
     limit: pageSize,
     // Advanced filters
@@ -92,7 +86,6 @@ function Index() {
     maxExperience: experienceRange[1] < 50 ? experienceRange[1] : undefined,
     skills: selectedSkills.length > 0 ? selectedSkills.join(",") : undefined,
     technologies: selectedTechnologies.length > 0 ? selectedTechnologies.join(",") : undefined,
-    workType: selectedWorkType || undefined,
   });
 
   if (isLoading && currentPage === 0) {
@@ -204,29 +197,6 @@ function Index() {
                           <span className="text-muted-foreground text-xs">years</span>
                         </div>
                       </div>
-
-                      {/* Work Type */}
-                      <div className="space-y-2">
-                        <Label className="font-medium text-sm">Work Type</Label>
-                        <select
-                          value={selectedWorkType}
-                          onChange={(e) => setSelectedWorkType(e.target.value)}
-                          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                          disabled={filterOptionsLoading}
-                        >
-                          <option value="">All Work Types</option>
-                          {filterOptionsLoading ? (
-                            <option disabled>Loading...</option>
-                          ) : (
-                            filterOptions &&
-                            (filterOptions as FilterOptions).work_types.map((type) => (
-                              <option key={type} value={type}>
-                                {type.charAt(0).toUpperCase() + type.slice(1)}
-                              </option>
-                            ))
-                          )}
-                        </select>
-                      </div>
                     </div>
 
                     {/* Skills and Technologies */}
@@ -323,19 +293,16 @@ function Index() {
                 <CardContent className="flex flex-col items-center justify-center py-12">
                   <Search className="mb-4 h-12 w-12 text-muted-foreground" />
                   <h3 className="mb-2 font-semibold text-lg">
-                    {searchQuery || selectedSkills.length > 0 || selectedTechnologies.length > 0 || selectedWorkType
+                    {searchQuery || selectedSkills.length > 0 || selectedTechnologies.length > 0
                       ? "No freelancers match your criteria"
                       : "No users found"}
                   </h3>
                   <p className="text-center text-muted-foreground">
-                    {searchQuery || selectedSkills.length > 0 || selectedTechnologies.length > 0 || selectedWorkType
+                    {searchQuery || selectedSkills.length > 0 || selectedTechnologies.length > 0
                       ? "Try adjusting your search criteria or filters to find more freelancers."
                       : "Try adjusting your search criteria or filters."}
                   </p>
-                  {(searchQuery ||
-                    selectedSkills.length > 0 ||
-                    selectedTechnologies.length > 0 ||
-                    selectedWorkType) && (
+                  {(searchQuery || selectedSkills.length > 0 || selectedTechnologies.length > 0) && (
                     <Button variant="outline" onClick={resetFilters} className="mt-4">
                       <X className="mr-2 h-4 w-4" />
                       Clear All Filters

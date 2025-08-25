@@ -1,9 +1,9 @@
 import enum
 from datetime import datetime, timezone
+from typing import TYPE_CHECKING, Optional
 
 from sqlalchemy import (
     Boolean,
-    Column,
     DateTime,
     Enum,
     ForeignKey,
@@ -11,9 +11,14 @@ from sqlalchemy import (
     String,
     Text,
 )
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.base import BaseModel
+
+if TYPE_CHECKING:
+    from app.models.chat import Chat
+    from app.models.payment import Payment
+    from app.models.user import User
 
 
 class NotificationType(str, enum.Enum):
@@ -30,27 +35,35 @@ class Notification(BaseModel):
     __tablename__ = "notifications"
     
     # Notification details
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    notification_type = Column(Enum(NotificationType), nullable=False)
-    title = Column(String, nullable=False)
-    message = Column(Text, nullable=False)
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id"), nullable=False)
+    notification_type: Mapped[NotificationType] = mapped_column(
+        Enum(NotificationType), nullable=False)
+    title: Mapped[str] = mapped_column(String, nullable=False)
+    message: Mapped[str] = mapped_column(Text, nullable=False)
     
     # Notification metadata
-    is_read = Column(Boolean, default=False, nullable=False)
-    is_archived = Column(Boolean, default=False, nullable=False)
+    is_read: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False)
+    is_archived: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False)
     
     # Related entities (optional)
-    related_chat_id = Column(Integer, ForeignKey("chats.id"), nullable=True)
-    related_payment_id = Column(Integer, ForeignKey("payments.id"), nullable=True)
+    related_chat_id: Mapped[Optional[int]] = mapped_column(
+        Integer, ForeignKey("chats.id"), nullable=True)
+    related_payment_id: Mapped[Optional[int]] = mapped_column(
+        Integer, ForeignKey("payments.id"), nullable=True)
     
     # Timestamps
-    read_at = Column(DateTime, nullable=True)
-    archived_at = Column(DateTime, nullable=True)
+    read_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime, nullable=True)
+    archived_at: Mapped[Optional[datetime]
+                        ] = mapped_column(DateTime, nullable=True)
     
     # Relationships
-    user = relationship("User", back_populates="notifications")
-    related_chat = relationship("Chat")
-    related_payment = relationship("Payment")
+    user: Mapped["User"] = relationship("User", back_populates="notifications")
+    related_chat: Mapped[Optional["Chat"]] = relationship("Chat")
+    related_payment: Mapped[Optional["Payment"]] = relationship("Payment")
     
     def __repr__(self):
         return (

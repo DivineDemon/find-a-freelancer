@@ -1,10 +1,14 @@
 from datetime import datetime, timezone
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.base import BaseModel
+
+if TYPE_CHECKING:
+    from app.models.chat import Chat
+    from app.models.user import User
 
 
 class Message(BaseModel):
@@ -37,16 +41,16 @@ class Message(BaseModel):
     # Message status
     is_deleted: Mapped[bool] = mapped_column(
         Boolean, default=False, nullable=False)
-    deleted_at: Mapped[Optional[DateTime]] = mapped_column(
+    deleted_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime, nullable=True)
 
     # Timestamps for message operations
-    edited_at: Mapped[Optional[DateTime]] = mapped_column(
+    edited_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime, nullable=True)
 
     # Relationships
-    chat = relationship("Chat", back_populates="messages")
-    sender = relationship("User", back_populates="messages")
+    chat: Mapped["Chat"] = relationship("Chat", back_populates="messages")
+    sender: Mapped["User"] = relationship("User", back_populates="messages")
 
     def __repr__(self):
         return f"<Message(id={self.id}, chat_id={self.chat_id}, " \
@@ -58,9 +62,9 @@ class Message(BaseModel):
             self.original_content = self.content
         self.content = new_content
         self.is_edited = True
-        self.edited_at = datetime.now(timezone.utc).replace(tzinfo=None)
+        self.edited_at = datetime.now(timezone.utc)
 
     def delete_message(self):
         """Soft delete a message."""
         self.is_deleted = True
-        self.deleted_at = datetime.now(timezone.utc).replace(tzinfo=None)
+        self.deleted_at = datetime.now(timezone.utc)

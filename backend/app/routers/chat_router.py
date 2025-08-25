@@ -198,7 +198,8 @@ async def list_user_chats(
                     Message.chat_id == chat.id,
                     Message.sender_id != current_user.id,
                     Message.is_deleted.is_(False)
-                    # TODO: Add read status tracking when MessageRead model is implemented
+                    # TODO: Add read status tracking when MessageRead model is
+                    # implemented
                 )
             )
         )

@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 from passlib.context import CryptContext
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import AsyncSessionLocal
@@ -268,13 +268,13 @@ async def force_reseed_database() -> bool:
     async with AsyncSessionLocal() as session:
         try:
             # Delete all data in reverse order of dependencies
-            await session.execute(Notification.__table__.delete())
-            await session.execute(Payment.__table__.delete())
-            await session.execute(Message.__table__.delete())
-            await session.execute(Chat.__table__.delete())
-            await session.execute(ClientHunter.__table__.delete())
-            await session.execute(Freelancer.__table__.delete())
-            await session.execute(User.__table__.delete())
+            await session.execute(delete(Notification))
+            await session.execute(delete(Payment))
+            await session.execute(delete(Message))
+            await session.execute(delete(Chat))
+            await session.execute(delete(ClientHunter))
+            await session.execute(delete(Freelancer))
+            await session.execute(delete(User))
             await session.commit()
             
             logger.info("Existing data cleared. Starting fresh seeding...")

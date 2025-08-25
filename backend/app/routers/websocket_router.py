@@ -1,7 +1,7 @@
 """WebSocket router for real-time chat functionality."""
 
 import json
-from typing import Annotated, Optional
+from typing import Annotated
 
 from fastapi import (
     APIRouter,
@@ -15,13 +15,12 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_session
+from app.core.jwt import JWTError, verify_access_token
 from app.core.logger import get_logger
 from app.core.websocket_manager import manager
-from app.core.jwt import verify_access_token, JWTError
 from app.models.chat import Chat
 from app.models.message import Message
 from app.models.user import User
-from app.schemas.message_schema import WebSocketMessage
 from app.schemas.user_schema import OnlineUsersResponse, UserStatusResponse
 from app.utils.content_filter import content_filter
 
@@ -35,6 +34,13 @@ async def get_user_from_token(token: str, session: AsyncSession) -> User:
     try:
         # Validate JWT token
         payload = verify_access_token(token)
+
+        if not payload:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token payload"
+            )
+
         user_id = payload.get("sub")
 
         if not user_id:
@@ -73,14 +79,17 @@ async def get_user_from_token(token: str, session: AsyncSession) -> User:
 async def websocket_endpoint(
     websocket: WebSocket,
     user_id: int,
-    session: Annotated[AsyncSession, Depends(get_session)],
-    token: Optional[str] = None
+    session: Annotated[AsyncSession, Depends(get_session)]
 ):
     """WebSocket endpoint for real-time chat."""
     try:
         # Accept the connection first
         await websocket.accept()
         
+        # Extract token from query parameters
+        query_params = websocket.query_params
+        token = query_params.get("token")
+
         # Validate user (in production, validate JWT token)
         if not token:
             await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
@@ -217,39 +226,7 @@ async def handle_chat_message(message_data: dict, user: User, session: AsyncSess
         
         await session.commit()
         await session.refresh(message)
-        
-        # Prepare message for broadcast
-        from app.schemas.message_schema import MessageWithSender
-        
-        message_with_sender = MessageWithSender(
-            id=message.id,
-            content=filtered_content,
-            content_type=content_type,
-            chat_id=chat_id,
-            sender_id=user.id,
-            is_flagged=not is_clean,
-            flag_reason=", ".join(violations) if violations else None,
-            is_edited=False,
-            original_content=None,
-            is_deleted=False,
-            deleted_at=None,
-            edited_at=None,
-            created_at=message.created_at,
-            updated_at=message.updated_at,
-            sender_name=user.full_name,
-            sender_type=user.user_type,
-            sender_avatar=None
-        )
-        
-        ws_message = WebSocketMessage(
-            type="chat",
-            chat_id=chat_id,
-            message=message_with_sender,
-            timestamp=message.created_at,
-            notification=None,
-            status="sent"
-        )
-        
+
         # Prepare message for broadcast
         broadcast_message = {
             "type": "chat",

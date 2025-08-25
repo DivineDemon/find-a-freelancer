@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { websocketService } from "@/services/websocket";
 import type { ChatWithParticipants, MessageWithSender } from "@/store/services/apis";
-import { useGetCurrentUserProfileAuthMeGetQuery } from "@/store/services/apis";
+import { useGetCurrentUserProfileAuthAuthMeGetQuery } from "@/store/services/apis";
 
 export interface RealtimeMessage extends MessageWithSender {
   isLocal?: boolean; // Flag for messages sent locally before server confirmation
@@ -22,7 +22,7 @@ interface ReadData extends WebSocketData {
 }
 
 export function useRealtimeChat(chat: ChatWithParticipants) {
-  const { data: currentUser } = useGetCurrentUserProfileAuthMeGetQuery();
+  const { data: currentUser } = useGetCurrentUserProfileAuthAuthMeGetQuery();
   const [messages, setMessages] = useState<RealtimeMessage[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const [typingUsers, setTypingUsers] = useState<Set<number>>(new Set());
@@ -108,11 +108,12 @@ export function useRealtimeChat(chat: ChatWithParticipants) {
         // Connect to WebSocket if not already connected
         if (!websocketService.isConnected()) {
           await websocketService.connect(currentUser.id, localStorage.getItem("accessToken") || "");
+        } else {
+          // Intentional empty block
         }
 
         // Join the specific chat room
         websocketService.joinChat(chat.id);
-        setIsConnected(true);
 
         // Set up message handlers
         websocketService.onMessage("chat", handleIncomingMessage);
@@ -120,9 +121,15 @@ export function useRealtimeChat(chat: ChatWithParticipants) {
         websocketService.onMessage("read", handleReadReceipt);
 
         // Set up connection handlers
-        websocketService.onConnection("connected", () => setIsConnected(true));
-        websocketService.onConnection("disconnected", () => setIsConnected(false));
-        websocketService.onConnection("error", () => setIsConnected(false));
+        websocketService.onConnection("connected", () => {
+          setIsConnected(true);
+        });
+        websocketService.onConnection("disconnected", () => {
+          setIsConnected(false);
+        });
+        websocketService.onConnection("error", () => {
+          setIsConnected(false);
+        });
       } catch (_error) {
         setIsConnected(false);
       }
@@ -166,7 +173,7 @@ export function useRealtimeChat(chat: ChatWithParticipants) {
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         sender_name: `${currentUser!.first_name} ${currentUser!.last_name}`,
-        sender_type: currentUser!.user_type,
+        sender_type: currentUser!.user_type as "client_hunter" | "freelancer",
         sender_avatar: currentUser!.profile_picture || null,
         isLocal: true,
       };

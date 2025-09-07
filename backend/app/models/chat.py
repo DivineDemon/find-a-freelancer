@@ -1,4 +1,3 @@
-
 from typing import TYPE_CHECKING, Optional
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text
@@ -15,35 +14,25 @@ class Chat(BaseModel):
     """Chat model for conversations between Client Hunters and Freelancers."""
     __tablename__ = "chats"
 
-    # Chat participants
     initiator_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("users.id"), nullable=False)
     participant_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("users.id"), nullable=False)
 
-    # Chat metadata
-    # Auto-generated or user-defined title
-    title: Mapped[Optional[str]] = mapped_column(String, nullable=True)
-    is_archived: Mapped[bool] = mapped_column(
+    is_archived_by_initiator: Mapped[bool] = mapped_column(
         Boolean, default=False, nullable=False)
-    is_deleted: Mapped[bool] = mapped_column(
+    is_archived_by_participant: Mapped[bool] = mapped_column(
         Boolean, default=False, nullable=False)
 
-    # Project context (optional)
     project_title: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     project_description: Mapped[Optional[str]
                                 ] = mapped_column(Text, nullable=True)
     project_budget: Mapped[Optional[str]
                            ] = mapped_column(String, nullable=True)
 
-    # Chat status
-    # "active", "archived", "deleted"
-    status: Mapped[str] = mapped_column(
-        String, default="active", nullable=False)
     last_message_at: Mapped[Optional[DateTime]
                             ] = mapped_column(DateTime, nullable=True)
 
-    # Relationships
     initiator: Mapped["User"] = relationship(
         "User",
         foreign_keys=[initiator_id],

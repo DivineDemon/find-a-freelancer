@@ -10,8 +10,6 @@ from app.models.user import UserType
 
 class ChatBase(BaseModel):
     """Base chat schema."""
-    title: Optional[str] = Field(
-        None, max_length=200, description="Chat title")
     project_title: Optional[str] = Field(
         None, max_length=200, description="Project title"
     )
@@ -39,11 +37,10 @@ class ChatCreate(ChatBase):
     )
 
 
-class ChatUpdate(ChatBase):
+class ChatUpdate(BaseModel):
     """Schema for updating a chat."""
-    title: Optional[str] = Field(None, max_length=200)
-    is_archived: Optional[bool] = None
-    status: Optional[str] = Field(None, pattern="^(active|archived|deleted)$")
+    is_archived_by_initiator: Optional[bool] = None
+    is_archived_by_participant: Optional[bool] = None
 
 
 class ChatRead(ChatBase):
@@ -51,9 +48,8 @@ class ChatRead(ChatBase):
     id: int
     initiator_id: int
     participant_id: int
-    is_archived: bool
-    is_deleted: bool
-    status: str
+    is_archived_by_initiator: bool
+    is_archived_by_participant: bool
     last_message_at: Optional[datetime]
     created_at: datetime
     updated_at: datetime
@@ -86,11 +82,11 @@ class ChatSearch(BaseModel):
     """Schema for chat search parameters."""
     query: Optional[str] = Field(
         None, max_length=100, description="Search query")
-    status: Optional[str] = Field(None, pattern="^(active|archived|deleted)$")
     project_type: Optional[str] = Field(
         None, max_length=100, description="Project type filter"
     )
-    is_archived: Optional[bool] = None
+    is_archived_by_initiator: Optional[bool] = None
+    is_archived_by_participant: Optional[bool] = None
     page: int = Field(1, ge=1, description="Page number")
     size: int = Field(20, ge=1, le=100, description="Page size")
 

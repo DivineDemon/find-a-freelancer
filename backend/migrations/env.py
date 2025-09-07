@@ -20,7 +20,6 @@ from app.models.chat import Chat  # noqa: F401, E402
 from app.models.client_hunter import ClientHunter  # noqa: F401, E402
 from app.models.freelancer import Freelancer  # noqa: F401, E402
 from app.models.message import Message  # noqa: F401, E402
-from app.models.notification import Notification  # noqa: F401, E402
 from app.models.payment import Payment  # noqa: F401, E402
 from app.models.project import Project  # noqa: F401, E402
 from app.models.user import User  # noqa: F401, E402

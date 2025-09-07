@@ -14,37 +14,28 @@ class Freelancer(BaseModel):
     """Freelancer profile model with skills, rates, and experience."""
     __tablename__ = "freelancers"
 
-    # Link to base user
     user_id: Mapped[int] = mapped_column(
         ForeignKey("users.id"), nullable=False, unique=True)
 
-    # Professional information
     title: Mapped[str] = mapped_column(String, nullable=False)
     bio: Mapped[Optional[str]] = mapped_column(
-        Text, nullable=True)  # Professional summary
+        Text, nullable=True)
     hourly_rate: Mapped[float] = mapped_column(
-        Float, nullable=False)  # Hourly rate in USD
+        Float, nullable=False)
     years_of_experience: Mapped[int] = mapped_column(
         Integer, nullable=False, default=0)
 
-    # Skills and technologies
     skills: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
-    technologies: Mapped[list] = mapped_column(
-        JSON, nullable=False, default=list)
 
-    # Portfolio and social links
     portfolio_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     github_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     linkedin_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
-    # Availability
     is_available: Mapped[bool] = mapped_column(
         Boolean, default=True, nullable=False)
 
-    # Location
     country: Mapped[str] = mapped_column(String, nullable=False)
 
-    # Relationships
     user: Mapped["User"] = relationship(
         "User", back_populates="freelancer_profile")
     projects: Mapped[list["Project"]] = relationship(

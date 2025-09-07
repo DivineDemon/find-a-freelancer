@@ -12,18 +12,26 @@ from app.core.logger import get_logger
 from app.models.freelancer import Freelancer
 from app.models.user import User
 from app.routers.auth_router import get_current_user
-from app.schemas.freelancer_schema import FreelancerRead
-from app.schemas.user_schema import UserRead, UserUpdate
+from app.schemas.freelancer_schema import (
+    DashboardFreelancerResponse,
+)
+from app.schemas.user_schema import (
+    ClientHunterProfileSummary,
+    ComprehensiveUserResponse,
+    FreelancerProfileSummary,
+    ProjectSummary,
+    UserRead,
+    UserUpdate,
+)
 
 logger = get_logger(__name__)
-router = APIRouter()
+router = APIRouter(prefix="/users", tags=["User Management"])
 
 
 # Response models for API documentation
 class FilterOptionsResponse(BaseModel):
     """Response model for filter options."""
     skills: List[str]
-    technologies: List[str]
     hourly_rate_range: dict
     experience_range: dict
 
@@ -42,33 +50,97 @@ async def get_current_user_info(current_user: User = Depends(get_current_user)):
     return current_user
 
 
-@router.get("/{user_id}", response_model=UserRead)
+@router.get("/{user_id}", response_model=ComprehensiveUserResponse)
 async def get_user(user_id: int, db=Depends(get_db)):
-    """Get user by ID."""
-    user = await db.get(User, user_id)
+    """Get comprehensive user data by ID including profile and projects."""
+    from sqlalchemy.orm import selectinload
+
+    # Get user with all related data
+    result = await db.execute(
+        select(User)
+        .options(
+            selectinload(User.freelancer_profile).selectinload(
+                Freelancer.projects),
+            selectinload(User.client_hunter_profile)
+        )
+        .where(User.id == user_id)
+    )
+    user = result.scalar_one_or_none()
+
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    return user
+
+    # Build comprehensive response
+    response_data = {
+        "id": user.id,
+        "email": user.email,
+        "first_name": user.first_name,
+        "last_name": user.last_name,
+        "phone": user.phone,
+        "profile_picture": user.profile_picture,
+        "user_type": user.user_type,
+        "is_active": user.is_active,
+        "created_at": user.created_at,
+        "updated_at": user.updated_at,
+        "freelancer_profile": None,
+        "client_hunter_profile": None,
+        "projects": None
+    }
+
+    # Add freelancer profile and projects if user is a freelancer
+    if user.user_type == "freelancer" and user.freelancer_profile:
+        freelancer = user.freelancer_profile
+        response_data["freelancer_profile"] = FreelancerProfileSummary(
+            id=freelancer.id,
+            title=freelancer.title,
+            bio=freelancer.bio,
+            hourly_rate=freelancer.hourly_rate,
+            years_of_experience=freelancer.years_of_experience,
+            skills=freelancer.skills,
+            portfolio_url=freelancer.portfolio_url,
+            github_url=freelancer.github_url,
+            linkedin_url=freelancer.linkedin_url,
+            is_available=freelancer.is_available,
+            country=freelancer.country,
+            created_at=freelancer.created_at,
+            updated_at=freelancer.updated_at
+        )
+
+        # Add projects if they exist
+        if freelancer.projects:
+            response_data["projects"] = [
+                ProjectSummary(
+                    id=project.id,
+                    title=project.title,
+                    description=project.description,
+                    url=project.url,
+                    cover_image=project.cover_image,
+                    earned=project.earned,
+                    time_taken=project.time_taken,
+                    created_at=project.created_at,
+                    updated_at=project.updated_at
+                )
+                for project in freelancer.projects
+            ]
+
+    # Add client hunter profile if user is a client hunter
+    elif user.user_type == "client_hunter" and user.client_hunter_profile:
+        client_hunter = user.client_hunter_profile
+        response_data["client_hunter_profile"] = ClientHunterProfileSummary(
+            id=client_hunter.id,
+            first_name=client_hunter.first_name,
+            last_name=client_hunter.last_name,
+            country=client_hunter.country,
+            is_paid=client_hunter.is_paid,
+            payment_date=client_hunter.payment_date,
+            created_at=client_hunter.created_at,
+            updated_at=client_hunter.updated_at
+        )
+
+    return response_data
 
 
-@router.get("/{user_id}/freelancer-profile", response_model=FreelancerRead)
-async def get_freelancer_profile(user_id: int, db=Depends(get_db)):
-    """Get freelancer profile by user ID."""
-    freelancer = await db.execute(
-        select(Freelancer)
-        .options(selectinload(Freelancer.projects))
-        .where(Freelancer.user_id == user_id)
-    )
-    freelancer = freelancer.scalar_one_or_none()
-
-    if not freelancer:
-        raise HTTPException(
-            status_code=404, detail="Freelancer profile not found")
-
-    return freelancer
-
-
-@router.get("", response_model=List[UserRead])
+@router.get("", response_model=List[DashboardFreelancerResponse])
 async def list_users(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=100),
@@ -77,17 +149,17 @@ async def list_users(
     min_experience: Optional[int] = Query(None, ge=0),
     max_experience: Optional[int] = Query(None, ge=0),
     skills: Optional[str] = Query(None),
-    technologies: Optional[str] = Query(None),
     work_type: Optional[str] = Query(None),
     search_query: Optional[str] = Query(None),
     db=Depends(get_db)
 ):
-    """List users with filtering options."""
+    """List freelancers with user information and filtering options."""
     try:
-        # Start with base query for freelancers
+        # Start with base query for freelancers with user data
         query = (
-            select(User)
-            .join(Freelancer, User.id == Freelancer.user_id)
+            select(Freelancer, User)
+            .options(selectinload(Freelancer.projects))
+            .join(User, Freelancer.user_id == User.id)
             .where(User.user_type == "freelancer")
         )
 
@@ -113,13 +185,6 @@ async def list_users(
                     for skill in skill_list])
             )
 
-        if technologies:
-            tech_list = [tech.strip().lower()
-                         for tech in technologies.split(",")]
-            query = query.where(
-                or_(*[func.lower(Freelancer.technologies).contains(tech)
-                    for tech in tech_list])
-            )
 
         if search_query:
             search_term = f"%{search_query.lower()}%"
@@ -137,12 +202,28 @@ async def list_users(
 
         # Execute query
         result = await db.execute(query)
-        users = result.scalars().all()
+        rows = result.all()
 
-        return users
+        # Map to dashboard response format
+        dashboard_freelancers = []
+        for freelancer, user in rows:
+            freelancer_data = {
+                "freelancer_image": user.profile_picture,
+                "freelancer_position": freelancer.title,
+                "freelancer_rate": freelancer.hourly_rate,
+                "freelancer_experience": freelancer.years_of_experience,
+                "skills": freelancer.skills,
+                "user_id": user.id,
+                "freelancer_id": freelancer.id,
+                "freelancer_first_name": user.first_name,
+                "freelancer_last_name": user.last_name,
+            }
+            dashboard_freelancers.append(freelancer_data)
+
+        return dashboard_freelancers
 
     except Exception as e:
-        logger.error(f"Error listing users: {e}")
+        logger.error(f"Error listing freelancers: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -150,7 +231,7 @@ async def list_users(
 async def get_filter_options(db=Depends(get_db)):
     """Get available filter options for user discovery."""
     try:
-        # Get skills and technologies from freelancers
+        # Get skills from freelancers
         skills_result = await db.execute(
             select(Freelancer.skills)
         )
@@ -158,14 +239,6 @@ async def get_filter_options(db=Depends(get_db)):
         for row in skills_result:
             if row[0]:
                 all_skills.extend(row[0])
-
-        technologies_result = await db.execute(
-            select(Freelancer.technologies)
-        )
-        all_technologies = []
-        for row in technologies_result:
-            if row[0]:
-                all_technologies.extend(row[0])
 
         # Get price and experience ranges
         rates_result = await db.execute(
@@ -182,7 +255,6 @@ async def get_filter_options(db=Depends(get_db)):
 
         return {
             "skills": list(set(all_skills)),
-            "technologies": list(set(all_technologies)),
             "hourly_rate_range": {
                 "min": min_rate or 0,
                 "max": max_rate or 100
@@ -198,7 +270,6 @@ async def get_filter_options(db=Depends(get_db)):
         # Return default values on error
         return {
             "skills": [],
-            "technologies": [],
             "hourly_rate_range": {"min": 0, "max": 100},
             "experience_range": {"min": 0, "max": 20}
         }

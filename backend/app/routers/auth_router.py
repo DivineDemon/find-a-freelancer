@@ -1,5 +1,3 @@
-"""Authentication router for user registration, login, and profile management."""
-
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -12,6 +10,8 @@ from app.core.db import get_session
 from app.core.jwt import create_access_token, verify_access_token
 from app.models.user import User
 from app.schemas.user_schema import (
+    LoginResponse,
+    LoginUserResponse,
     UserCreate,
     UserLogin,
     UserRead,
@@ -60,7 +60,6 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    # Get user from database
     result = await session.execute(
         select(User).where(User.id == user_id)
     )
@@ -92,7 +91,6 @@ async def register_user(
     session: Annotated[AsyncSession, Depends(get_session)]
 ):
     """Register a new user."""
-    # Check if user already exists
     result = await session.execute(
         select(User).where(User.email == user_data.email)
     )
@@ -102,9 +100,9 @@ async def register_user(
             detail="Email already registered"
         )
     
-    # Create new user
-    user_data_dict = user_data.dict(exclude={"password"})
-    # Ensure profile_picture is None if empty string
+    user_data_dict = user_data.model_dump(exclude={"password"})
+    if "image_url" in user_data_dict:
+        user_data_dict["profile_picture"] = user_data_dict.pop("image_url")
     if user_data_dict.get("profile_picture") == "":
         user_data_dict["profile_picture"] = None
 
@@ -114,7 +112,6 @@ async def register_user(
     await session.commit()
     await session.refresh(user)
     
-    # Generate access token
     access_token = create_access_token(
         data={"sub": str(user.id)},
         expires_delta=settings.JWT_EXPIRATION_MINUTES
@@ -127,13 +124,12 @@ async def register_user(
     )
 
 
-@router.post("/login", response_model=UserWithToken)
+@router.post("/login", response_model=LoginResponse)
 async def login_user(
     user_credentials: UserLogin,
     session: Annotated[AsyncSession, Depends(get_session)]
 ):
     """Login user with email and password."""
-    # Find user by email
     result = await session.execute(
         select(User).where(User.email == user_credentials.email)
     )
@@ -152,16 +148,31 @@ async def login_user(
             detail="Inactive user account"
         )
     
-    # Generate access token
     access_token = create_access_token(
         data={"sub": str(user.id)},
         expires_delta=settings.JWT_EXPIRATION_MINUTES
     )
     
-    return UserWithToken(
-        user=UserRead.from_orm(user),
+    payment_status = None
+    if user.user_type == "client_hunter":
+        from app.models.client_hunter import ClientHunter
+        client_hunter_result = await session.execute(
+            select(ClientHunter).where(ClientHunter.user_id == user.id)
+        )
+        client_hunter = client_hunter_result.scalar_one_or_none()
+        payment_status = "paid" if client_hunter and client_hunter.is_paid else "unpaid"
+
+    return LoginResponse(
         access_token=access_token,
-        token_type="bearer"
+        user=LoginUserResponse(
+            email=user.email,
+            first_name=user.first_name,
+            last_name=user.last_name,
+            image_url=user.profile_picture,
+            account_status="active" if user.is_active else "inactive",
+            user_type=user.user_type,
+            payment_status=payment_status
+        )
     )
 
 
@@ -170,7 +181,7 @@ async def get_current_user_profile(
     current_user: Annotated[User, Depends(get_current_user)]
 ):
     """Get current user's profile."""
-    return UserRead.from_orm(current_user)
+    return UserRead.model_validate(current_user)
 
 
 @router.put("/me", response_model=UserRead)
@@ -180,14 +191,13 @@ async def update_current_user_profile(
     session: Annotated[AsyncSession, Depends(get_session)]
 ):
     """Update current user's profile."""
-    # Update user fields
     for field, value in user_update.dict(exclude_unset=True).items():
         setattr(current_user, field, value)
     
     await session.commit()
     await session.refresh(current_user)
     
-    return UserRead.from_orm(current_user)
+    return UserRead.model_validate(current_user)
 
 
 @router.post("/refresh", response_model=UserWithToken)
@@ -195,14 +205,13 @@ async def refresh_access_token(
     current_user: Annotated[User, Depends(get_current_user)]
 ):
     """Refresh user's access token."""
-    # Generate new access token
     access_token = create_access_token(
         data={"sub": str(current_user.id)},
         expires_delta=settings.JWT_EXPIRATION_MINUTES
     )
     
     return UserWithToken(
-        user=UserRead.from_orm(current_user),
+        user=UserRead.model_validate(current_user),
         access_token=access_token,
         token_type="bearer"
     )

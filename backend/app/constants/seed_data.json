@@ -1,7 +1,6 @@
 {
   "users": [
     {
-      "id": 1,
       "email": "john.client@example.com",
       "password": "securepass123",
       "first_name": "John",
@@ -11,7 +10,6 @@
       "is_active": true
     },
     {
-      "id": 2,
       "email": "sarah.dev@example.com",
       "password": "devpass123",
       "first_name": "Sarah",
@@ -21,7 +19,6 @@
       "is_active": true
     },
     {
-      "id": 3,
       "email": "mike.startup@example.com",
       "password": "startup123",
       "first_name": "Mike",
@@ -31,7 +28,6 @@
       "is_active": true
     },
     {
-      "id": 4,
       "email": "alex.fullstack@example.com",
       "password": "fullstack123",
       "first_name": "Alex",
@@ -41,7 +37,6 @@
       "is_active": true
     },
     {
-      "id": 5,
       "email": "emma.mobile@example.com",
       "password": "mobile123",
       "first_name": "Emma",
@@ -51,7 +46,6 @@
       "is_active": true
     },
     {
-      "id": 6,
       "email": "david.agency@example.com",
       "password": "agency123",
       "first_name": "David",
@@ -63,12 +57,10 @@
   ],
   "freelancers": [
     {
-      "id": 1,
-      "user_id": 2,
+      "user_email": "sarah.dev@example.com",
       "title": "Senior Full-Stack Developer",
       "bio": "Experienced full-stack developer with 7+ years in React, Node.js, and Python. Specialized in building scalable web applications and API development.",
       "hourly_rate": 85.0,
-      "daily_rate": 600.0,
       "years_of_experience": 7,
       "skills": [
         "JavaScript",
@@ -81,36 +73,17 @@
         "Redux",
         "TypeScript"
       ],
-      "technologies": [
-        "React",
-        "Next.js",
-        "FastAPI",
-        "Express.js",
-        "PostgreSQL",
-        "MongoDB",
-        "Docker",
-        "AWS",
-        "Git"
-      ],
       "portfolio_url": "https://sarahjohnson.dev",
       "github_url": "https://github.com/sarahdev",
       "linkedin_url": "https://linkedin.com/in/sarah-johnson-dev",
       "is_available": true,
-      "preferred_work_type": [
-        "remote",
-        "hybrid"
-      ],
-      "timezone": "UTC-5",
-      "rating": 4.8,
-      "total_reviews": 23
+      "country": "United States"
     },
     {
-      "id": 2,
-      "user_id": 4,
+      "user_email": "alex.fullstack@example.com",
       "title": "Full-Stack Engineer & DevOps Specialist",
       "bio": "Full-stack engineer with strong DevOps background. Expert in cloud infrastructure, CI/CD pipelines, and modern web development.",
       "hourly_rate": 75.0,
-      "daily_rate": 550.0,
       "years_of_experience": 5,
       "skills": [
         "Python",
@@ -123,35 +96,17 @@
         "DevOps",
         "CI/CD"
       ],
-      "technologies": [
-        "Django",
-        "React",
-        "Vue.js",
-        "Docker",
-        "Kubernetes",
-        "AWS",
-        "Jenkins",
-        "Terraform",
-        "Redis"
-      ],
       "portfolio_url": "https://alexrodriguez.tech",
       "github_url": "https://github.com/alexdevops",
       "linkedin_url": "https://linkedin.com/in/alex-rodriguez-devops",
       "is_available": true,
-      "preferred_work_type": [
-        "remote"
-      ],
-      "timezone": "UTC-8",
-      "rating": 4.9,
-      "total_reviews": 31
+      "country": "Canada"
     },
     {
-      "id": 3,
-      "user_id": 5,
+      "user_email": "emma.mobile@example.com",
       "title": "Mobile App Developer (React Native & Flutter)",
       "bio": "Mobile development specialist with expertise in React Native and Flutter. Built 20+ mobile apps with focus on user experience and performance.",
       "hourly_rate": 70.0,
-      "daily_rate": 500.0,
       "years_of_experience": 4,
       "skills": [
         "React Native",
@@ -163,106 +118,81 @@
         "Firebase",
         "REST APIs"
       ],
-      "technologies": [
-        "React Native",
-        "Flutter",
-        "Expo",
-        "Firebase",
-        "Redux",
-        "MobX",
-        "Figma",
-        "Xcode",
-        "Android Studio"
-      ],
       "portfolio_url": "https://emmamobile.dev",
       "github_url": "https://github.com/emmamobile",
       "linkedin_url": "https://linkedin.com/in/emma-williams-mobile",
       "is_available": false,
-      "preferred_work_type": [
-        "remote",
-        "onsite"
-      ],
-      "timezone": "UTC+1",
-      "rating": 4.7,
-      "total_reviews": 18
+      "country": "United Kingdom"
     }
   ],
   "client_hunters": [
     {
-      "id": 1,
-      "user_id": 1,
-      "company_name": "TechVenture Solutions",
-      "business_type": "Agency",
-      "industry": "Technology",
-      "preferred_project_types": [
-        "web-app",
-        "api-development",
-        "database-design"
-      ],
-      "budget_range": [
-        "$5k-$15k",
-        "$15k-$25k"
-      ],
-      "preferred_communication": [
-        "chat",
-        "video-call"
-      ],
-      "timezone": "UTC-5",
-      "has_paid_one_time_fee": true,
+      "user_email": "john.client@example.com",
+      "first_name": "John",
+      "last_name": "Anderson",
+      "country": "United States",
+      "is_paid": true,
       "payment_date": "2024-01-15"
     },
     {
-      "id": 2,
-      "user_id": 3,
-      "company_name": "InnovateLab Startup",
-      "business_type": "Startup",
-      "industry": "FinTech",
-      "preferred_project_types": [
-        "web-app",
-        "mobile-app",
-        "ai-ml"
-      ],
-      "budget_range": [
-        "$10k-$25k",
-        "$25k+"
-      ],
-      "preferred_communication": [
-        "chat",
-        "email"
-      ],
-      "timezone": "UTC-8",
-      "has_paid_one_time_fee": false,
+      "user_email": "mike.startup@example.com",
+      "first_name": "Mike",
+      "last_name": "Chen",
+      "country": "Canada",
+      "is_paid": false,
       "payment_date": null
     },
     {
-      "id": 3,
-      "user_id": 6,
-      "company_name": "Digital Marketing Pro",
-      "business_type": "Agency",
-      "industry": "Marketing",
-      "preferred_project_types": [
-        "web-app",
-        "cms",
-        "e-commerce"
-      ],
-      "budget_range": [
-        "$5k-$15k"
-      ],
-      "preferred_communication": [
-        "chat",
-        "video-call",
-        "email"
-      ],
-      "timezone": "UTC-6",
-      "has_paid_one_time_fee": true,
+      "user_email": "david.agency@example.com",
+      "first_name": "David",
+      "last_name": "Thompson",
+      "country": "United States",
+      "is_paid": true,
       "payment_date": "2024-02-20"
+    }
+  ],
+  "projects": [
+    {
+      "freelancer_email": "sarah.dev@example.com",
+      "title": "E-commerce Platform",
+      "description": "Built a full-stack e-commerce platform with React frontend and Python backend",
+      "url": "https://sarahjohnson.dev/projects/ecommerce",
+      "cover_image": "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=400",
+      "earned": 15000.0,
+      "time_taken": "8 weeks"
+    },
+    {
+      "freelancer_email": "sarah.dev@example.com",
+      "title": "API Development",
+      "description": "Developed RESTful APIs for a fintech application",
+      "url": "https://sarahjohnson.dev/projects/api",
+      "cover_image": "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400",
+      "earned": 8000.0,
+      "time_taken": "4 weeks"
+    },
+    {
+      "freelancer_email": "alex.fullstack@example.com",
+      "title": "DevOps Infrastructure",
+      "description": "Set up AWS infrastructure with Docker and Kubernetes",
+      "url": "https://alexrodriguez.tech/projects/devops",
+      "cover_image": "https://images.unsplash.com/photo-1518432031352-d6fc5c10da5a?w=400",
+      "earned": 12000.0,
+      "time_taken": "6 weeks"
+    },
+    {
+      "freelancer_email": "emma.mobile@example.com",
+      "title": "Mobile Banking App",
+      "description": "Developed a React Native mobile banking application",
+      "url": "https://emmamobile.dev/projects/banking",
+      "cover_image": "https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=400",
+      "earned": 20000.0,
+      "time_taken": "12 weeks"
     }
   ],
   "chats": [
     {
-      "id": 1,
-      "initiator_id": 1,
-      "participant_id": 2,
+      "initiator_email": "john.client@example.com",
+      "participant_email": "sarah.dev@example.com",
       "title": "E-commerce Platform Development",
       "project_title": "Custom E-commerce Solution",
       "project_description": "Looking for a developer to build a custom e-commerce platform with React frontend and Python backend. Need inventory management, payment integration, and admin dashboard.",
@@ -273,9 +203,8 @@
       "last_message_at": "2024-02-15T10:30:00Z"
     },
     {
-      "id": 2,
-      "initiator_id": 6,
-      "participant_id": 4,
+      "initiator_email": "david.agency@example.com",
+      "participant_email": "alex.fullstack@example.com",
       "title": "DevOps Infrastructure Setup",
       "project_title": "Cloud Infrastructure & CI/CD",
       "project_description": "Need help setting up AWS infrastructure with Docker containers, CI/CD pipeline, and monitoring for a client's web application.",
@@ -286,9 +215,8 @@
       "last_message_at": "2024-02-14T16:45:00Z"
     },
     {
-      "id": 3,
-      "initiator_id": 3,
-      "participant_id": 5,
+      "initiator_email": "mike.startup@example.com",
+      "participant_email": "emma.mobile@example.com",
       "title": "Mobile App MVP",
       "project_title": "FinTech Mobile App",
       "project_description": "Building MVP for a personal finance mobile app. Need React Native development with secure authentication and data visualization.",
@@ -301,9 +229,9 @@
   ],
   "messages": [
     {
-      "id": 1,
-      "chat_id": 1,
-      "sender_id": 1,
+      "chat_initiator_email": "john.client@example.com",
+      "chat_participant_email": "sarah.dev@example.com",
+      "sender_email": "john.client@example.com",
       "content": "Hi Sarah! I came across your profile and I'm impressed with your full-stack experience. I have an e-commerce project that might be a perfect fit for your skills.",
       "content_type": "text",
       "is_flagged": false,
@@ -315,9 +243,9 @@
       "edited_at": null
     },
     {
-      "id": 2,
-      "chat_id": 1,
-      "sender_id": 2,
+      "chat_initiator_email": "john.client@example.com",
+      "chat_participant_email": "sarah.dev@example.com",
+      "sender_email": "sarah.dev@example.com",
       "content": "Thank you for reaching out! I'd love to learn more about your e-commerce project. Could you share some details about the requirements and timeline?",
       "content_type": "text",
       "is_flagged": false,
@@ -329,9 +257,9 @@
       "edited_at": null
     },
     {
-      "id": 3,
-      "chat_id": 1,
-      "sender_id": 1,
+      "chat_initiator_email": "john.client@example.com",
+      "chat_participant_email": "sarah.dev@example.com",
+      "sender_email": "john.client@example.com",
       "content": "Great! We need a custom solution with React frontend, Python/FastAPI backend, PostgreSQL database, and Stripe payment integration. The timeline is about 8-10 weeks. Are you available for this timeline?",
       "content_type": "text",
       "is_flagged": false,
@@ -343,9 +271,9 @@
       "edited_at": null
     },
     {
-      "id": 4,
-      "chat_id": 2,
-      "sender_id": 6,
+      "chat_initiator_email": "david.agency@example.com",
+      "chat_participant_email": "alex.fullstack@example.com",
+      "sender_email": "david.agency@example.com",
       "content": "Hi Alex! I need help with DevOps setup for a client project. Looking at your profile, you seem to have exactly the experience we need.",
       "content_type": "text",
       "is_flagged": false,
@@ -357,9 +285,9 @@
       "edited_at": null
     },
     {
-      "id": 5,
-      "chat_id": 2,
-      "sender_id": 4,
+      "chat_initiator_email": "david.agency@example.com",
+      "chat_participant_email": "alex.fullstack@example.com",
+      "sender_email": "alex.fullstack@example.com",
       "content": "Hi David! I'd be happy to help with your DevOps needs. Could you tell me more about the current setup and what specific infrastructure you're looking to implement?",
       "content_type": "text",
       "is_flagged": false,
@@ -371,9 +299,9 @@
       "edited_at": null
     },
     {
-      "id": 6,
-      "chat_id": 3,
-      "sender_id": 3,
+      "chat_initiator_email": "mike.startup@example.com",
+      "chat_participant_email": "emma.mobile@example.com",
+      "sender_email": "mike.startup@example.com",
       "content": "Emma, your mobile development portfolio looks amazing! We're building a FinTech MVP and need someone with React Native expertise. Interested?",
       "content_type": "text",
       "is_flagged": false,
@@ -387,8 +315,7 @@
   ],
   "payments": [
     {
-      "id": 1,
-      "user_id": 1,
+      "user_email": "john.client@example.com",
       "amount": 99.0,
       "currency": "USD",
       "payment_type": "one_time_fee",
@@ -401,8 +328,7 @@
       "expires_at": null
     },
     {
-      "id": 2,
-      "user_id": 6,
+      "user_email": "david.agency@example.com",
       "amount": 99.0,
       "currency": "USD",
       "payment_type": "one_time_fee",
@@ -415,8 +341,7 @@
       "expires_at": null
     },
     {
-      "id": 3,
-      "user_id": 3,
+      "user_email": "mike.startup@example.com",
       "amount": 99.0,
       "currency": "USD",
       "payment_type": "one_time_fee",
@@ -427,73 +352,6 @@
       "description": "One-time platform access fee for Client Hunter",
       "paid_at": null,
       "expires_at": "2024-03-15T23:59:59Z"
-    }
-  ],
-  "notifications": [
-    {
-      "id": 1,
-      "user_id": 2,
-      "notification_type": "chat_message",
-      "title": "New Message from John Anderson",
-      "message": "You have a new message in your conversation about E-commerce Platform Development",
-      "is_read": false,
-      "is_archived": false,
-      "related_chat_id": 1,
-      "related_payment_id": null,
-      "read_at": null,
-      "archived_at": null
-    },
-    {
-      "id": 2,
-      "user_id": 1,
-      "notification_type": "payment_confirmed",
-      "title": "Payment Confirmed",
-      "message": "Your one-time platform fee payment has been successfully processed. You now have full access to contact freelancers.",
-      "is_read": true,
-      "is_archived": false,
-      "related_chat_id": null,
-      "related_payment_id": 1,
-      "read_at": "2024-01-15T10:00:00Z",
-      "archived_at": null
-    },
-    {
-      "id": 3,
-      "user_id": 4,
-      "notification_type": "chat_message",
-      "title": "New Message from David Thompson",
-      "message": "You have a new message in your conversation about DevOps Infrastructure Setup",
-      "is_read": false,
-      "is_archived": false,
-      "related_chat_id": 2,
-      "related_payment_id": null,
-      "read_at": null,
-      "archived_at": null
-    },
-    {
-      "id": 4,
-      "user_id": 6,
-      "notification_type": "payment_confirmed",
-      "title": "Payment Confirmed",
-      "message": "Your one-time platform fee payment has been successfully processed. Welcome to Find-a-Freelancer!",
-      "is_read": true,
-      "is_archived": false,
-      "related_chat_id": null,
-      "related_payment_id": 2,
-      "read_at": "2024-02-20T14:30:00Z",
-      "archived_at": null
-    },
-    {
-      "id": 5,
-      "user_id": 5,
-      "notification_type": "chat_message",
-      "title": "New Project Inquiry",
-      "message": "Mike Chen is interested in your mobile development services for a FinTech project",
-      "is_read": false,
-      "is_archived": false,
-      "related_chat_id": 3,
-      "related_payment_id": null,
-      "read_at": null,
-      "archived_at": null
     }
   ]
 }

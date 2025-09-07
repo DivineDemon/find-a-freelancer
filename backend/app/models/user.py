@@ -12,13 +12,11 @@ if TYPE_CHECKING:
     from app.models.client_hunter import ClientHunter
     from app.models.freelancer import Freelancer
     from app.models.message import Message
-    from app.models.notification import Notification
 
-# Password hashing context - using bcrypt with proper configuration
 pwd_context = CryptContext(
     schemes=["bcrypt"],
     deprecated="auto",
-    bcrypt__rounds=12  # Explicitly set rounds for better security
+    bcrypt__rounds=12
 )
 
 
@@ -32,7 +30,6 @@ class User(BaseModel):
     """Base user model for both Client Hunters and Freelancers."""
     __tablename__ = "users"
     
-    # Basic user information
     email: Mapped[str] = mapped_column(
         String, unique=True, index=True, nullable=False)
     password_hash: Mapped[str] = mapped_column(String, nullable=False)
@@ -42,12 +39,10 @@ class User(BaseModel):
     profile_picture: Mapped[Optional[str]
                             ] = mapped_column(String, nullable=True)
     
-    # User type and status
     user_type: Mapped[UserType] = mapped_column(Enum(UserType), nullable=False)
     is_active: Mapped[bool] = mapped_column(
         Boolean, default=True, nullable=False)
 
-    # Relationships
     chats_as_initiator: Mapped[list["Chat"]] = relationship(
         "Chat", 
         foreign_keys="Chat.initiator_id", 
@@ -60,10 +55,7 @@ class User(BaseModel):
     )
     messages: Mapped[list["Message"]] = relationship(
         "Message", back_populates="sender")
-    notifications: Mapped[list["Notification"]] = relationship(
-        "Notification", back_populates="user")
     
-    # Profile relationships
     client_hunter_profile: Mapped[Optional["ClientHunter"]] = relationship(
         "ClientHunter", back_populates="user", uselist=False)
     freelancer_profile: Mapped[Optional["Freelancer"]] = relationship(

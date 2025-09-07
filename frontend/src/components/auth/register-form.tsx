@@ -2,13 +2,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, Send } from "lucide-react";
 import type { Dispatch, SetStateAction } from "react";
 import { useForm } from "react-hook-form";
-import { useDispatch } from "react-redux";
 import { toast } from "sonner";
 import { z } from "zod";
 import Logo from "@/assets/img/logo.png";
 import { registerSchema } from "@/lib/form-schemas";
-import { useRegisterUserAuthAuthRegisterPostMutation } from "@/store/services/apis";
-import { setUser } from "@/store/slices/global";
+import { useRegisterUserAuthRegisterPostMutation } from "@/store/services/apis";
 import { Button } from "../ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "../ui/form";
 import ImageUploader from "../ui/image-uploader";
@@ -20,13 +18,11 @@ interface RegisterFormProps {
 }
 
 function RegisterForm({ setIsLogin }: RegisterFormProps) {
-  const dispatch = useDispatch();
-
   const registerForm = useForm<z.infer<typeof registerSchema>>({
     resolver: zodResolver(registerSchema),
   });
 
-  const [register, { isLoading: registering }] = useRegisterUserAuthAuthRegisterPostMutation();
+  const [register, { isLoading: registering }] = useRegisterUserAuthRegisterPostMutation();
 
   const handleRegister = async (data: z.infer<typeof registerSchema>) => {
     try {
@@ -36,8 +32,8 @@ function RegisterForm({ setIsLogin }: RegisterFormProps) {
 
       if (response.data) {
         registerForm.reset();
-        dispatch(setUser(response.data.user));
         toast.success("Registration successful! Please login.");
+
         setIsLogin(true);
       } else if (response.error) {
         toast.error("Registration failed. Please try again.");
@@ -118,7 +114,7 @@ function RegisterForm({ setIsLogin }: RegisterFormProps) {
           control={registerForm.control}
           name="user_type"
           render={({ field }) => (
-            <FormItem className="col-span-2 w-full">
+            <FormItem className="w-full">
               <FormLabel>User Type</FormLabel>
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl className="w-full">
@@ -135,10 +131,23 @@ function RegisterForm({ setIsLogin }: RegisterFormProps) {
             </FormItem>
           )}
         />
+        <FormField
+          control={registerForm.control}
+          name="phone"
+          render={({ field }) => (
+            <FormItem className="w-full">
+              <FormLabel>Phone</FormLabel>
+              <FormControl>
+                <Input {...field} value={field.value || ""} placeholder="Enter Phone Number" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
         <div className="col-span-2 w-full">
           <FormField
             control={registerForm.control}
-            name="profile_picture"
+            name="image_url"
             render={({ field, fieldState }) => (
               <ImageUploader field={field} error={fieldState.error} label="Profile Picture (Optional)" />
             )}

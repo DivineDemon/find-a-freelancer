@@ -13,13 +13,11 @@ class Settings(BaseSettings):
     JWT_EXPIRATION_MINUTES: int = 60 * 24
     APP_NAME: str = "Find a Freelancer BE"
 
-    # PayPal Configuration
     PAYPAL_CLIENT_ID: str = ""
     PAYPAL_CLIENT_SECRET: str = ""
-    PAYPAL_MODE: str = "sandbox"  # sandbox or live
+    PAYPAL_MODE: str = "sandbox"
     PAYPAL_WEBHOOK_ID: str = ""
 
-    # Platform Configuration
     PLATFORM_FEE_AMOUNT: float = 50.00
     PLATFORM_FEE_CURRENCY: str = "USD"
 

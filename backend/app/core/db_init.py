@@ -11,7 +11,6 @@ async def init_db(engine: AsyncEngine) -> None:
     """Initialize the database by creating all tables."""
     try:
         async with engine.begin() as conn:
-            # Create all tables
             await conn.run_sync(Base.metadata.create_all)
             logger.info("Database tables created successfully")
     except Exception as e:

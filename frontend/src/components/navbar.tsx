@@ -1,7 +1,8 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { LogOut, MessageSquare, User2 } from "lucide-react";
+import { useSelector } from "react-redux";
 import Logo from "@/assets/img/logo.png";
-import { useGetCurrentUserProfileAuthAuthMeGetQuery } from "@/store/services/apis";
+import type { RootState } from "@/store";
 import MaxWidthWrapper from "./max-width-wrapper";
 import ModeToggle from "./mode-toggle";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
@@ -9,7 +10,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 
 function Navbar() {
   const navigate = useNavigate();
-  const { data: currentUser } = useGetCurrentUserProfileAuthAuthMeGetQuery();
+  const { user } = useSelector((state: RootState) => state.global);
 
   const logout = () => {
     localStorage.clear();
@@ -20,19 +21,19 @@ function Navbar() {
     <nav className="h-16 w-full border-b py-3">
       <MaxWidthWrapper className="flex items-center justify-between">
         <Link to="/dashboard">
-          <img src={Logo} alt="logo-img" className="size-9" />
+          <img src={Logo} alt="logo-img" className="size-9 rounded-md" />
         </Link>
         <div className="flex items-center justify-center gap-2.5">
           <ModeToggle />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Avatar className="bg-muted">
-                <AvatarImage alt="profile-picture" src={currentUser?.profile_picture ?? ""} />
+                <AvatarImage alt="profile-picture" src={user?.image_url ?? ""} />
                 <AvatarFallback className="p-2">
-                  {currentUser ? (
+                  {user ? (
                     <span className="font-medium text-sm">
-                      {currentUser.first_name?.[0]}
-                      {currentUser.last_name?.[0]}
+                      {user.first_name?.[0]}
+                      {user.last_name?.[0]}
                     </span>
                   ) : (
                     <User2 />

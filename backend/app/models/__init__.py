@@ -3,7 +3,6 @@ from app.models.chat import Chat
 from app.models.client_hunter import ClientHunter
 from app.models.freelancer import Freelancer
 from app.models.message import Message
-from app.models.notification import Notification, NotificationType
 from app.models.payment import Payment, PaymentStatus, PaymentType
 from app.models.project import Project
 from app.models.user import User, UserType
@@ -17,8 +16,6 @@ __all__ = [
     "Project",
     "Chat",
     "Message",
-    "Notification",
-    "NotificationType",
     "Payment",
     "PaymentType",
     "PaymentStatus"

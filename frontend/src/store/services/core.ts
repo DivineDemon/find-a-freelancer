@@ -2,6 +2,7 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { toast } from "sonner";
 
 import { type RootState } from "..";
+import type { HealthCheckGetApiResponse } from "./apis";
 
 const baseQuery = fetchBaseQuery({
   baseUrl: import.meta.env.VITE_BASE_API_URL,
@@ -29,5 +30,13 @@ const baseQueryWith401Handling: typeof baseQuery = async (args, api, extraOption
 export const api = createApi({
   baseQuery: baseQueryWith401Handling,
   keepUnusedDataFor: 5,
-  endpoints: () => ({}),
+  endpoints: (build) => ({
+    healthCheck: build.query({
+      query: () => ({
+        url: "/",
+        method: "GET",
+      }),
+      transformResponse: (response: HealthCheckGetApiResponse) => response,
+    }),
+  }),
 });

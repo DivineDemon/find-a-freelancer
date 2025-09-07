@@ -18,38 +18,10 @@ from app.schemas.message_schema import (
     MessageCreate,
     MessageList,
     MessageRead,
-    MessageUpdate,
     MessageWithSender,
 )
-from app.utils.content_filter import content_filter
 
 router = APIRouter(prefix="/messages", tags=["Message Management"])
-
-
-async def get_message_owner(
-    message_id: int,
-    current_user: Annotated[User, Depends(get_current_user)],
-    session: Annotated[AsyncSession, Depends(get_session)]
-) -> Message:
-    """Get message and verify current user is the sender."""
-    result = await session.execute(
-        select(Message).where(
-            and_(
-                Message.id == message_id,
-                Message.sender_id == current_user.id,
-                Message.is_deleted.is_(False)
-            )
-        )
-    )
-    message = result.scalar_one_or_none()
-
-    if not message:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Message not found or access denied"
-        )
-
-    return message
 
 
 @router.post("/", response_model=MessageRead, status_code=status.HTTP_201_CREATED)
@@ -67,9 +39,7 @@ async def send_message(
                 or_(
                     Chat.initiator_id == current_user.id,
                     Chat.participant_id == current_user.id
-                ),
-                Chat.is_deleted.is_(False),
-                Chat.status == "active"
+                )
             )
         )
     )
@@ -81,19 +51,12 @@ async def send_message(
             detail="Chat not found or access denied"
         )
 
-    # Filter content for violations
-    filtered_content, violations, is_clean = content_filter.filter_message(
-        message_data.content
-    )
-
     # Create message
     message = Message(
-        content=filtered_content,
+        content=message_data.content,
         content_type=message_data.content_type,
         chat_id=message_data.chat_id,
-        sender_id=current_user.id,
-        is_flagged=not is_clean,
-        flag_reason=", ".join(violations) if violations else None
+        sender_id=current_user.id
     )
 
     session.add(message)
@@ -119,10 +82,7 @@ async def get_chat_messages(
     """Get messages from a specific chat with pagination."""
     # Get total count
     count_query = select(func.count(Message.id)).where(
-        and_(
-            Message.chat_id == chat.id,
-            Message.is_deleted.is_(False)
-        )
+        Message.chat_id == chat.id
     )
     total_result = await session.execute(count_query)
     total = total_result.scalar() or 0
@@ -131,10 +91,7 @@ async def get_chat_messages(
     query = select(Message).options(
         selectinload(Message.sender)
     ).where(
-        and_(
-            Message.chat_id == chat.id,
-            Message.is_deleted.is_(False)
-        )
+        Message.chat_id == chat.id
     ).order_by(desc(Message.created_at))
 
     query = query.offset((page - 1) * size).limit(size)
@@ -174,10 +131,7 @@ async def get_message(
         select(Message).options(
             selectinload(Message.sender)
         ).where(
-            and_(
-                Message.id == message_id,
-                Message.is_deleted.is_(False)
-            )
+            Message.id == message_id
         )
     )
     message = result.scalar_one_or_none()
@@ -196,8 +150,7 @@ async def get_message(
                 or_(
                     Chat.initiator_id == current_user.id,
                     Chat.participant_id == current_user.id
-                ),
-                Chat.is_deleted.is_(False)
+                )
             )
         )
     )
@@ -218,39 +171,6 @@ async def get_message(
     )
 
 
-@router.put("/{message_id}", response_model=MessageRead)
-async def edit_message(
-    message_update: MessageUpdate,
-    message: Annotated[Message, Depends(get_message_owner)],
-    session: Annotated[AsyncSession, Depends(get_session)]
-):
-    """Edit a message sent by the current user."""
-    # Filter content for violations
-    filtered_content, violations, is_clean = content_filter.filter_message(
-        message_update.content
-    )
-
-    # Update message
-    message.edit_message(filtered_content)
-    message.is_flagged = not is_clean
-    message.flag_reason = ", ".join(violations) if violations else None
-
-    session.add(message)
-    await session.commit()
-    await session.refresh(message)
-
-    return message
-
-
-@router.delete("/{message_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_message(
-    message: Annotated[Message, Depends(get_message_owner)],
-    session: Annotated[AsyncSession, Depends(get_session)]
-):
-    """Delete a message sent by the current user."""
-    message.delete_message()
-    session.add(message)
-    await session.commit()
 
 
 @router.get("/search", response_model=MessageList)
@@ -274,12 +194,9 @@ async def search_messages(
     """Search messages across user's chats."""
     # Build base query for user's chats
     user_chats_query = select(Chat.id).where(
-        and_(
-            or_(
-                Chat.initiator_id == current_user.id,
-                Chat.participant_id == current_user.id
-            ),
-            Chat.is_deleted.is_(False)
+        or_(
+            Chat.initiator_id == current_user.id,
+            Chat.participant_id == current_user.id
         )
     )
 
@@ -287,7 +204,6 @@ async def search_messages(
     message_query = select(Message).where(
         and_(
             Message.chat_id.in_(user_chats_query),
-            Message.is_deleted.is_(False),
             Message.content.ilike(f"%{query}%")
         )
     )
@@ -334,61 +250,3 @@ async def search_messages(
         has_next=page * size < total,
         has_prev=page > 1
     )
-
-
-@router.post("/{message_id}/flag", response_model=MessageRead)
-async def flag_message(
-    message_id: int,
-    current_user: Annotated[User, Depends(get_current_user)],
-    session: Annotated[AsyncSession, Depends(get_session)],
-    reason: str = Query(..., min_length=1, max_length=500,
-                        description="Flag reason")
-):
-    """Flag a message for moderation."""
-    # Get message
-    result = await session.execute(
-        select(Message).where(
-            and_(
-                Message.id == message_id,
-                Message.is_deleted.is_(False)
-            )
-        )
-    )
-    message = result.scalar_one_or_none()
-
-    if not message:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Message not found"
-        )
-
-    # Verify user has access to the chat
-    chat_result = await session.execute(
-        select(Chat).where(
-            and_(
-                Chat.id == message.chat_id,
-                or_(
-                    Chat.initiator_id == current_user.id,
-                    Chat.participant_id == current_user.id
-                ),
-                Chat.is_deleted.is_(False)
-            )
-        )
-    )
-    chat = chat_result.scalar_one_or_none()
-
-    if not chat:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied to this message"
-        )
-
-    # Flag the message
-    message.is_flagged = True
-    message.flag_reason = reason
-
-    session.add(message)
-    await session.commit()
-    await session.refresh(message)
-
-    return message

@@ -44,8 +44,7 @@ async def get_chat_participant(
                 or_(
                     Chat.initiator_id == current_user.id,
                     Chat.participant_id == current_user.id
-                ),
-                Chat.is_deleted.is_(False)
+                )
             )
         )
     )
@@ -88,18 +87,15 @@ async def create_chat(
     # Check if chat already exists between these users
     existing_chat_result = await session.execute(
         select(Chat).where(
-            and_(
-                or_(
-                    and_(
-                        Chat.initiator_id == current_user.id,
-                        Chat.participant_id == chat_data.participant_id
-                    ),
-                    and_(
-                        Chat.initiator_id == chat_data.participant_id,
-                        Chat.participant_id == current_user.id
-                    )
+            or_(
+                and_(
+                    Chat.initiator_id == current_user.id,
+                    Chat.participant_id == chat_data.participant_id
                 ),
-                Chat.is_deleted.is_(False)
+                and_(
+                    Chat.initiator_id == chat_data.participant_id,
+                    Chat.participant_id == current_user.id
+                )
             )
         )
     )
@@ -113,11 +109,9 @@ async def create_chat(
     chat = Chat(
         initiator_id=current_user.id,
         participant_id=chat_data.participant_id,
-        title=chat_data.title,
         project_title=chat_data.project_title,
         project_description=chat_data.project_description,
-        project_budget=chat_data.project_budget,
-        status="active"
+        project_budget=chat_data.project_budget
     )
 
     session.add(chat)
@@ -131,30 +125,31 @@ async def create_chat(
 async def list_user_chats(
     current_user: Annotated[User, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_session)],
-    status_filter: Optional[str] = Query(
-        None, description="Filter by chat status"),
-    is_archived: Optional[bool] = Query(
-        None, description="Filter by archive status"),
+    is_archived_by_initiator: Optional[bool] = Query(
+        None, description="Filter by archive status for initiator"),
+    is_archived_by_participant: Optional[bool] = Query(
+        None, description="Filter by archive status for participant"),
     page: int = Query(1, ge=1, description="Page number"),
     size: int = Query(20, ge=1, le=100, description="Page size")
 ):
     """List all chats for the current user with pagination."""
     # Build base query
     query = select(Chat).where(
-        and_(
-            or_(
-                Chat.initiator_id == current_user.id,
-                Chat.participant_id == current_user.id
-            ),
-            Chat.is_deleted.is_(False)
+        or_(
+            Chat.initiator_id == current_user.id,
+            Chat.participant_id == current_user.id
         )
     )
 
-    # Apply filters
-    if status_filter:
-        query = query.where(Chat.status == status_filter)
-    if is_archived is not None:
-        query = query.where(Chat.is_archived == is_archived)
+    # Apply filters based on user role
+    if current_user.user_type == UserType.FREELANCER:
+        if is_archived_by_initiator is not None:
+            query = query.where(
+                Chat.is_archived_by_initiator == is_archived_by_initiator)
+    else:  # CLIENT_HUNTER
+        if is_archived_by_participant is not None:
+            query = query.where(
+                Chat.is_archived_by_participant == is_archived_by_participant)
 
     # Get total count
     count_query = select(func.count()).select_from(query.subquery())
@@ -183,10 +178,7 @@ async def list_user_chats(
         # Get last message for preview
         last_message_result = await session.execute(
             select(Message).where(
-                and_(
-                    Message.chat_id == chat.id,
-                    Message.is_deleted.is_(False)
-                )
+                Message.chat_id == chat.id
             ).order_by(desc(Message.created_at)).limit(1)
         )
         last_message = last_message_result.scalar_one_or_none()
@@ -196,10 +188,7 @@ async def list_user_chats(
             select(func.count(Message.id)).where(
                 and_(
                     Message.chat_id == chat.id,
-                    Message.sender_id != current_user.id,
-                    Message.is_deleted.is_(False)
-                    # TODO: Add read status tracking when MessageRead model is
-                    # implemented
+                    Message.sender_id != current_user.id
                 )
             )
         )
@@ -301,11 +290,16 @@ async def update_chat(
 @router.post("/{chat_id}/archive", response_model=ChatRead)
 async def archive_chat(
     chat: Annotated[Chat, Depends(get_chat_participant)],
+    current_user: Annotated[User, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_session)]
 ):
-    """Archive a chat."""
-    chat.is_archived = True
-    chat.status = "archived"
+    """Archive a chat for the current user."""
+    # Determine if current user is initiator or participant
+    if chat.initiator_id == current_user.id:
+        chat.is_archived_by_initiator = True
+    else:
+        chat.is_archived_by_participant = True
+
     chat.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
 
     session.add(chat)
@@ -318,11 +312,16 @@ async def archive_chat(
 @router.post("/{chat_id}/unarchive", response_model=ChatRead)
 async def unarchive_chat(
     chat: Annotated[Chat, Depends(get_chat_participant)],
+    current_user: Annotated[User, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_session)]
 ):
-    """Unarchive a chat."""
-    chat.is_archived = False
-    chat.status = "active"
+    """Unarchive a chat for the current user."""
+    # Determine if current user is initiator or participant
+    if chat.initiator_id == current_user.id:
+        chat.is_archived_by_initiator = False
+    else:
+        chat.is_archived_by_participant = False
+
     chat.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
 
     session.add(chat)
@@ -330,20 +329,6 @@ async def unarchive_chat(
     await session.refresh(chat)
 
     return chat
-
-
-@router.delete("/{chat_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_chat(
-    chat: Annotated[Chat, Depends(get_chat_participant)],
-    session: Annotated[AsyncSession, Depends(get_session)]
-):
-    """Soft delete a chat."""
-    chat.is_deleted = True
-    chat.status = "deleted"
-    chat.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
-
-    session.add(chat)
-    await session.commit()
 
 
 @router.get("/stats/summary", response_model=ChatStats)
@@ -355,69 +340,84 @@ async def get_chat_stats(
     # Get total chats
     total_chats_result = await session.execute(
         select(func.count(Chat.id)).where(
-            and_(
-                or_(
-                    Chat.initiator_id == current_user.id,
-                    Chat.participant_id == current_user.id
-                ),
-                Chat.is_deleted.is_(False)
+            or_(
+                Chat.initiator_id == current_user.id,
+                Chat.participant_id == current_user.id
             )
         )
     )
     total_chats = total_chats_result.scalar() or 0
 
-    # Get active chats
-    active_chats_result = await session.execute(
-        select(func.count(Chat.id)).where(
-            and_(
-                or_(
-                    Chat.initiator_id == current_user.id,
-                    Chat.participant_id == current_user.id
-                ),
-                Chat.is_deleted.is_(False),
-                Chat.status == "active"
+    # Get active chats (not archived by current user)
+    if current_user.user_type == UserType.FREELANCER:
+        active_chats_result = await session.execute(
+            select(func.count(Chat.id)).where(
+                and_(
+                    or_(
+                        Chat.initiator_id == current_user.id,
+                        Chat.participant_id == current_user.id
+                    ),
+                    Chat.is_archived_by_initiator.is_(False)
+                )
             )
         )
-    )
+    else:  # CLIENT_HUNTER
+        active_chats_result = await session.execute(
+            select(func.count(Chat.id)).where(
+                and_(
+                    or_(
+                        Chat.initiator_id == current_user.id,
+                        Chat.participant_id == current_user.id
+                    ),
+                    Chat.is_archived_by_participant.is_(False)
+                )
+            )
+        )
     active_chats = active_chats_result.scalar() or 0
 
-    # Get archived chats
-    archived_chats_result = await session.execute(
-        select(func.count(Chat.id)).where(
-            and_(
-                or_(
-                    Chat.initiator_id == current_user.id,
-                    Chat.participant_id == current_user.id
-                ),
-                Chat.is_deleted.is_(False),
-                Chat.is_archived.is_(True)
+    # Get archived chats (archived by current user)
+    if current_user.user_type == UserType.FREELANCER:
+        archived_chats_result = await session.execute(
+            select(func.count(Chat.id)).where(
+                and_(
+                    or_(
+                        Chat.initiator_id == current_user.id,
+                        Chat.participant_id == current_user.id
+                    ),
+                    Chat.is_archived_by_initiator.is_(True)
+                )
             )
         )
-    )
+    else:  # CLIENT_HUNTER
+        archived_chats_result = await session.execute(
+            select(func.count(Chat.id)).where(
+                and_(
+                    or_(
+                        Chat.initiator_id == current_user.id,
+                        Chat.participant_id == current_user.id
+                    ),
+                    Chat.is_archived_by_participant.is_(True)
+                )
+            )
+        )
     archived_chats = archived_chats_result.scalar() or 0
 
     # Get total messages
     total_messages_result = await session.execute(
         select(func.count(Message.id)).where(
-            and_(
-                Message.chat_id.in_(
-                    select(Chat.id).where(
-                        and_(
-                            or_(
-                                Chat.initiator_id == current_user.id,
-                                Chat.participant_id == current_user.id
-                            ),
-                            Chat.is_deleted.is_(False)
-                        )
+            Message.chat_id.in_(
+                select(Chat.id).where(
+                    or_(
+                        Chat.initiator_id == current_user.id,
+                        Chat.participant_id == current_user.id
                     )
-                ),
-                Message.is_deleted.is_(False)
+                )
             )
         )
     )
     total_messages = total_messages_result.scalar() or 0
 
-    # Get unread messages (placeholder for now)
+    # Unread message tracking not implemented yet
     unread_messages = 0
 
     # Get monthly stats
@@ -432,7 +432,6 @@ async def get_chat_stats(
                     Chat.initiator_id == current_user.id,
                     Chat.participant_id == current_user.id
                 ),
-                Chat.is_deleted.is_(False),
                 Chat.created_at >= current_month
             )
         )
@@ -444,16 +443,12 @@ async def get_chat_stats(
             and_(
                 Message.chat_id.in_(
                     select(Chat.id).where(
-                        and_(
-                            or_(
-                                Chat.initiator_id == current_user.id,
-                                Chat.participant_id == current_user.id
-                            ),
-                            Chat.is_deleted.is_(False)
+                        or_(
+                            Chat.initiator_id == current_user.id,
+                            Chat.participant_id == current_user.id
                         )
                     )
                 ),
-                Message.is_deleted.is_(False),
                 Message.created_at >= current_month
             )
         )

@@ -1,10 +1,10 @@
 import { api } from "./core";
 export const addTagTypes = [
   "Authentication",
+  "User Management",
   "Chat Management",
   "Message Management",
   "Payments",
-  "WebSocket Chat",
 ] as const;
 const injectedRtkApi = api
   .enhanceEndpoints({
@@ -15,51 +15,48 @@ const injectedRtkApi = api
       healthCheckGet: build.query<HealthCheckGetApiResponse, HealthCheckGetApiArg>({
         query: () => ({ url: `/` }),
       }),
-      registerUserAuthAuthRegisterPost: build.mutation<
-        RegisterUserAuthAuthRegisterPostApiResponse,
-        RegisterUserAuthAuthRegisterPostApiArg
+      registerUserAuthRegisterPost: build.mutation<
+        RegisterUserAuthRegisterPostApiResponse,
+        RegisterUserAuthRegisterPostApiArg
       >({
         query: (queryArg) => ({
-          url: `/auth/auth/register`,
+          url: `/auth/register`,
           method: "POST",
           body: queryArg.userCreate,
         }),
         invalidatesTags: ["Authentication"],
       }),
-      loginUserAuthAuthLoginPost: build.mutation<
-        LoginUserAuthAuthLoginPostApiResponse,
-        LoginUserAuthAuthLoginPostApiArg
-      >({
+      loginUserAuthLoginPost: build.mutation<LoginUserAuthLoginPostApiResponse, LoginUserAuthLoginPostApiArg>({
         query: (queryArg) => ({
-          url: `/auth/auth/login`,
+          url: `/auth/login`,
           method: "POST",
           body: queryArg.userLogin,
         }),
         invalidatesTags: ["Authentication"],
       }),
-      getCurrentUserProfileAuthAuthMeGet: build.query<
-        GetCurrentUserProfileAuthAuthMeGetApiResponse,
-        GetCurrentUserProfileAuthAuthMeGetApiArg
+      getCurrentUserProfileAuthMeGet: build.query<
+        GetCurrentUserProfileAuthMeGetApiResponse,
+        GetCurrentUserProfileAuthMeGetApiArg
       >({
-        query: () => ({ url: `/auth/auth/me` }),
+        query: () => ({ url: `/auth/me` }),
         providesTags: ["Authentication"],
       }),
-      updateCurrentUserProfileAuthAuthMePut: build.mutation<
-        UpdateCurrentUserProfileAuthAuthMePutApiResponse,
-        UpdateCurrentUserProfileAuthAuthMePutApiArg
+      updateCurrentUserProfileAuthMePut: build.mutation<
+        UpdateCurrentUserProfileAuthMePutApiResponse,
+        UpdateCurrentUserProfileAuthMePutApiArg
       >({
         query: (queryArg) => ({
-          url: `/auth/auth/me`,
+          url: `/auth/me`,
           method: "PUT",
           body: queryArg.userUpdate,
         }),
         invalidatesTags: ["Authentication"],
       }),
-      refreshAccessTokenAuthAuthRefreshPost: build.mutation<
-        RefreshAccessTokenAuthAuthRefreshPostApiResponse,
-        RefreshAccessTokenAuthAuthRefreshPostApiArg
+      refreshAccessTokenAuthRefreshPost: build.mutation<
+        RefreshAccessTokenAuthRefreshPostApiResponse,
+        RefreshAccessTokenAuthRefreshPostApiArg
       >({
-        query: () => ({ url: `/auth/auth/refresh`, method: "POST" }),
+        query: () => ({ url: `/auth/refresh`, method: "POST" }),
         invalidatesTags: ["Authentication"],
       }),
       getCurrentUserInfoUsersMeGet: build.query<
@@ -67,6 +64,7 @@ const injectedRtkApi = api
         GetCurrentUserInfoUsersMeGetApiArg
       >({
         query: () => ({ url: `/users/me` }),
+        providesTags: ["User Management"],
       }),
       updateCurrentUserUsersMePut: build.mutation<
         UpdateCurrentUserUsersMePutApiResponse,
@@ -77,17 +75,11 @@ const injectedRtkApi = api
           method: "PUT",
           body: queryArg.userUpdate,
         }),
+        invalidatesTags: ["User Management"],
       }),
       getUserUsersUserIdGet: build.query<GetUserUsersUserIdGetApiResponse, GetUserUsersUserIdGetApiArg>({
         query: (queryArg) => ({ url: `/users/${queryArg.userId}` }),
-      }),
-      getFreelancerProfileUsersUserIdFreelancerProfileGet: build.query<
-        GetFreelancerProfileUsersUserIdFreelancerProfileGetApiResponse,
-        GetFreelancerProfileUsersUserIdFreelancerProfileGetApiArg
-      >({
-        query: (queryArg) => ({
-          url: `/users/${queryArg.userId}/freelancer-profile`,
-        }),
+        providesTags: ["User Management"],
       }),
       listUsersUsersGet: build.query<ListUsersUsersGetApiResponse, ListUsersUsersGetApiArg>({
         query: (queryArg) => ({
@@ -100,113 +92,99 @@ const injectedRtkApi = api
             min_experience: queryArg.minExperience,
             max_experience: queryArg.maxExperience,
             skills: queryArg.skills,
-            technologies: queryArg.technologies,
             work_type: queryArg.workType,
             search_query: queryArg.searchQuery,
           },
         }),
+        providesTags: ["User Management"],
       }),
       getFilterOptionsUsersFiltersOptionsGet: build.query<
         GetFilterOptionsUsersFiltersOptionsGetApiResponse,
         GetFilterOptionsUsersFiltersOptionsGetApiArg
       >({
         query: () => ({ url: `/users/filters/options` }),
+        providesTags: ["User Management"],
       }),
       getUserStatsUsersStatsSummaryGet: build.query<
         GetUserStatsUsersStatsSummaryGetApiResponse,
         GetUserStatsUsersStatsSummaryGetApiArg
       >({
         query: () => ({ url: `/users/stats/summary` }),
+        providesTags: ["User Management"],
       }),
-      createChatChatsChatsPost: build.mutation<CreateChatChatsChatsPostApiResponse, CreateChatChatsChatsPostApiArg>({
+      createChatChatsPost: build.mutation<CreateChatChatsPostApiResponse, CreateChatChatsPostApiArg>({
         query: (queryArg) => ({
-          url: `/chats/chats/`,
+          url: `/chats/`,
           method: "POST",
           body: queryArg.chatCreate,
         }),
         invalidatesTags: ["Chat Management"],
       }),
-      listUserChatsChatsChatsGet: build.query<ListUserChatsChatsChatsGetApiResponse, ListUserChatsChatsChatsGetApiArg>({
+      listUserChatsChatsGet: build.query<ListUserChatsChatsGetApiResponse, ListUserChatsChatsGetApiArg>({
         query: (queryArg) => ({
-          url: `/chats/chats/`,
+          url: `/chats/`,
           params: {
-            status_filter: queryArg.statusFilter,
-            is_archived: queryArg.isArchived,
+            is_archived_by_initiator: queryArg.isArchivedByInitiator,
+            is_archived_by_participant: queryArg.isArchivedByParticipant,
             page: queryArg.page,
             size: queryArg.size,
           },
         }),
         providesTags: ["Chat Management"],
       }),
-      getChatChatsChatsChatIdGet: build.query<GetChatChatsChatsChatIdGetApiResponse, GetChatChatsChatsChatIdGetApiArg>({
-        query: (queryArg) => ({ url: `/chats/chats/${queryArg.chatId}` }),
+      getChatChatsChatIdGet: build.query<GetChatChatsChatIdGetApiResponse, GetChatChatsChatIdGetApiArg>({
+        query: (queryArg) => ({ url: `/chats/${queryArg.chatId}` }),
         providesTags: ["Chat Management"],
       }),
-      updateChatChatsChatsChatIdPut: build.mutation<
-        UpdateChatChatsChatsChatIdPutApiResponse,
-        UpdateChatChatsChatsChatIdPutApiArg
-      >({
+      updateChatChatsChatIdPut: build.mutation<UpdateChatChatsChatIdPutApiResponse, UpdateChatChatsChatIdPutApiArg>({
         query: (queryArg) => ({
-          url: `/chats/chats/${queryArg.chatId}`,
+          url: `/chats/${queryArg.chatId}`,
           method: "PUT",
           body: queryArg.chatUpdate,
         }),
         invalidatesTags: ["Chat Management"],
       }),
-      deleteChatChatsChatsChatIdDelete: build.mutation<
-        DeleteChatChatsChatsChatIdDeleteApiResponse,
-        DeleteChatChatsChatsChatIdDeleteApiArg
+      archiveChatChatsChatIdArchivePost: build.mutation<
+        ArchiveChatChatsChatIdArchivePostApiResponse,
+        ArchiveChatChatsChatIdArchivePostApiArg
       >({
         query: (queryArg) => ({
-          url: `/chats/chats/${queryArg.chatId}`,
-          method: "DELETE",
-        }),
-        invalidatesTags: ["Chat Management"],
-      }),
-      archiveChatChatsChatsChatIdArchivePost: build.mutation<
-        ArchiveChatChatsChatsChatIdArchivePostApiResponse,
-        ArchiveChatChatsChatsChatIdArchivePostApiArg
-      >({
-        query: (queryArg) => ({
-          url: `/chats/chats/${queryArg.chatId}/archive`,
+          url: `/chats/${queryArg.chatId}/archive`,
           method: "POST",
         }),
         invalidatesTags: ["Chat Management"],
       }),
-      unarchiveChatChatsChatsChatIdUnarchivePost: build.mutation<
-        UnarchiveChatChatsChatsChatIdUnarchivePostApiResponse,
-        UnarchiveChatChatsChatsChatIdUnarchivePostApiArg
+      unarchiveChatChatsChatIdUnarchivePost: build.mutation<
+        UnarchiveChatChatsChatIdUnarchivePostApiResponse,
+        UnarchiveChatChatsChatIdUnarchivePostApiArg
       >({
         query: (queryArg) => ({
-          url: `/chats/chats/${queryArg.chatId}/unarchive`,
+          url: `/chats/${queryArg.chatId}/unarchive`,
           method: "POST",
         }),
         invalidatesTags: ["Chat Management"],
       }),
-      getChatStatsChatsChatsStatsSummaryGet: build.query<
-        GetChatStatsChatsChatsStatsSummaryGetApiResponse,
-        GetChatStatsChatsChatsStatsSummaryGetApiArg
+      getChatStatsChatsStatsSummaryGet: build.query<
+        GetChatStatsChatsStatsSummaryGetApiResponse,
+        GetChatStatsChatsStatsSummaryGetApiArg
       >({
-        query: () => ({ url: `/chats/chats/stats/summary` }),
+        query: () => ({ url: `/chats/stats/summary` }),
         providesTags: ["Chat Management"],
       }),
-      sendMessageMessagesMessagesPost: build.mutation<
-        SendMessageMessagesMessagesPostApiResponse,
-        SendMessageMessagesMessagesPostApiArg
-      >({
+      sendMessageMessagesPost: build.mutation<SendMessageMessagesPostApiResponse, SendMessageMessagesPostApiArg>({
         query: (queryArg) => ({
-          url: `/messages/messages/`,
+          url: `/messages/`,
           method: "POST",
           body: queryArg.messageCreate,
         }),
         invalidatesTags: ["Message Management"],
       }),
-      getChatMessagesMessagesMessagesChatChatIdGet: build.query<
-        GetChatMessagesMessagesMessagesChatChatIdGetApiResponse,
-        GetChatMessagesMessagesMessagesChatChatIdGetApiArg
+      getChatMessagesMessagesChatChatIdGet: build.query<
+        GetChatMessagesMessagesChatChatIdGetApiResponse,
+        GetChatMessagesMessagesChatChatIdGetApiArg
       >({
         query: (queryArg) => ({
-          url: `/messages/messages/chat/${queryArg.chatId}`,
+          url: `/messages/chat/${queryArg.chatId}`,
           params: {
             page: queryArg.page,
             size: queryArg.size,
@@ -214,42 +192,19 @@ const injectedRtkApi = api
         }),
         providesTags: ["Message Management"],
       }),
-      getMessageMessagesMessagesMessageIdGet: build.query<
-        GetMessageMessagesMessagesMessageIdGetApiResponse,
-        GetMessageMessagesMessagesMessageIdGetApiArg
+      getMessageMessagesMessageIdGet: build.query<
+        GetMessageMessagesMessageIdGetApiResponse,
+        GetMessageMessagesMessageIdGetApiArg
       >({
-        query: (queryArg) => ({
-          url: `/messages/messages/${queryArg.messageId}`,
-        }),
+        query: (queryArg) => ({ url: `/messages/${queryArg.messageId}` }),
         providesTags: ["Message Management"],
       }),
-      editMessageMessagesMessagesMessageIdPut: build.mutation<
-        EditMessageMessagesMessagesMessageIdPutApiResponse,
-        EditMessageMessagesMessagesMessageIdPutApiArg
+      searchMessagesMessagesSearchGet: build.query<
+        SearchMessagesMessagesSearchGetApiResponse,
+        SearchMessagesMessagesSearchGetApiArg
       >({
         query: (queryArg) => ({
-          url: `/messages/messages/${queryArg.messageId}`,
-          method: "PUT",
-          body: queryArg.messageUpdate,
-        }),
-        invalidatesTags: ["Message Management"],
-      }),
-      deleteMessageMessagesMessagesMessageIdDelete: build.mutation<
-        DeleteMessageMessagesMessagesMessageIdDeleteApiResponse,
-        DeleteMessageMessagesMessagesMessageIdDeleteApiArg
-      >({
-        query: (queryArg) => ({
-          url: `/messages/messages/${queryArg.messageId}`,
-          method: "DELETE",
-        }),
-        invalidatesTags: ["Message Management"],
-      }),
-      searchMessagesMessagesMessagesSearchGet: build.query<
-        SearchMessagesMessagesMessagesSearchGetApiResponse,
-        SearchMessagesMessagesMessagesSearchGetApiArg
-      >({
-        query: (queryArg) => ({
-          url: `/messages/messages/search`,
+          url: `/messages/search`,
           params: {
             query: queryArg.query,
             chat_id: queryArg.chatId,
@@ -260,79 +215,47 @@ const injectedRtkApi = api
         }),
         providesTags: ["Message Management"],
       }),
-      flagMessageMessagesMessagesMessageIdFlagPost: build.mutation<
-        FlagMessageMessagesMessagesMessageIdFlagPostApiResponse,
-        FlagMessageMessagesMessagesMessageIdFlagPostApiArg
+      createPaymentOrderPaymentsCreateOrderPost: build.mutation<
+        CreatePaymentOrderPaymentsCreateOrderPostApiResponse,
+        CreatePaymentOrderPaymentsCreateOrderPostApiArg
       >({
         query: (queryArg) => ({
-          url: `/messages/messages/${queryArg.messageId}/flag`,
-          method: "POST",
-          params: {
-            reason: queryArg.reason,
-          },
-        }),
-        invalidatesTags: ["Message Management"],
-      }),
-      createPaymentOrderPaymentsPaymentsCreateOrderPost: build.mutation<
-        CreatePaymentOrderPaymentsPaymentsCreateOrderPostApiResponse,
-        CreatePaymentOrderPaymentsPaymentsCreateOrderPostApiArg
-      >({
-        query: (queryArg) => ({
-          url: `/payments/payments/create-order`,
+          url: `/payments/create-order`,
           method: "POST",
           body: queryArg.paymentCreate,
         }),
         invalidatesTags: ["Payments"],
       }),
-      capturePaymentPaymentsPaymentsCapturePaymentIdPost: build.mutation<
-        CapturePaymentPaymentsPaymentsCapturePaymentIdPostApiResponse,
-        CapturePaymentPaymentsPaymentsCapturePaymentIdPostApiArg
+      capturePaymentPaymentsCapturePaymentIdPost: build.mutation<
+        CapturePaymentPaymentsCapturePaymentIdPostApiResponse,
+        CapturePaymentPaymentsCapturePaymentIdPostApiArg
       >({
         query: (queryArg) => ({
-          url: `/payments/payments/capture/${queryArg.paymentId}`,
+          url: `/payments/capture/${queryArg.paymentId}`,
           method: "POST",
         }),
         invalidatesTags: ["Payments"],
       }),
-      getPaymentPaymentsPaymentsPaymentIdGet: build.query<
-        GetPaymentPaymentsPaymentsPaymentIdGetApiResponse,
-        GetPaymentPaymentsPaymentsPaymentIdGetApiArg
+      getPaymentPaymentsPaymentIdGet: build.query<
+        GetPaymentPaymentsPaymentIdGetApiResponse,
+        GetPaymentPaymentsPaymentIdGetApiArg
       >({
-        query: (queryArg) => ({
-          url: `/payments/payments/${queryArg.paymentId}`,
-        }),
+        query: (queryArg) => ({ url: `/payments/${queryArg.paymentId}` }),
         providesTags: ["Payments"],
       }),
-      getUserPaymentsPaymentsPaymentsUserPaymentsGet: build.query<
-        GetUserPaymentsPaymentsPaymentsUserPaymentsGetApiResponse,
-        GetUserPaymentsPaymentsPaymentsUserPaymentsGetApiArg
+      getUserPaymentsPaymentsUserPaymentsGet: build.query<
+        GetUserPaymentsPaymentsUserPaymentsGetApiResponse,
+        GetUserPaymentsPaymentsUserPaymentsGetApiArg
       >({
-        query: () => ({ url: `/payments/payments/user/payments` }),
+        query: () => ({ url: `/payments/user/payments` }),
         providesTags: ["Payments"],
       }),
-      paypalWebhookPaymentsPaymentsWebhookPaypalPost: build.mutation<
-        PaypalWebhookPaymentsPaymentsWebhookPaypalPostApiResponse,
-        PaypalWebhookPaymentsPaymentsWebhookPaypalPostApiArg
+      paypalWebhookPaymentsWebhookPaypalPost: build.mutation<
+        PaypalWebhookPaymentsWebhookPaypalPostApiResponse,
+        PaypalWebhookPaymentsWebhookPaypalPostApiArg
       >({
-        query: () => ({
-          url: `/payments/payments/webhook/paypal`,
-          method: "POST",
-        }),
+        query: () => ({ url: `/payments/webhook/paypal`, method: "POST" }),
         invalidatesTags: ["Payments"],
-      }),
-      getOnlineUsersWsOnlineUsersGet: build.query<
-        GetOnlineUsersWsOnlineUsersGetApiResponse,
-        GetOnlineUsersWsOnlineUsersGetApiArg
-      >({
-        query: () => ({ url: `/ws/online-users` }),
-        providesTags: ["WebSocket Chat"],
-      }),
-      getUserStatusWsUserStatusUserIdGet: build.query<
-        GetUserStatusWsUserStatusUserIdGetApiResponse,
-        GetUserStatusWsUserStatusUserIdGetApiArg
-      >({
-        query: (queryArg) => ({ url: `/ws/user-status/${queryArg.userId}` }),
-        providesTags: ["WebSocket Chat"],
       }),
     }),
     overrideExisting: false,
@@ -340,38 +263,33 @@ const injectedRtkApi = api
 export { injectedRtkApi as appApis };
 export type HealthCheckGetApiResponse = /** status 200 Successful Response */ ResponseModelHealthBase;
 export type HealthCheckGetApiArg = void;
-export type RegisterUserAuthAuthRegisterPostApiResponse = /** status 201 Successful Response */ UserWithToken;
-export type RegisterUserAuthAuthRegisterPostApiArg = {
+export type RegisterUserAuthRegisterPostApiResponse = /** status 201 Successful Response */ UserWithToken;
+export type RegisterUserAuthRegisterPostApiArg = {
   userCreate: UserCreate;
 };
-export type LoginUserAuthAuthLoginPostApiResponse = /** status 200 Successful Response */ UserWithToken;
-export type LoginUserAuthAuthLoginPostApiArg = {
+export type LoginUserAuthLoginPostApiResponse = /** status 200 Successful Response */ LoginResponse;
+export type LoginUserAuthLoginPostApiArg = {
   userLogin: UserLogin;
 };
-export type GetCurrentUserProfileAuthAuthMeGetApiResponse = /** status 200 Successful Response */ UserRead;
-export type GetCurrentUserProfileAuthAuthMeGetApiArg = void;
-export type UpdateCurrentUserProfileAuthAuthMePutApiResponse = /** status 200 Successful Response */ UserRead;
-export type UpdateCurrentUserProfileAuthAuthMePutApiArg = {
+export type GetCurrentUserProfileAuthMeGetApiResponse = /** status 200 Successful Response */ UserRead;
+export type GetCurrentUserProfileAuthMeGetApiArg = void;
+export type UpdateCurrentUserProfileAuthMePutApiResponse = /** status 200 Successful Response */ UserRead;
+export type UpdateCurrentUserProfileAuthMePutApiArg = {
   userUpdate: UserUpdate;
 };
-export type RefreshAccessTokenAuthAuthRefreshPostApiResponse = /** status 200 Successful Response */ UserWithToken;
-export type RefreshAccessTokenAuthAuthRefreshPostApiArg = void;
+export type RefreshAccessTokenAuthRefreshPostApiResponse = /** status 200 Successful Response */ UserWithToken;
+export type RefreshAccessTokenAuthRefreshPostApiArg = void;
 export type GetCurrentUserInfoUsersMeGetApiResponse = /** status 200 Successful Response */ UserRead;
 export type GetCurrentUserInfoUsersMeGetApiArg = void;
 export type UpdateCurrentUserUsersMePutApiResponse = /** status 200 Successful Response */ UserRead;
 export type UpdateCurrentUserUsersMePutApiArg = {
   userUpdate: UserUpdate;
 };
-export type GetUserUsersUserIdGetApiResponse = /** status 200 Successful Response */ UserRead;
+export type GetUserUsersUserIdGetApiResponse = /** status 200 Successful Response */ ComprehensiveUserResponse;
 export type GetUserUsersUserIdGetApiArg = {
   userId: number;
 };
-export type GetFreelancerProfileUsersUserIdFreelancerProfileGetApiResponse =
-  /** status 200 Successful Response */ FreelancerRead;
-export type GetFreelancerProfileUsersUserIdFreelancerProfileGetApiArg = {
-  userId: number;
-};
-export type ListUsersUsersGetApiResponse = /** status 200 Successful Response */ UserRead[];
+export type ListUsersUsersGetApiResponse = /** status 200 Successful Response */ DashboardFreelancerResponse[];
 export type ListUsersUsersGetApiArg = {
   skip?: number;
   limit?: number;
@@ -380,7 +298,6 @@ export type ListUsersUsersGetApiArg = {
   minExperience?: number | null;
   maxExperience?: number | null;
   skills?: string | null;
-  technologies?: string | null;
   workType?: string | null;
   searchQuery?: string | null;
 };
@@ -389,71 +306,58 @@ export type GetFilterOptionsUsersFiltersOptionsGetApiResponse =
 export type GetFilterOptionsUsersFiltersOptionsGetApiArg = void;
 export type GetUserStatsUsersStatsSummaryGetApiResponse = /** status 200 Successful Response */ UserStatsResponse;
 export type GetUserStatsUsersStatsSummaryGetApiArg = void;
-export type CreateChatChatsChatsPostApiResponse = /** status 201 Successful Response */ ChatRead;
-export type CreateChatChatsChatsPostApiArg = {
+export type CreateChatChatsPostApiResponse = /** status 201 Successful Response */ ChatRead;
+export type CreateChatChatsPostApiArg = {
   chatCreate: ChatCreate;
 };
-export type ListUserChatsChatsChatsGetApiResponse = /** status 200 Successful Response */ ChatList;
-export type ListUserChatsChatsChatsGetApiArg = {
-  /** Filter by chat status */
-  statusFilter?: string | null;
-  /** Filter by archive status */
-  isArchived?: boolean | null;
+export type ListUserChatsChatsGetApiResponse = /** status 200 Successful Response */ ChatList;
+export type ListUserChatsChatsGetApiArg = {
+  /** Filter by archive status for initiator */
+  isArchivedByInitiator?: boolean | null;
+  /** Filter by archive status for participant */
+  isArchivedByParticipant?: boolean | null;
   /** Page number */
   page?: number;
   /** Page size */
   size?: number;
 };
-export type GetChatChatsChatsChatIdGetApiResponse = /** status 200 Successful Response */ ChatWithParticipants;
-export type GetChatChatsChatsChatIdGetApiArg = {
+export type GetChatChatsChatIdGetApiResponse = /** status 200 Successful Response */ ChatWithParticipants;
+export type GetChatChatsChatIdGetApiArg = {
   chatId: number;
 };
-export type UpdateChatChatsChatsChatIdPutApiResponse = /** status 200 Successful Response */ ChatRead;
-export type UpdateChatChatsChatsChatIdPutApiArg = {
+export type UpdateChatChatsChatIdPutApiResponse = /** status 200 Successful Response */ ChatRead;
+export type UpdateChatChatsChatIdPutApiArg = {
   chatId: number;
   chatUpdate: ChatUpdate;
 };
-export type DeleteChatChatsChatsChatIdDeleteApiResponse = unknown;
-export type DeleteChatChatsChatsChatIdDeleteApiArg = {
+export type ArchiveChatChatsChatIdArchivePostApiResponse = /** status 200 Successful Response */ ChatRead;
+export type ArchiveChatChatsChatIdArchivePostApiArg = {
   chatId: number;
 };
-export type ArchiveChatChatsChatsChatIdArchivePostApiResponse = /** status 200 Successful Response */ ChatRead;
-export type ArchiveChatChatsChatsChatIdArchivePostApiArg = {
+export type UnarchiveChatChatsChatIdUnarchivePostApiResponse = /** status 200 Successful Response */ ChatRead;
+export type UnarchiveChatChatsChatIdUnarchivePostApiArg = {
   chatId: number;
 };
-export type UnarchiveChatChatsChatsChatIdUnarchivePostApiResponse = /** status 200 Successful Response */ ChatRead;
-export type UnarchiveChatChatsChatsChatIdUnarchivePostApiArg = {
-  chatId: number;
-};
-export type GetChatStatsChatsChatsStatsSummaryGetApiResponse = /** status 200 Successful Response */ ChatStats;
-export type GetChatStatsChatsChatsStatsSummaryGetApiArg = void;
-export type SendMessageMessagesMessagesPostApiResponse = /** status 201 Successful Response */ MessageRead;
-export type SendMessageMessagesMessagesPostApiArg = {
+export type GetChatStatsChatsStatsSummaryGetApiResponse = /** status 200 Successful Response */ ChatStats;
+export type GetChatStatsChatsStatsSummaryGetApiArg = void;
+export type SendMessageMessagesPostApiResponse = /** status 201 Successful Response */ MessageRead;
+export type SendMessageMessagesPostApiArg = {
   messageCreate: MessageCreate;
 };
-export type GetChatMessagesMessagesMessagesChatChatIdGetApiResponse = /** status 200 Successful Response */ MessageList;
-export type GetChatMessagesMessagesMessagesChatChatIdGetApiArg = {
+export type GetChatMessagesMessagesChatChatIdGetApiResponse = /** status 200 Successful Response */ MessageList;
+export type GetChatMessagesMessagesChatChatIdGetApiArg = {
   chatId: number;
   /** Page number */
   page?: number;
   /** Page size */
   size?: number;
 };
-export type GetMessageMessagesMessagesMessageIdGetApiResponse = /** status 200 Successful Response */ MessageWithSender;
-export type GetMessageMessagesMessagesMessageIdGetApiArg = {
+export type GetMessageMessagesMessageIdGetApiResponse = /** status 200 Successful Response */ MessageWithSender;
+export type GetMessageMessagesMessageIdGetApiArg = {
   messageId: number;
 };
-export type EditMessageMessagesMessagesMessageIdPutApiResponse = /** status 200 Successful Response */ MessageRead;
-export type EditMessageMessagesMessagesMessageIdPutApiArg = {
-  messageId: number;
-  messageUpdate: MessageUpdate;
-};
-export type DeleteMessageMessagesMessagesMessageIdDeleteApiResponse = unknown;
-export type DeleteMessageMessagesMessagesMessageIdDeleteApiArg = {
-  messageId: number;
-};
-export type SearchMessagesMessagesMessagesSearchGetApiResponse = /** status 200 Successful Response */ MessageList;
-export type SearchMessagesMessagesMessagesSearchGetApiArg = {
+export type SearchMessagesMessagesSearchGetApiResponse = /** status 200 Successful Response */ MessageList;
+export type SearchMessagesMessagesSearchGetApiArg = {
   /** Search query */
   query: string;
   /** Search within specific chat */
@@ -465,38 +369,24 @@ export type SearchMessagesMessagesMessagesSearchGetApiArg = {
   /** Page size */
   size?: number;
 };
-export type FlagMessageMessagesMessagesMessageIdFlagPostApiResponse = /** status 200 Successful Response */ MessageRead;
-export type FlagMessageMessagesMessagesMessageIdFlagPostApiArg = {
-  messageId: number;
-  /** Flag reason */
-  reason: string;
-};
-export type CreatePaymentOrderPaymentsPaymentsCreateOrderPostApiResponse =
+export type CreatePaymentOrderPaymentsCreateOrderPostApiResponse =
   /** status 200 Successful Response */ PayPalOrderResponse;
-export type CreatePaymentOrderPaymentsPaymentsCreateOrderPostApiArg = {
+export type CreatePaymentOrderPaymentsCreateOrderPostApiArg = {
   paymentCreate: PaymentCreate;
 };
-export type CapturePaymentPaymentsPaymentsCapturePaymentIdPostApiResponse =
+export type CapturePaymentPaymentsCapturePaymentIdPostApiResponse =
   /** status 200 Successful Response */ PaymentCaptureResponse;
-export type CapturePaymentPaymentsPaymentsCapturePaymentIdPostApiArg = {
+export type CapturePaymentPaymentsCapturePaymentIdPostApiArg = {
   paymentId: number;
 };
-export type GetPaymentPaymentsPaymentsPaymentIdGetApiResponse = /** status 200 Successful Response */ PaymentRead;
-export type GetPaymentPaymentsPaymentsPaymentIdGetApiArg = {
+export type GetPaymentPaymentsPaymentIdGetApiResponse = /** status 200 Successful Response */ PaymentRead;
+export type GetPaymentPaymentsPaymentIdGetApiArg = {
   paymentId: number;
 };
-export type GetUserPaymentsPaymentsPaymentsUserPaymentsGetApiResponse =
-  /** status 200 Successful Response */ PaymentRead[];
-export type GetUserPaymentsPaymentsPaymentsUserPaymentsGetApiArg = void;
-export type PaypalWebhookPaymentsPaymentsWebhookPaypalPostApiResponse =
-  /** status 200 Successful Response */ WebhookResponse;
-export type PaypalWebhookPaymentsPaymentsWebhookPaypalPostApiArg = void;
-export type GetOnlineUsersWsOnlineUsersGetApiResponse = /** status 200 Successful Response */ OnlineUsersResponse;
-export type GetOnlineUsersWsOnlineUsersGetApiArg = void;
-export type GetUserStatusWsUserStatusUserIdGetApiResponse = /** status 200 Successful Response */ UserStatusResponse;
-export type GetUserStatusWsUserStatusUserIdGetApiArg = {
-  userId: number;
-};
+export type GetUserPaymentsPaymentsUserPaymentsGetApiResponse = /** status 200 Successful Response */ PaymentRead[];
+export type GetUserPaymentsPaymentsUserPaymentsGetApiArg = void;
+export type PaypalWebhookPaymentsWebhookPaypalPostApiResponse = /** status 200 Successful Response */ WebhookResponse;
+export type PaypalWebhookPaymentsWebhookPaypalPostApiArg = void;
 export type HealthBase = {
   status: string;
   message: string;
@@ -538,6 +428,20 @@ export type UserCreate = {
   phone?: string | null;
   password: string;
   user_type: string;
+  image_url?: string | null;
+};
+export type LoginUserResponse = {
+  email: string;
+  first_name: string;
+  last_name: string;
+  image_url?: string | null;
+  account_status: string;
+  user_type: string;
+  payment_status?: string | null;
+};
+export type LoginResponse = {
+  access_token: string;
+  user: LoginUserResponse;
 };
 export type UserLogin = {
   email: string;
@@ -551,39 +455,70 @@ export type UserUpdate = {
   profile_picture?: string | null;
   is_active?: boolean | null;
 };
-export type ProjectRead = {
+export type FreelancerProfileSummary = {
+  id: number;
+  title: string;
+  bio?: string | null;
+  hourly_rate: number;
+  years_of_experience: number;
+  skills: string[];
+  portfolio_url?: string | null;
+  github_url?: string | null;
+  linkedin_url?: string | null;
+  is_available: boolean;
+  country?: string | null;
+  created_at: string;
+  updated_at: string;
+};
+export type ClientHunterProfileSummary = {
+  id: number;
+  first_name: string;
+  last_name: string;
+  country: string;
+  is_paid: boolean;
+  payment_date?: string | null;
+  created_at: string;
+  updated_at: string;
+};
+export type ProjectSummary = {
+  id: number;
   title: string;
   description?: string | null;
   url?: string | null;
   cover_image?: string | null;
   earned: number;
   time_taken?: string | null;
-  id: number;
-  freelancer_id: number;
   created_at: string;
   updated_at: string;
 };
-export type FreelancerRead = {
-  title: string;
-  bio?: string | null;
-  hourly_rate: number;
-  years_of_experience: number;
-  skills: string[];
-  technologies: string[];
-  portfolio_url?: string | null;
-  github_url?: string | null;
-  linkedin_url?: string | null;
-  is_available: boolean;
-  country: string;
+export type ComprehensiveUserResponse = {
+  email: string;
+  first_name: string;
+  last_name: string;
+  phone?: string | null;
   id: number;
-  user_id: number;
-  projects: ProjectRead[];
+  profile_picture?: string | null;
+  user_type: string;
+  is_active: boolean;
   created_at: string;
   updated_at: string;
+  freelancer_profile?: FreelancerProfileSummary | null;
+  client_hunter_profile?: ClientHunterProfileSummary | null;
+  projects?: ProjectSummary[] | null;
+};
+export type DashboardFreelancerResponse = {
+  freelancer_image?: string | null;
+  freelancer_position: string;
+  freelancer_rate: number;
+  freelancer_experience: number;
+  skills: string[];
+  user_id: number;
+  freelancer_id: number;
+  freelancer_first_name: string;
+  freelancer_last_name: string;
 };
 export type FilterOptionsResponse = {
   skills: string[];
-  technologies: string[];
   hourly_rate_range: object;
   experience_range: object;
 };
@@ -594,8 +529,6 @@ export type UserStatsResponse = {
   active_users: number;
 };
 export type ChatRead = {
-  /** Chat title */
-  title?: string | null;
   /** Project title */
   project_title?: string | null;
   /** Project description */
@@ -605,16 +538,13 @@ export type ChatRead = {
   id: number;
   initiator_id: number;
   participant_id: number;
-  is_archived: boolean;
-  is_deleted: boolean;
-  status: string;
+  is_archived_by_initiator: boolean;
+  is_archived_by_participant: boolean;
   last_message_at: string | null;
   created_at: string;
   updated_at: string;
 };
 export type ChatCreate = {
-  /** Chat title */
-  title?: string | null;
   /** Project title */
   project_title?: string | null;
   /** Project description */
@@ -626,8 +556,6 @@ export type ChatCreate = {
 };
 export type UserType = "client_hunter" | "freelancer";
 export type ChatWithParticipants = {
-  /** Chat title */
-  title?: string | null;
   /** Project title */
   project_title?: string | null;
   /** Project description */
@@ -637,9 +565,8 @@ export type ChatWithParticipants = {
   id: number;
   initiator_id: number;
   participant_id: number;
-  is_archived: boolean;
-  is_deleted: boolean;
-  status: string;
+  is_archived_by_initiator: boolean;
+  is_archived_by_participant: boolean;
   last_message_at: string | null;
   created_at: string;
   updated_at: string;
@@ -659,15 +586,8 @@ export type ChatList = {
   has_prev: boolean;
 };
 export type ChatUpdate = {
-  title?: string | null;
-  /** Project title */
-  project_title?: string | null;
-  /** Project description */
-  project_description?: string | null;
-  /** Project budget range */
-  project_budget?: string | null;
-  is_archived?: boolean | null;
-  status?: string | null;
+  is_archived_by_initiator?: boolean | null;
+  is_archived_by_participant?: boolean | null;
 };
 export type ChatStats = {
   total_chats: number;
@@ -686,13 +606,6 @@ export type MessageRead = {
   id: number;
   chat_id: number;
   sender_id: number;
-  is_flagged: boolean;
-  flag_reason: string | null;
-  is_edited: boolean;
-  original_content: string | null;
-  is_deleted: boolean;
-  deleted_at: string | null;
-  edited_at: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -712,13 +625,6 @@ export type MessageWithSender = {
   id: number;
   chat_id: number;
   sender_id: number;
-  is_flagged: boolean;
-  flag_reason: string | null;
-  is_edited: boolean;
-  original_content: string | null;
-  is_deleted: boolean;
-  deleted_at: string | null;
-  edited_at: string | null;
   created_at: string;
   updated_at: string;
   sender_name: string;
@@ -732,10 +638,6 @@ export type MessageList = {
   size: number;
   has_next: boolean;
   has_prev: boolean;
-};
-export type MessageUpdate = {
-  /** New message content */
-  content: string;
 };
 export type PayPalOrderResponse = {
   payment_id: number;
@@ -777,48 +679,33 @@ export type PaymentRead = {
 export type WebhookResponse = {
   status: string;
 };
-export type OnlineUsersResponse = {
-  online_users: number[];
-  total_online: number;
-};
-export type UserStatusResponse = {
-  user_id: number;
-  is_online: boolean;
-};
 export const {
   useHealthCheckGetQuery,
-  useRegisterUserAuthAuthRegisterPostMutation,
-  useLoginUserAuthAuthLoginPostMutation,
-  useGetCurrentUserProfileAuthAuthMeGetQuery,
-  useUpdateCurrentUserProfileAuthAuthMePutMutation,
-  useRefreshAccessTokenAuthAuthRefreshPostMutation,
+  useRegisterUserAuthRegisterPostMutation,
+  useLoginUserAuthLoginPostMutation,
+  useGetCurrentUserProfileAuthMeGetQuery,
+  useUpdateCurrentUserProfileAuthMePutMutation,
+  useRefreshAccessTokenAuthRefreshPostMutation,
   useGetCurrentUserInfoUsersMeGetQuery,
   useUpdateCurrentUserUsersMePutMutation,
   useGetUserUsersUserIdGetQuery,
-  useGetFreelancerProfileUsersUserIdFreelancerProfileGetQuery,
   useListUsersUsersGetQuery,
   useGetFilterOptionsUsersFiltersOptionsGetQuery,
   useGetUserStatsUsersStatsSummaryGetQuery,
-  useCreateChatChatsChatsPostMutation,
-  useListUserChatsChatsChatsGetQuery,
-  useGetChatChatsChatsChatIdGetQuery,
-  useUpdateChatChatsChatsChatIdPutMutation,
-  useDeleteChatChatsChatsChatIdDeleteMutation,
-  useArchiveChatChatsChatsChatIdArchivePostMutation,
-  useUnarchiveChatChatsChatsChatIdUnarchivePostMutation,
-  useGetChatStatsChatsChatsStatsSummaryGetQuery,
-  useSendMessageMessagesMessagesPostMutation,
-  useGetChatMessagesMessagesMessagesChatChatIdGetQuery,
-  useGetMessageMessagesMessagesMessageIdGetQuery,
-  useEditMessageMessagesMessagesMessageIdPutMutation,
-  useDeleteMessageMessagesMessagesMessageIdDeleteMutation,
-  useSearchMessagesMessagesMessagesSearchGetQuery,
-  useFlagMessageMessagesMessagesMessageIdFlagPostMutation,
-  useCreatePaymentOrderPaymentsPaymentsCreateOrderPostMutation,
-  useCapturePaymentPaymentsPaymentsCapturePaymentIdPostMutation,
-  useGetPaymentPaymentsPaymentsPaymentIdGetQuery,
-  useGetUserPaymentsPaymentsPaymentsUserPaymentsGetQuery,
-  usePaypalWebhookPaymentsPaymentsWebhookPaypalPostMutation,
-  useGetOnlineUsersWsOnlineUsersGetQuery,
-  useGetUserStatusWsUserStatusUserIdGetQuery,
+  useCreateChatChatsPostMutation,
+  useListUserChatsChatsGetQuery,
+  useGetChatChatsChatIdGetQuery,
+  useUpdateChatChatsChatIdPutMutation,
+  useArchiveChatChatsChatIdArchivePostMutation,
+  useUnarchiveChatChatsChatIdUnarchivePostMutation,
+  useGetChatStatsChatsStatsSummaryGetQuery,
+  useSendMessageMessagesPostMutation,
+  useGetChatMessagesMessagesChatChatIdGetQuery,
+  useGetMessageMessagesMessageIdGetQuery,
+  useSearchMessagesMessagesSearchGetQuery,
+  useCreatePaymentOrderPaymentsCreateOrderPostMutation,
+  useCapturePaymentPaymentsCapturePaymentIdPostMutation,
+  useGetPaymentPaymentsPaymentIdGetQuery,
+  useGetUserPaymentsPaymentsUserPaymentsGetQuery,
+  usePaypalWebhookPaymentsWebhookPaypalPostMutation,
 } = injectedRtkApi;

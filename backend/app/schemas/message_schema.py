@@ -24,10 +24,8 @@ class MessageCreate(MessageBase):
 
 
 class MessageUpdate(BaseModel):
-    """Schema for updating a message."""
-    content: str = Field(
-        ..., min_length=1, max_length=5000, description="New message content"
-    )
+    """Schema for updating a message - messages cannot be edited."""
+    pass
 
 
 class MessageRead(MessageBase):
@@ -35,13 +33,6 @@ class MessageRead(MessageBase):
     id: int
     chat_id: int
     sender_id: int
-    is_flagged: bool
-    flag_reason: Optional[str]
-    is_edited: bool
-    original_content: Optional[str]
-    is_deleted: bool
-    deleted_at: Optional[datetime]
-    edited_at: Optional[datetime]
     created_at: datetime
     updated_at: datetime
 
@@ -71,10 +62,6 @@ class MessageFilter(BaseModel):
     chat_id: Optional[int] = Field(None, description="Filter by specific chat")
     sender_id: Optional[int] = Field(None, description="Filter by sender")
     content_type: Optional[str] = Field(None, pattern="^(text|image|file)$")
-    is_flagged: Optional[bool] = Field(
-        None, description="Filter flagged messages")
-    is_edited: Optional[bool] = Field(
-        None, description="Filter edited messages")
     date_from: Optional[datetime] = Field(None, description="Filter from date")
     date_to: Optional[datetime] = Field(None, description="Filter to date")
     page: int = Field(1, ge=1, description="Page number")

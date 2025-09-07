@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 import Logo from "@/assets/img/logo.png";
 import { loginSchema } from "@/lib/form-schemas";
-import { useLoginUserAuthAuthLoginPostMutation } from "@/store/services/apis";
+import { useLoginUserAuthLoginPostMutation } from "@/store/services/apis";
 import { setToken, setUser } from "@/store/slices/global";
 import { Button } from "../ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "../ui/form";
@@ -21,10 +21,12 @@ interface LoginFormProps {
 function LoginForm({ setIsLogin }: LoginFormProps) {
   const navigate = useNavigate();
   const dispatch = useDispatch();
+
   const loginForm = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
   });
-  const [login, { isLoading: logging }] = useLoginUserAuthAuthLoginPostMutation();
+
+  const [login, { isLoading: logging }] = useLoginUserAuthLoginPostMutation();
 
   const handleLogin = async (data: z.infer<typeof loginSchema>) => {
     const response = await login({

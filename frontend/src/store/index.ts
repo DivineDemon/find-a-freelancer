@@ -1,4 +1,5 @@
 import { configureStore } from "@reduxjs/toolkit";
+import { setupListeners } from "@reduxjs/toolkit/query";
 import { persistReducer, persistStore } from "redux-persist";
 import storage from "redux-persist/lib/storage";
 import { api } from "./services/core";
@@ -17,6 +18,9 @@ const store = configureStore({
   },
   middleware: (getDefaultMiddleware) => getDefaultMiddleware({ serializableCheck: false }).concat(api.middleware),
 });
+
+setupListeners(store.dispatch);
+void store.dispatch(api.endpoints.healthCheck.initiate({}));
 
 export default store;
 export const persistor = persistStore(store);

@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List, Optional
 
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import BaseModel, EmailStr, Field, HttpUrl
 
 
 class ProjectBase(BaseModel):
@@ -47,7 +47,6 @@ class FreelancerBase(BaseModel):
     hourly_rate: float
     years_of_experience: int
     skills: List[str]
-    technologies: List[str]
     portfolio_url: Optional[HttpUrl] = None
     github_url: Optional[HttpUrl] = None
     linkedin_url: Optional[HttpUrl] = None
@@ -67,7 +66,6 @@ class FreelancerUpdate(BaseModel):
     hourly_rate: Optional[float] = None
     years_of_experience: Optional[int] = None
     skills: Optional[List[str]] = None
-    technologies: Optional[List[str]] = None
     portfolio_url: Optional[HttpUrl] = None
     github_url: Optional[HttpUrl] = None
     linkedin_url: Optional[HttpUrl] = None
@@ -87,10 +85,42 @@ class FreelancerRead(FreelancerBase):
         from_attributes = True
 
 
+class FreelancerWithUser(FreelancerRead):
+    """Schema for freelancer with user information."""
+    # User information
+    email: EmailStr
+    first_name: str
+    last_name: str
+    phone: Optional[str] = None
+    profile_picture: Optional[str] = None
+    user_type: str
+    is_active: bool
+    user_created_at: datetime
+    user_updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class DashboardFreelancerResponse(BaseModel):
+    """Schema for dashboard freelancer response."""
+    freelancer_image: Optional[str] = None
+    freelancer_position: str
+    freelancer_rate: float
+    freelancer_experience: int
+    skills: List[str]
+    user_id: int
+    freelancer_id: int
+    freelancer_first_name: str
+    freelancer_last_name: str
+
+    class Config:
+        from_attributes = True
+
+
 class FreelancerSearch(BaseModel):
     """Schema for freelancer search parameters."""
     skills: Optional[List[str]] = None
-    technologies: Optional[List[str]] = None
     min_rate: Optional[float] = None
     max_rate: Optional[float] = None
     min_experience: Optional[int] = None

@@ -1,14 +1,17 @@
 import { createSlice } from "@reduxjs/toolkit";
-import type { UserRead } from "../services/apis";
+import type { LoginResponse } from "../services/apis";
 
-type GlobalState = {
-  token: string | null;
-  user: UserRead | null;
-};
-
-const initialState: GlobalState = {
-  user: null,
-  token: null,
+const initialState: LoginResponse = {
+  user: {
+    email: "",
+    last_name: "",
+    image_url: "",
+    user_type: "",
+    first_name: "",
+    account_status: "",
+    payment_status: "",
+  },
+  access_token: "",
 };
 
 const globalSlice = createSlice({
@@ -19,7 +22,7 @@ const globalSlice = createSlice({
       state.user = action.payload;
     },
     setToken: (state, action) => {
-      state.token = action.payload;
+      state.access_token = action.payload;
     },
   },
 });

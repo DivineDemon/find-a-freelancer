@@ -29,7 +29,6 @@ class Payment(BaseModel):
     """Payment model for PayPal integration and financial transactions."""
     __tablename__ = "payments"
     
-    # Payment details
     user_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("users.id"), nullable=False)
     amount: Mapped[float] = mapped_column(Float, nullable=False)
@@ -38,7 +37,6 @@ class Payment(BaseModel):
     payment_type: Mapped[PaymentType] = mapped_column(
         Enum(PaymentType), nullable=False)
     
-    # PayPal integration
     paypal_payment_id: Mapped[Optional[str]] = mapped_column(
         String, nullable=True, unique=True)
     paypal_order_id: Mapped[Optional[str]] = mapped_column(
@@ -46,18 +44,15 @@ class Payment(BaseModel):
     paypal_transaction_id: Mapped[Optional[str]] = mapped_column(
         String, nullable=True, unique=True)
     
-    # Payment status and metadata
     status: Mapped[PaymentStatus] = mapped_column(
         Enum(PaymentStatus), default=PaymentStatus.PENDING, nullable=False)
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     
-    # Timestamps
     paid_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime, nullable=True)
     expires_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime, nullable=True)
     
-    # Relationships
     user: Mapped["User"] = relationship("User", backref="payments")
     
     def __repr__(self):

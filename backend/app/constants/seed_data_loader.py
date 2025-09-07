@@ -1,5 +1,3 @@
-"""Database seeding utilities for Find-a-Freelancer application."""
-
 import asyncio
 import json
 from datetime import datetime
@@ -17,11 +15,10 @@ from app.models import (
     ClientHunter,
     Freelancer,
     Message,
-    Notification,
-    NotificationType,
     Payment,
     PaymentStatus,
     PaymentType,
+    Project,
     User,
     UserType,
 )
@@ -39,6 +36,43 @@ async def check_if_database_is_empty(session: AsyncSession) -> bool:
     except Exception as e:
         logger.error(f"Error checking database status: {e}")
         return False
+
+
+async def get_user_email_to_id_mapping(session: AsyncSession) -> Dict[str, int]:
+    """Get mapping of user emails to user IDs."""
+    result = await session.execute(select(User.email, User.id))
+    return {email: user_id for email, user_id in result.fetchall()}
+
+
+async def get_chat_mapping(session: AsyncSession) -> Dict[str, int]:
+    """Get mapping of chat initiator_participant emails to chat IDs."""
+    from sqlalchemy import alias, join
+
+    initiator_user = alias(User.__table__, name="initiator")
+    participant_user = alias(User.__table__, name="participant")
+
+    result = await session.execute(
+        select(
+            initiator_user.c.email.label("initiator_email"),
+            participant_user.c.email.label("participant_email"),
+            Chat.id
+        )
+        .select_from(
+            join(Chat, initiator_user, Chat.initiator_id == initiator_user.c.id)
+            .join(participant_user, Chat.participant_id == participant_user.c.id)
+        )
+    )
+    return {f"{row[0]}_{row[1]}": row[2] for row in result.fetchall()}
+
+
+async def get_freelancer_email_to_id_mapping(session: AsyncSession) -> Dict[str, int]:
+    """Get mapping of freelancer emails to freelancer IDs."""
+    from sqlalchemy import join
+    result = await session.execute(
+        select(User.email, Freelancer.id)
+        .select_from(join(Freelancer, User, Freelancer.user_id == User.id))
+    )
+    return {email: freelancer_id for email, freelancer_id in result.fetchall()}
 
 
 def load_seed_data() -> Dict[str, Any]:
@@ -63,10 +97,8 @@ async def seed_users(session: AsyncSession, users_data: List[Dict[str, Any]]) ->
     logger.info("Seeding users...")
     
     for user_data in users_data:
-        # Hash the password
         hashed_password = pwd_context.hash(user_data.pop("password"))
         
-        # Convert user_type string to enum
         user_type_str = user_data.pop("user_type")
         user_type = (
             UserType.CLIENT_HUNTER 
@@ -74,7 +106,6 @@ async def seed_users(session: AsyncSession, users_data: List[Dict[str, Any]]) ->
             else UserType.FREELANCER
         )
         
-        # Remove the id field to let PostgreSQL auto-increment
         user_data.pop("id", None)
         
         user = User(
@@ -83,8 +114,8 @@ async def seed_users(session: AsyncSession, users_data: List[Dict[str, Any]]) ->
             user_type=user_type
         )
         session.add(user)
-    
-    await session.commit()
+        await session.commit()
+
     logger.info(f"Seeded {len(users_data)} users")
 
 
@@ -95,11 +126,18 @@ async def seed_freelancers(
     """Seed freelancers table."""
     logger.info("Seeding freelancers...")
     
+    user_email_to_id = await get_user_email_to_id_mapping(session)
+
     for freelancer_data in freelancers_data:
-        # Remove the id field to let PostgreSQL auto-increment
         freelancer_data.pop("id", None)
         
-        freelancer = Freelancer(**freelancer_data)
+        user_email = freelancer_data.pop("user_email")
+        user_id = user_email_to_id.get(user_email)
+        if not user_id:
+            logger.error(f"User not found for email: {user_email}")
+            continue
+
+        freelancer = Freelancer(user_id=user_id, **freelancer_data)
         session.add(freelancer)
     
     await session.commit()
@@ -113,11 +151,18 @@ async def seed_client_hunters(
     """Seed client_hunters table."""
     logger.info("Seeding client hunters...")
     
+    user_email_to_id = await get_user_email_to_id_mapping(session)
+
     for client_hunter_data in client_hunters_data:
-        # Remove the id field to let PostgreSQL auto-increment
         client_hunter_data.pop("id", None)
         
-        client_hunter = ClientHunter(**client_hunter_data)
+        user_email = client_hunter_data.pop("user_email")
+        user_id = user_email_to_id.get(user_email)
+        if not user_id:
+            logger.error(f"User not found for email: {user_email}")
+            continue
+
+        client_hunter = ClientHunter(user_id=user_id, **client_hunter_data)
         session.add(client_hunter)
     
     await session.commit()
@@ -128,16 +173,32 @@ async def seed_chats(session: AsyncSession, chats_data: List[Dict[str, Any]]) ->
     """Seed chats table."""
     logger.info("Seeding chats...")
     
+    user_email_to_id = await get_user_email_to_id_mapping(session)
+
     for chat_data in chats_data:
-        # Remove the id field to let PostgreSQL auto-increment
         chat_data.pop("id", None)
         
-        # Convert ISO string to datetime if present
+        initiator_email = chat_data.pop("initiator_email")
+        participant_email = chat_data.pop("participant_email")
+
+        initiator_id = user_email_to_id.get(initiator_email)
+        participant_id = user_email_to_id.get(participant_email)
+
+        if not initiator_id or not participant_id:
+            logger.error(
+                f"User not found for emails: {initiator_email}, {participant_email}")
+            continue
+
         if chat_data.get("last_message_at"):
             last_message_str = chat_data["last_message_at"].replace("Z", "+00:00")
-            chat_data["last_message_at"] = datetime.fromisoformat(last_message_str)
+            dt = datetime.fromisoformat(last_message_str)
+            chat_data["last_message_at"] = dt.replace(tzinfo=None)
         
-        chat = Chat(**chat_data)
+        chat = Chat(
+            initiator_id=initiator_id,
+            participant_id=participant_id,
+            **chat_data
+        )
         session.add(chat)
     
     await session.commit()
@@ -151,21 +212,68 @@ async def seed_messages(
     """Seed messages table."""
     logger.info("Seeding messages...")
     
+    user_email_to_id = await get_user_email_to_id_mapping(session)
+
+    chat_mapping = await get_chat_mapping(session)
+
     for message_data in messages_data:
-        # Remove the id field to let PostgreSQL auto-increment
         message_data.pop("id", None)
         
-        # Convert ISO strings to datetime if present
+        chat_initiator_email = message_data.pop("chat_initiator_email")
+        chat_participant_email = message_data.pop("chat_participant_email")
+        sender_email = message_data.pop("sender_email")
+
+        chat_key = f"{chat_initiator_email}_{chat_participant_email}"
+        chat_id = chat_mapping.get(chat_key)
+        if not chat_id:
+            logger.error(
+                f"Chat not found for: {chat_initiator_email}, {chat_participant_email}")
+            continue
+
+        sender_id = user_email_to_id.get(sender_email)
+        if not sender_id:
+            logger.error(f"User not found for email: {sender_email}")
+            continue
+
         for date_field in ["deleted_at", "edited_at"]:
             if message_data.get(date_field):
                 date_str = message_data[date_field].replace("Z", "+00:00")
                 message_data[date_field] = datetime.fromisoformat(date_str)
         
-        message = Message(**message_data)
+        message = Message(
+            chat_id=chat_id,
+            sender_id=sender_id,
+            **message_data
+        )
         session.add(message)
     
     await session.commit()
     logger.info(f"Seeded {len(messages_data)} messages")
+
+
+async def seed_projects(
+    session: AsyncSession,
+    projects_data: List[Dict[str, Any]]
+) -> None:
+    """Seed projects table."""
+    logger.info("Seeding projects...")
+
+    freelancer_email_to_id = await get_freelancer_email_to_id_mapping(session)
+
+    for project_data in projects_data:
+        project_data.pop("id", None)
+
+        freelancer_email = project_data.pop("freelancer_email")
+        freelancer_id = freelancer_email_to_id.get(freelancer_email)
+        if not freelancer_id:
+            logger.error(f"Freelancer not found for email: {freelancer_email}")
+            continue
+
+        project = Project(freelancer_id=freelancer_id, **project_data)
+        session.add(project)
+
+    await session.commit()
+    logger.info(f"Seeded {len(projects_data)} projects")
 
 
 async def seed_payments(
@@ -175,53 +283,32 @@ async def seed_payments(
     """Seed payments table."""
     logger.info("Seeding payments...")
     
+    user_email_to_id = await get_user_email_to_id_mapping(session)
+
     for payment_data in payments_data:
-        # Remove the id field to let PostgreSQL auto-increment
         payment_data.pop("id", None)
         
-        # Convert string enums to proper enums
+        user_email = payment_data.pop("user_email")
+        user_id = user_email_to_id.get(user_email)
+        if not user_id:
+            logger.error(f"User not found for email: {user_email}")
+            continue
+
         payment_data["status"] = PaymentStatus(payment_data["status"])
         payment_data["payment_type"] = PaymentType(payment_data["payment_type"])
         
-        # Convert ISO strings to datetime if present
         for date_field in ["paid_at", "expires_at"]:
             if payment_data.get(date_field):
                 date_str = payment_data[date_field].replace("Z", "+00:00")
                 payment_data[date_field] = datetime.fromisoformat(date_str)
         
-        payment = Payment(**payment_data)
+        payment = Payment(user_id=user_id, **payment_data)
         session.add(payment)
     
     await session.commit()
     logger.info(f"Seeded {len(payments_data)} payments")
 
 
-async def seed_notifications(
-    session: AsyncSession, 
-    notifications_data: List[Dict[str, Any]]
-) -> None:
-    """Seed notifications table."""
-    logger.info("Seeding notifications...")
-    
-    for notification_data in notifications_data:
-        # Remove the id field to let PostgreSQL auto-increment
-        notification_data.pop("id", None)
-        
-        # Convert string enum to proper enum
-        notification_type_str = notification_data["notification_type"]
-        notification_data["notification_type"] = NotificationType(notification_type_str)
-        
-        # Convert ISO strings to datetime if present
-        for date_field in ["read_at", "archived_at"]:
-            if notification_data.get(date_field):
-                date_str = notification_data[date_field].replace("Z", "+00:00")
-                notification_data[date_field] = datetime.fromisoformat(date_str)
-        
-        notification = Notification(**notification_data)
-        session.add(notification)
-    
-    await session.commit()
-    logger.info(f"Seeded {len(notifications_data)} notifications")
 
 
 async def seed_database() -> bool:
@@ -230,27 +317,24 @@ async def seed_database() -> bool:
     
     async with AsyncSessionLocal() as session:
         try:
-            # Check if database is empty
             is_empty = await check_if_database_is_empty(session)
             
             if not is_empty:
                 logger.info("Database already contains data. Skipping seeding.")
                 return False
             
-            # Load seed data
             seed_data = load_seed_data()
             if not seed_data:
                 logger.error("No seed data available. Skipping seeding.")
                 return False
             
-            # Seed in order to respect foreign key constraints
             await seed_users(session, seed_data.get("users", []))
             await seed_freelancers(session, seed_data.get("freelancers", []))
             await seed_client_hunters(session, seed_data.get("client_hunters", []))
+            await seed_projects(session, seed_data.get("projects", []))
             await seed_chats(session, seed_data.get("chats", []))
             await seed_messages(session, seed_data.get("messages", []))
             await seed_payments(session, seed_data.get("payments", []))
-            await seed_notifications(session, seed_data.get("notifications", []))
             
             logger.info("Database seeding completed successfully!")
             return True
@@ -267,11 +351,10 @@ async def force_reseed_database() -> bool:
     
     async with AsyncSessionLocal() as session:
         try:
-            # Delete all data in reverse order of dependencies
-            await session.execute(delete(Notification))
             await session.execute(delete(Payment))
             await session.execute(delete(Message))
             await session.execute(delete(Chat))
+            await session.execute(delete(Project))
             await session.execute(delete(ClientHunter))
             await session.execute(delete(Freelancer))
             await session.execute(delete(User))
@@ -279,7 +362,6 @@ async def force_reseed_database() -> bool:
             
             logger.info("Existing data cleared. Starting fresh seeding...")
             
-            # Now seed with fresh data
             return await seed_database()
             
         except Exception as e:
@@ -289,5 +371,4 @@ async def force_reseed_database() -> bool:
 
 
 if __name__ == "__main__":
-    # Run seeding as a standalone script
     asyncio.run(seed_database())

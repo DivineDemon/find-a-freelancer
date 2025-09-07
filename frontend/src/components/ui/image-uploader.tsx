@@ -1,34 +1,71 @@
-import { Upload } from "lucide-react";
+import { Upload, X } from "lucide-react";
 import { useCallback } from "react";
 import { useDropzone } from "react-dropzone";
-import type { ControllerRenderProps, FieldError } from "react-hook-form";
-import type { z } from "zod";
+import type { ControllerRenderProps, FieldError, FieldPath, FieldValues } from "react-hook-form";
+import { toast } from "sonner";
 import { FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { addItemSchema, registerSchema } from "@/lib/form-schemas";
-import { uploadToImgbb } from "@/lib/utils";
+import { Button } from "./button";
 
-interface ImageUploaderProps {
+interface ImageUploaderProps<TFieldValues extends FieldValues, TName extends FieldPath<TFieldValues>> {
   label?: string;
   error?: FieldError;
-  field: ControllerRenderProps<z.infer<typeof addItemSchema>> | ControllerRenderProps<z.infer<typeof registerSchema>>;
+  field: ControllerRenderProps<TFieldValues, TName>;
+  onFileSelected?: (file: File) => void;
+  multiple?: boolean;
+  maxFiles?: number;
 }
 
-function ImageUploader({ field, error, label = "Upload an Image" }: ImageUploaderProps) {
-  const { value: file, onChange, onBlur } = field;
+const ImageUploader = <TFieldValues extends FieldValues, TName extends FieldPath<TFieldValues>>({
+  field,
+  error,
+  label = "Upload Images",
+  onFileSelected,
+  multiple = false,
+  maxFiles = 5,
+}: ImageUploaderProps<TFieldValues, TName>) => {
+  const { value: files, onChange, onBlur } = field;
+
+  const normalizedFiles = multiple ? (Array.isArray(files) ? files : files ? [files] : []) : files ? [files] : [];
 
   const onDrop = useCallback(
-    async (acceptedFiles: File[]) => {
-      if (acceptedFiles.length > 0) {
-        const imageUrl = await uploadToImgbb(acceptedFiles[0]);
-        onChange(imageUrl);
+    (acceptedFiles: File[]) => {
+      if (multiple) {
+        const currentFiles = normalizedFiles;
+
+        if (currentFiles.length + acceptedFiles.length > maxFiles) {
+          toast.error(`Maximum limit reached: ${maxFiles} images only.`);
+          return;
+        }
+
+        const newFiles = [...currentFiles, ...acceptedFiles];
+        onChange(newFiles);
+      } else {
+        onChange(acceptedFiles[0]);
+      }
+
+      if (onFileSelected && acceptedFiles.length > 0) {
+        onFileSelected(acceptedFiles[0]);
       }
     },
-    [onChange],
+    [onChange, normalizedFiles, onFileSelected, multiple, maxFiles],
+  );
+
+  const removeFile = useCallback(
+    (indexToRemove: number) => {
+      if (multiple) {
+        const currentFiles = normalizedFiles;
+        const newFiles = currentFiles.filter((_, index) => index !== indexToRemove);
+        onChange(newFiles);
+      } else {
+        onChange(null);
+      }
+    },
+    [onChange, normalizedFiles, multiple],
   );
 
   const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
     onDrop,
-    multiple: false,
+    multiple,
     accept: { "image/*": [] },
     noClick: true,
     noKeyboard: true,
@@ -39,15 +76,36 @@ function ImageUploader({ field, error, label = "Upload an Image" }: ImageUploade
       <FormLabel>{label}</FormLabel>
       <div
         {...getRootProps()}
-        className="flex w-full cursor-pointer flex-col items-center justify-center gap-2.5 rounded-lg border-2 border-dashed bg-muted/50 px-10 py-10 backdrop-blur-sm"
+        className="flex w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed bg-muted/50 px-10 py-8 backdrop-blur-sm"
         onClick={open}
       >
         <input {...getInputProps()} onBlur={onBlur} />
-
         {isDragActive ? (
-          <span className="font-semibold text-lg">Drop the image here...</span>
-        ) : file ? (
-          <img src={file} alt="preview" className="aspect-square size-32 rounded-md object-cover" />
+          <span className="font-semibold text-lg">Drop the image(s) here…</span>
+        ) : normalizedFiles.length > 0 ? (
+          <div className={`flex ${multiple ? "gap-2 overflow-x-auto px-2 py-2" : "justify-center"}`}>
+            {normalizedFiles.map((file: File | string, index: number) => (
+              <div key={index} className="relative flex-shrink-0">
+                <img
+                  src={typeof file === "string" ? file : URL.createObjectURL(file)}
+                  alt={`preview-${index}`}
+                  className="aspect-square h-24 w-24 rounded-md object-cover"
+                />
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="sm"
+                  className="-top-2 -right-2 absolute h-6 w-6 cursor-pointer rounded-full p-0"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    removeFile(index);
+                  }}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              </div>
+            ))}
+          </div>
         ) : (
           <div className="flex w-full flex-col items-center justify-center">
             <div className="size-12 rounded-full bg-[#0F233F] p-3 text-white">
@@ -61,6 +119,6 @@ function ImageUploader({ field, error, label = "Upload an Image" }: ImageUploade
       {error && <FormMessage>{error.message}</FormMessage>}
     </FormItem>
   );
-}
+};
 
 export default ImageUploader;

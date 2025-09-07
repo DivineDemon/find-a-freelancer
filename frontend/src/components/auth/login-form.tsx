@@ -29,17 +29,18 @@ function LoginForm({ setIsLogin }: LoginFormProps) {
   const [login, { isLoading: logging }] = useLoginUserAuthLoginPostMutation();
 
   const handleLogin = async (data: z.infer<typeof loginSchema>) => {
-    const response = await login({
-      userLogin: data,
-    });
+    try {
+      const response = await login({
+        userLogin: data,
+      }).unwrap();
 
-    if (response.data) {
       loginForm.reset();
-      dispatch(setUser(response.data.user));
-      dispatch(setToken(response.data.access_token));
+      dispatch(setUser(response.user));
+      dispatch(setToken(response.access_token));
+
       navigate({ to: "/dashboard" });
       toast.success("Login successful!");
-    } else {
+    } catch (_error) {
       toast.error("Login failed. Please check your credentials.");
     }
   };

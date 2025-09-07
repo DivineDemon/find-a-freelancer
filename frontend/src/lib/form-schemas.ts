@@ -1,11 +1,5 @@
 import { z } from "zod";
 
-export const addItemSchema = z.object({
-  description: z.string(),
-  name: z.string().min(1, "Name is required"),
-  image_url: z.string().url("Image must be a valid URL"),
-});
-
 export const registerSchema = z.object({
   phone: z.string().optional().nullable().or(z.literal("")),
   email: z.string().email({ message: "Invalid email address" }),
@@ -23,11 +17,23 @@ export const loginSchema = z.object({
   password: z.string().min(1, { message: "Password is required" }),
 });
 
-export const updateFormSchema = z.object({
-  new_password: z.string().optional(),
-  current_password: z.string().optional(),
-  email: z.string().email({ message: "Invalid email address" }),
-  last_name: z.string().min(1, { message: "Last name is required" }),
-  first_name: z.string().min(1, { message: "First name is required" }),
-  profile_picture: z.string().url({ message: "Invalid URL for profile picture" }),
+export const profileSchema = z.object({
+  first_name: z.string().min(1, "First name is required").max(50, "First name too long"),
+  last_name: z.string().min(1, "Last name is required").max(50, "Last name too long"),
+  profile_picture: z.string().url("Must be a valid URL").optional().nullable(),
+  image_url: z.string().url("Must be a valid URL").optional().nullable(),
+  email: z.string().email({ message: "Invalid email address" }).optional().nullable(),
+  phone: z.string().optional().nullable().or(z.literal("")),
+  is_active: z.boolean(),
 });
+
+export const passwordSchema = z
+  .object({
+    current_password: z.string().min(1, "Current password is required"),
+    new_password: z.string().min(8, "Password must be at least 8 characters").max(100, "Password too long"),
+    confirm_password: z.string().min(1, "Please confirm your password"),
+  })
+  .refine((data) => data.new_password === data.confirm_password, {
+    message: "Passwords don't match",
+    path: ["confirm_password"],
+  });

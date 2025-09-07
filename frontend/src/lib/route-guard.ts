@@ -4,7 +4,7 @@ import store from "@/store";
 export async function requireAuth() {
   const state = store.getState();
 
-  if (!state.global.token) {
+  if (!state.global.access_token) {
     throw redirect({ to: "/" });
   }
 }

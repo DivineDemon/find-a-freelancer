@@ -5,9 +5,10 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy import func, or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.core.db import get_db
+from app.core.db import get_session
 from app.core.logger import get_logger
 from app.models.freelancer import Freelancer
 from app.models.user import User
@@ -21,7 +22,6 @@ from app.schemas.user_schema import (
     FreelancerProfileSummary,
     ProjectSummary,
     UserRead,
-    UserUpdate,
 )
 
 logger = get_logger(__name__)
@@ -51,12 +51,12 @@ async def get_current_user_info(current_user: User = Depends(get_current_user)):
 
 
 @router.get("/{user_id}", response_model=ComprehensiveUserResponse)
-async def get_user(user_id: int, db=Depends(get_db)):
+async def get_user(user_id: int, session: AsyncSession = Depends(get_session)):
     """Get comprehensive user data by ID including profile and projects."""
     from sqlalchemy.orm import selectinload
 
     # Get user with all related data
-    result = await db.execute(
+    result = await session.execute(
         select(User)
         .options(
             selectinload(User.freelancer_profile).selectinload(
@@ -151,7 +151,7 @@ async def list_users(
     skills: Optional[str] = Query(None),
     work_type: Optional[str] = Query(None),
     search_query: Optional[str] = Query(None),
-    db=Depends(get_db)
+    session: AsyncSession = Depends(get_session)
 ):
     """List freelancers with user information and filtering options."""
     try:
@@ -180,10 +180,16 @@ async def list_users(
 
         if skills:
             skill_list = [skill.strip().lower() for skill in skills.split(",")]
-            query = query.where(
-                or_(*[func.lower(Freelancer.skills).contains(skill)
-                    for skill in skill_list])
-            )
+            # Use PostgreSQL JSON contains operator for skills filtering
+            from sqlalchemy import text
+            skill_conditions = []
+            for i, skill in enumerate(skill_list):
+                skill_conditions.append(
+                    text(f"freelancers.skills::text \
+                        ILIKE :skill_pattern_{i}").bindparams(
+                        **{f"skill_pattern_{i}": f"%{skill}%"})
+                )
+            query = query.where(or_(*skill_conditions))
 
 
         if search_query:
@@ -201,7 +207,7 @@ async def list_users(
         query = query.offset(skip).limit(limit)
 
         # Execute query
-        result = await db.execute(query)
+        result = await session.execute(query)
         rows = result.all()
 
         # Map to dashboard response format
@@ -228,11 +234,11 @@ async def list_users(
 
 
 @router.get("/filters/options", response_model=FilterOptionsResponse)
-async def get_filter_options(db=Depends(get_db)):
+async def get_filter_options(session: AsyncSession = Depends(get_session)):
     """Get available filter options for user discovery."""
     try:
         # Get skills from freelancers
-        skills_result = await db.execute(
+        skills_result = await session.execute(
             select(Freelancer.skills)
         )
         all_skills = []
@@ -241,17 +247,20 @@ async def get_filter_options(db=Depends(get_db)):
                 all_skills.extend(row[0])
 
         # Get price and experience ranges
-        rates_result = await db.execute(
+        rates_result = await session.execute(
             select(func.min(Freelancer.hourly_rate),
                    func.max(Freelancer.hourly_rate))
         )
-        min_rate, max_rate = rates_result.first()
+        rate_row = rates_result.first()
+        min_rate, max_rate = (
+            rate_row[0], rate_row[1]) if rate_row else (0, 100)
 
-        experience_result = await db.execute(
+        experience_result = await session.execute(
             select(func.min(Freelancer.years_of_experience),
                    func.max(Freelancer.years_of_experience))
         )
-        min_exp, max_exp = experience_result.first()
+        exp_row = experience_result.first()
+        min_exp, max_exp = (exp_row[0], exp_row[1]) if exp_row else (0, 20)
 
         return {
             "skills": list(set(all_skills)),
@@ -276,23 +285,23 @@ async def get_filter_options(db=Depends(get_db)):
 
 
 @router.get("/stats/summary", response_model=UserStatsResponse)
-async def get_user_stats(db=Depends(get_db)):
+async def get_user_stats(session: AsyncSession = Depends(get_session)):
     """Get user statistics summary."""
     try:
         # Count total users
-        total_users = await db.scalar(select(func.count(User.id)))
+        total_users = await session.scalar(select(func.count(User.id)))
 
         # Count by user type
-        client_hunters = await db.scalar(
+        client_hunters = await session.scalar(
             select(func.count(User.id)).where(
                 User.user_type == "client_hunter")
         )
-        freelancers = await db.scalar(
+        freelancers = await session.scalar(
             select(func.count(User.id)).where(User.user_type == "freelancer")
         )
 
         # Count active users
-        active_users = await db.scalar(
+        active_users = await session.scalar(
             select(func.count(User.id)).where(User.is_active)
         )
 
@@ -308,22 +317,4 @@ async def get_user_stats(db=Depends(get_db)):
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@router.put("/me", response_model=UserRead)
-async def update_current_user(
-    user_update: UserUpdate,
-    current_user: User = Depends(get_current_user),
-    db=Depends(get_db)
-):
-    """Update current user information."""
-    try:
-        # Update user fields
-        for field, value in user_update.dict(exclude_unset=True).items():
-            setattr(current_user, field, value)
-
-        await db.commit()
-        await db.refresh(current_user)
-        return current_user
-
-    except Exception as e:
-        logger.error(f"Error updating user: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+# Removed redundant PUT /me endpoint - use /auth/me instead

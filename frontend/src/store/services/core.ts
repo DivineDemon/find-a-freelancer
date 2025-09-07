@@ -7,7 +7,7 @@ import type { HealthCheckGetApiResponse } from "./apis";
 const baseQuery = fetchBaseQuery({
   baseUrl: import.meta.env.VITE_BASE_API_URL,
   prepareHeaders: (headers, { getState }) => {
-    const token = (getState() as RootState).global.token;
+    const token = (getState() as RootState).global.access_token;
 
     if (token) {
       headers.set("Authorization", `Bearer ${token}`);

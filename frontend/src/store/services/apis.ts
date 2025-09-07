@@ -59,23 +59,23 @@ const injectedRtkApi = api
         query: () => ({ url: `/auth/refresh`, method: "POST" }),
         invalidatesTags: ["Authentication"],
       }),
+      changePasswordAuthChangePasswordPost: build.mutation<
+        ChangePasswordAuthChangePasswordPostApiResponse,
+        ChangePasswordAuthChangePasswordPostApiArg
+      >({
+        query: (queryArg) => ({
+          url: `/auth/change-password`,
+          method: "POST",
+          body: queryArg.passwordChange,
+        }),
+        invalidatesTags: ["Authentication"],
+      }),
       getCurrentUserInfoUsersMeGet: build.query<
         GetCurrentUserInfoUsersMeGetApiResponse,
         GetCurrentUserInfoUsersMeGetApiArg
       >({
         query: () => ({ url: `/users/me` }),
         providesTags: ["User Management"],
-      }),
-      updateCurrentUserUsersMePut: build.mutation<
-        UpdateCurrentUserUsersMePutApiResponse,
-        UpdateCurrentUserUsersMePutApiArg
-      >({
-        query: (queryArg) => ({
-          url: `/users/me`,
-          method: "PUT",
-          body: queryArg.userUpdate,
-        }),
-        invalidatesTags: ["User Management"],
       }),
       getUserUsersUserIdGet: build.query<GetUserUsersUserIdGetApiResponse, GetUserUsersUserIdGetApiArg>({
         query: (queryArg) => ({ url: `/users/${queryArg.userId}` }),
@@ -279,12 +279,12 @@ export type UpdateCurrentUserProfileAuthMePutApiArg = {
 };
 export type RefreshAccessTokenAuthRefreshPostApiResponse = /** status 200 Successful Response */ UserWithToken;
 export type RefreshAccessTokenAuthRefreshPostApiArg = void;
+export type ChangePasswordAuthChangePasswordPostApiResponse = /** status 200 Successful Response */ object;
+export type ChangePasswordAuthChangePasswordPostApiArg = {
+  passwordChange: PasswordChange;
+};
 export type GetCurrentUserInfoUsersMeGetApiResponse = /** status 200 Successful Response */ UserRead;
 export type GetCurrentUserInfoUsersMeGetApiArg = void;
-export type UpdateCurrentUserUsersMePutApiResponse = /** status 200 Successful Response */ UserRead;
-export type UpdateCurrentUserUsersMePutApiArg = {
-  userUpdate: UserUpdate;
-};
 export type GetUserUsersUserIdGetApiResponse = /** status 200 Successful Response */ ComprehensiveUserResponse;
 export type GetUserUsersUserIdGetApiArg = {
   userId: number;
@@ -434,6 +434,7 @@ export type LoginUserResponse = {
   email: string;
   first_name: string;
   last_name: string;
+  phone?: string | null;
   image_url?: string | null;
   account_status: string;
   user_type: string;
@@ -454,6 +455,10 @@ export type UserUpdate = {
   phone?: string | null;
   profile_picture?: string | null;
   is_active?: boolean | null;
+};
+export type PasswordChange = {
+  current_password: string;
+  new_password: string;
 };
 export type FreelancerProfileSummary = {
   id: number;
@@ -686,8 +691,8 @@ export const {
   useGetCurrentUserProfileAuthMeGetQuery,
   useUpdateCurrentUserProfileAuthMePutMutation,
   useRefreshAccessTokenAuthRefreshPostMutation,
+  useChangePasswordAuthChangePasswordPostMutation,
   useGetCurrentUserInfoUsersMeGetQuery,
-  useUpdateCurrentUserUsersMePutMutation,
   useGetUserUsersUserIdGetQuery,
   useListUsersUsersGetQuery,
   useGetFilterOptionsUsersFiltersOptionsGetQuery,

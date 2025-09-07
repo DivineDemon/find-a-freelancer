@@ -35,6 +35,12 @@ class UserUpdate(BaseModel):
     is_active: Optional[bool] = None
 
 
+class PasswordChange(BaseModel):
+    """Schema for changing user password."""
+    current_password: str
+    new_password: str
+
+
 class UserRead(UserBase):
     """Schema for reading user information."""
     id: int
@@ -60,6 +66,7 @@ class LoginUserResponse(BaseModel):
     email: str
     first_name: str
     last_name: str
+    phone: Optional[str] = None
     image_url: Optional[str] = None
     account_status: str
     user_type: str

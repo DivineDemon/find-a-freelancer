@@ -12,6 +12,7 @@ from app.models.user import User
 from app.schemas.user_schema import (
     LoginResponse,
     LoginUserResponse,
+    PasswordChange,
     UserCreate,
     UserLogin,
     UserRead,
@@ -168,6 +169,7 @@ async def login_user(
             email=user.email,
             first_name=user.first_name,
             last_name=user.last_name,
+            phone=user.phone,
             image_url=user.profile_picture,
             account_status="active" if user.is_active else "inactive",
             user_type=user.user_type,
@@ -215,3 +217,31 @@ async def refresh_access_token(
         access_token=access_token,
         token_type="bearer"
     )
+
+
+@router.post("/change-password", response_model=dict)
+async def change_password(
+    password_data: PasswordChange,
+    current_user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_session)]
+):
+    """Change user's password."""
+    # Verify current password
+    if not current_user.verify_password(password_data.current_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Current password is incorrect"
+        )
+
+    # Validate new password strength (basic validation)
+    if len(password_data.new_password) < 8:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="New password must be at least 8 characters long"
+        )
+
+    # Update password
+    current_user.set_password(password_data.new_password)
+    await session.commit()
+
+    return {"message": "Password changed successfully"}

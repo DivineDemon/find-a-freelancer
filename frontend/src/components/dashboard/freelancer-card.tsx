@@ -38,7 +38,9 @@ function FreelancerCard({ freelancer }: FreelancerCardProps) {
       </div>
       <div className="flex w-full flex-wrap items-start justify-start gap-2">
         {freelancer.skills.slice(0, 6).map((skill) => (
-          <span className="rounded-md bg-primary/20 px-2 py-1 text-[12px] text-primary leading-[12px]">{skill}</span>
+          <span key={skill} className="rounded-md bg-primary/20 px-2 py-1 text-[12px] text-primary leading-[12px]">
+            {skill}
+          </span>
         ))}
         <span className="rounded-md bg-primary/20 px-2 py-1 text-[12px] text-primary leading-[12px]">
           +{freelancer.skills.length - 6}&nbsp;more

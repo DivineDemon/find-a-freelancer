@@ -4,6 +4,7 @@ import type { LoginResponse } from "../services/apis";
 const initialState: LoginResponse = {
   user: {
     email: "",
+    phone: "",
     last_name: "",
     image_url: "",
     user_type: "",

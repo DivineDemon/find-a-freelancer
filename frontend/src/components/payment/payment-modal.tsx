@@ -1,253 +1,156 @@
-import { zodResolver } from "@hookform/resolvers/zod";
-import { CheckCircle, CreditCard, Loader2 } from "lucide-react";
+import { CardElement, useElements, useStripe } from "@stripe/react-stripe-js";
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useDispatch, useSelector } from "react-redux";
 import { toast } from "sonner";
-import { z } from "zod";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-
-const paymentSchema = z.object({
-  card_number: z.string().min(16, "Card number must be 16 digits").max(16, "Card number must be 16 digits"),
-  expiry_month: z
-    .string()
-    .min(1, "Month is required")
-    .regex(/^(0[1-9]|1[0-2])$/, "Invalid month"),
-  expiry_year: z
-    .string()
-    .min(1, "Year is required")
-    .regex(/^(2[0-9][0-9][0-9])$/, "Invalid year"),
-  cvv: z.string().min(3, "CVV must be 3 digits").max(4, "CVV must be 3-4 digits"),
-  cardholder_name: z.string().min(1, "Cardholder name is required"),
-});
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import type { RootState } from "@/store";
+import { useCreatePaymentIntentPaymentsCreatePaymentIntentPostMutation } from "@/store/services/apis";
+import { hideModal } from "@/store/slices/payment";
 
 interface PaymentModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSuccess: () => void;
+  amount: number;
+  description: string;
 }
 
-const PLATFORM_FEE = 50; // $50 platform access fee
+function PaymentModal({ amount, description }: PaymentModalProps) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const dispatch = useDispatch();
+  const [isLoading, setIsLoading] = useState(false);
 
-export default function PaymentModal({ isOpen, onClose, onSuccess }: PaymentModalProps) {
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
-
-  const form = useForm<z.infer<typeof paymentSchema>>({
-    resolver: zodResolver(paymentSchema),
-    defaultValues: {
-      card_number: "",
-      expiry_month: "",
-      expiry_year: "",
-      cvv: "",
-      cardholder_name: "",
-    },
-  });
-
-  const onSubmit = async (_data: z.infer<typeof paymentSchema>) => {
-    setIsProcessing(true);
-
-    try {
-      // Simulate payment processing
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      // TODO: Update ClientHunter profile when backend supports it
-      // For now, just update localStorage
-
-      // Update localStorage
-      localStorage.setItem("has_paid", "true");
-      localStorage.setItem("payment_date", new Date().toISOString());
-      localStorage.setItem("payment_amount", PLATFORM_FEE.toString());
-
-      setIsSuccess(true);
-      toast.success("Payment successful! Welcome to the platform!");
-
-      // Close modal after success
-      setTimeout(() => {
-        onSuccess();
-        onClose();
-        setIsSuccess(false);
-        form.reset();
-      }, 2000);
-    } catch (_error) {
-      toast.error("Payment failed. Please try again.");
-    } finally {
-      setIsProcessing(false);
-    }
-  };
+  const { showModal, pendingAction } = useSelector(
+    (state: RootState) => state.payment
+  );
+  const [createPaymentIntent] =
+    useCreatePaymentIntentPaymentsCreatePaymentIntentPostMutation();
 
   const handleClose = () => {
-    if (!isProcessing) {
-      onClose();
-      form.reset();
+    dispatch(hideModal());
+  };
+
+  const handleSuccess = () => {
+    dispatch(hideModal());
+
+    if (pendingAction) {
+      pendingAction();
+    }
+
+    toast.success(
+      "Payment successful! You now have access to premium features."
+    );
+  };
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+
+    if (!stripe || !elements) {
+      toast.error("Payment system not ready. Please try again.");
+      return;
+    }
+
+    // Check if card element is mounted
+    const cardElement = elements.getElement(CardElement);
+    if (!cardElement) {
+      toast.error("Card input not ready. Please wait a moment and try again.");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const paymentIntentResponse = await createPaymentIntent({
+        paymentIntentCreate: {
+          amount: amount * 100,
+          currency: "usd",
+          description: description,
+        },
+      }).unwrap();
+
+      const { error, paymentIntent } = await stripe.confirmCardPayment(
+        paymentIntentResponse.client_secret,
+        {
+          payment_method: {
+            card: cardElement,
+          },
+        }
+      );
+
+      if (error) {
+        console.error("Stripe payment error:", error);
+        toast.error(error.message || "Payment failed");
+      } else if (paymentIntent && paymentIntent.status === "succeeded") {
+        handleSuccess();
+      } else {
+        console.error("Payment intent status:", paymentIntent?.status);
+        toast.error("Payment was not completed successfully");
+      }
+    } catch (error) {
+      if (error && typeof error === "object" && "data" in error) {
+        toast.error(`Error data: ${error.data}`);
+      }
+
+      toast.error(
+        `Payment failed: ${
+          error instanceof Error ? error.message : "Please try again."
+        }`
+      );
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  if (isSuccess) {
-    return (
-      <Dialog open={isOpen} onOpenChange={handleClose}>
-        <DialogContent className="sm:max-w-[400px]">
-          <div className="py-8 text-center">
-            <CheckCircle className="mx-auto mb-4 h-16 w-16 text-green-500" />
-            <h3 className="mb-2 font-semibold text-xl">Payment Successful!</h3>
-            <p className="text-muted-foreground">
-              Welcome to the platform! You now have full access to hire freelancers.
-            </p>
-          </div>
-        </DialogContent>
-      </Dialog>
-    );
-  }
-
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[500px]">
+    <Dialog open={showModal} onOpenChange={handleClose}>
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Complete Your Registration</DialogTitle>
-          <DialogDescription>
-            Client hunters need to pay a one-time platform access fee to hire freelancers.
-          </DialogDescription>
+          <DialogTitle>Complete Payment</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6">
-          {/* Pricing Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CreditCard className="h-5 w-5" />
-                Platform Access Fee
-              </CardTitle>
-              <CardDescription>One-time payment to access the platform</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-2xl">${PLATFORM_FEE}</span>
-                <Badge variant="secondary">One-time</Badge>
-              </div>
-              <ul className="mt-3 space-y-1 text-muted-foreground text-sm">
-                <li>• Access to hire freelancers</li>
-                <li>• Project management tools</li>
-                <li>• Secure payment processing</li>
-                <li>• 24/7 customer support</li>
-              </ul>
-            </CardContent>
-          </Card>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="rounded-md border p-4">
+            <CardElement
+              options={{
+                style: {
+                  base: {
+                    fontSize: "16px",
+                    color: "#374151",
+                    fontFamily: "system-ui, sans-serif",
+                    "::placeholder": {
+                      color: "#9CA3AF",
+                    },
+                  },
+                  invalid: {
+                    color: "#EF4444",
+                  },
+                },
+                hidePostalCode: false,
+              }}
+            />
+          </div>
 
-          {/* Payment Form */}
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="cardholder_name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Cardholder Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="John Doe" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="card_number"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Card Number</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="1234 5678 9012 3456"
-                        {...field}
-                        onChange={(e) => {
-                          const value = e.target.value.replace(/\s/g, "").replace(/\D/g, "");
-                          field.onChange(value);
-                        }}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <div className="grid grid-cols-3 gap-4">
-                <FormField
-                  control={form.control}
-                  name="expiry_month"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Month</FormLabel>
-                      <FormControl>
-                        <Input placeholder="MM" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="expiry_year"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Year</FormLabel>
-                      <FormControl>
-                        <Input placeholder="YYYY" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="cvv"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>CVV</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="123"
-                          {...field}
-                          onChange={(e) => {
-                            const value = e.target.value.replace(/\D/g, "");
-                            field.onChange(value);
-                          }}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <div className="flex justify-end gap-2 pt-4">
-                <Button type="button" variant="outline" onClick={handleClose} disabled={isProcessing}>
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={isProcessing} className="min-w-[120px]">
-                  {isProcessing ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      <CreditCard className="mr-2 h-4 w-4" />
-                      Pay ${PLATFORM_FEE}
-                    </>
-                  )}
-                </Button>
-              </div>
-            </form>
-          </Form>
-        </div>
+          <div className="flex items-center justify-between">
+            <span className="font-semibold text-lg">Total: ${amount}</span>
+            <div className="space-x-2">
+              <Button type="button" variant="outline" onClick={handleClose}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={!stripe || isLoading}>
+                {isLoading ? "Processing..." : `Pay $${amount}`}
+              </Button>
+            </div>
+          </div>
+        </form>
       </DialogContent>
     </Dialog>
   );
 }
+
+export default PaymentModal;

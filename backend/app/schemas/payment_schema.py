@@ -1,121 +1,94 @@
-"""Payment schemas for PayPal integration."""
+"""Payment schemas for Stripe integration."""
 
 from datetime import datetime
-from decimal import Decimal
-from enum import Enum
-from typing import Optional
+from typing import Any, Dict, Optional
 
 from pydantic import BaseModel, Field
 
 
-class PaymentStatus(str, Enum):
-    """Payment status enumeration."""
-    PENDING = "pending"
-    APPROVED = "approved"
-    COMPLETED = "completed"
-    FAILED = "failed"
-    CANCELLED = "cancelled"
-    REFUNDED = "refunded"
+class PaymentIntentCreate(BaseModel):
+    """Schema for creating a payment intent."""
+    amount: int = Field(..., description="Amount in cents")
+    currency: str = Field(default="usd", description="Currency code")
+    description: Optional[str] = Field(None, description="Payment description")
+    metadata: Optional[Dict[str, Any]] = Field(
+        None, description="Additional metadata")
 
 
-class PaymentMethod(str, Enum):
-    """Payment method enumeration."""
-    PAYPAL = "paypal"
-    STRIPE = "stripe"
-    BANK_TRANSFER = "bank_transfer"
-
-
-class PaymentCreate(BaseModel):
-    """Schema for creating a payment."""
-    amount: Decimal = Field(..., ge=0.01, description="Payment amount")
-    currency: str = Field(default="USD", description="Payment currency")
-    description: str = Field(..., max_length=500, description="Payment description")
-    payment_method: PaymentMethod = Field(default=PaymentMethod.PAYPAL)
+class PaymentIntentResponse(BaseModel):
+    """Schema for payment intent response."""
+    client_secret: str
+    payment_intent_id: str
+    amount: int
+    currency: str
+    status: str
 
 
 class PaymentRead(BaseModel):
     """Schema for reading payment information."""
     id: int
     user_id: int
-    amount: Decimal
+    stripe_payment_intent_id: str
+    stripe_customer_id: Optional[str] = None
+    amount: int
     currency: str
-    payment_method: PaymentMethod
-    status: PaymentStatus
-    description: str
-    paypal_order_id: Optional[str] = None
-    paypal_capture_id: Optional[str] = None
+    status: str
+    payment_method: Optional[str] = None
+    description: Optional[str] = None
+    payment_metadata: Optional[str] = None
+    paid_at: Optional[datetime] = None
+    failed_at: Optional[datetime] = None
+    canceled_at: Optional[datetime] = None
+    refunded: bool = False
+    refunded_at: Optional[datetime] = None
+    refund_amount: Optional[int] = None
     created_at: datetime
     updated_at: datetime
-    completed_at: Optional[datetime] = None
-    
+
     class Config:
         from_attributes = True
 
 
-class PayPalOrderResponse(BaseModel):
-    """Schema for PayPal order creation response."""
-    payment_id: int
-    paypal_order_id: str
-    approval_url: str
-    amount: Decimal
-    currency: str
+class PaymentCreate(BaseModel):
+    """Schema for creating a payment record."""
+    user_id: int
+    stripe_payment_intent_id: str
+    stripe_customer_id: Optional[str] = None
+    amount: int
+    currency: str = "usd"
+    status: str
+    payment_method: Optional[str] = None
+    description: Optional[str] = None
+    payment_metadata: Optional[str] = None
 
 
 class PaymentUpdate(BaseModel):
-    """Schema for updating payment information."""
-    status: Optional[PaymentStatus] = None
-    description: Optional[str] = Field(None, max_length=500)
-    paypal_capture_id: Optional[str] = None
-
-
-class PaymentFilter(BaseModel):
-    """Schema for filtering payments."""
-    status: Optional[PaymentStatus] = None
-    payment_method: Optional[PaymentMethod] = None
-    min_amount: Optional[Decimal] = Field(None, ge=0)
-    max_amount: Optional[Decimal] = Field(None, ge=0)
-    start_date: Optional[datetime] = None
-    end_date: Optional[datetime] = None
-
-
-class PaymentSummary(BaseModel):
-    """Schema for payment summary statistics."""
-    total_payments: int
-    total_amount: Decimal
-    completed_payments: int
-    completed_amount: Decimal
-    pending_payments: int
-    failed_payments: int
-    currency: str = "USD"
-
-
-class RefundRequest(BaseModel):
-    """Schema for payment refund request."""
-    reason: str = Field(
-        ..., max_length=500, description="Refund reason"
-    )
-    amount: Optional[Decimal] = Field(
-        None, ge=0.01,
-        description="Refund amount (full if not specified)"
-    )
+    """Schema for updating a payment record."""
+    status: Optional[str] = None
+    payment_method: Optional[str] = None
+    paid_at: Optional[datetime] = None
+    failed_at: Optional[datetime] = None
+    canceled_at: Optional[datetime] = None
+    refunded: Optional[bool] = None
+    refunded_at: Optional[datetime] = None
+    refund_amount: Optional[int] = None
 
 
 class WebhookEvent(BaseModel):
-    """Schema for PayPal webhook events."""
-    event_type: str
-    resource_type: str
-    resource: dict
-    event_time: str
+    """Schema for Stripe webhook events."""
     id: str
-
-
-class PaymentCaptureResponse(BaseModel):
-    """Schema for payment capture response."""
-    message: str
-    payment_id: int
-    status: PaymentStatus
+    type: str
+    data: Dict[str, Any]
+    created: int
 
 
 class WebhookResponse(BaseModel):
     """Schema for webhook response."""
     status: str
+
+
+class PaymentConfigResponse(BaseModel):
+    """Schema for payment configuration response."""
+    publishable_key: str
+    platform_fee_amount: int
+    currency: str

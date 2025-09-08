@@ -154,14 +154,7 @@ async def login_user(
         expires_delta=settings.JWT_EXPIRATION_MINUTES
     )
     
-    payment_status = None
-    if user.user_type == "client_hunter":
-        from app.models.client_hunter import ClientHunter
-        client_hunter_result = await session.execute(
-            select(ClientHunter).where(ClientHunter.user_id == user.id)
-        )
-        client_hunter = client_hunter_result.scalar_one_or_none()
-        payment_status = "paid" if client_hunter and client_hunter.is_paid else "unpaid"
+    payment_status = "paid" if user.has_paid else "unpaid"
 
     return LoginResponse(
         access_token=access_token,

@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { MessageCircleMore } from "lucide-react";
+import { hasUserPaid, triggerPaymentModal } from "@/lib/route-guard";
 import { cn } from "@/lib/utils";
 import type { DashboardFreelancerResponse } from "@/store/services/apis";
 import { Button, buttonVariants } from "../ui/button";
@@ -9,6 +10,14 @@ interface FreelancerCardProps {
 }
 
 function FreelancerCard({ freelancer }: FreelancerCardProps) {
+  const handleChatClick = () => {
+    if (!hasUserPaid()) {
+      triggerPaymentModal();
+    } else {
+      // Intentionally Empty
+    }
+  };
+
   return (
     <div className="flex h-fit w-full flex-col gap-5 rounded-lg border bg-card p-5 shadow">
       <div className="flex w-full items-center justify-center gap-5">
@@ -54,7 +63,7 @@ function FreelancerCard({ freelancer }: FreelancerCardProps) {
         >
           Visit Profile
         </Link>
-        <Button size="sm" variant="default">
+        <Button size="sm" variant="default" onClick={handleChatClick}>
           <MessageCircleMore />
           Chat
         </Button>

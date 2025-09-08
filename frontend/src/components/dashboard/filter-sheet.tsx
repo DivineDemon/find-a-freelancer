@@ -30,7 +30,13 @@ interface FilterSheetProps {
 }
 
 function FilterSheet({ open, onOpenChange, filters, onFiltersChange, onApplyFilters }: FilterSheetProps) {
-  const [localFilters, setLocalFilters] = useState(filters);
+  const [localFilters, setLocalFilters] = useState<{
+    skills: string[];
+    minHourlyRate: number;
+    maxHourlyRate: number;
+    minExperience: number;
+    maxExperience: number;
+  }>(filters);
   const { data, isLoading } = useGetFilterOptionsUsersFiltersOptionsGetQuery();
 
   const handleSkillToggle = (skill: string) => {

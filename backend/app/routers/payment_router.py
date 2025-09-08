@@ -1,321 +1,432 @@
-"""Payment router for PayPal integration."""
+"""Payment router for Stripe integration."""
 
-from datetime import datetime, timezone
-from typing import Annotated, Dict
+import io
+import json
+from datetime import datetime
+from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from sqlalchemy import and_, select, update
+from fastapi.responses import StreamingResponse
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+from reportlab.lib.units import inch
+from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_session
 from app.core.logger import get_logger
 from app.models.payment import Payment
-from app.models.user import User
-from app.routers.auth_router import get_current_user
+from app.schemas.generic import UserJWT
 from app.schemas.payment_schema import (
-    PaymentCaptureResponse,
-    PaymentCreate,
+    PaymentConfigResponse,
+    PaymentIntentCreate,
+    PaymentIntentResponse,
     PaymentRead,
-    PaymentStatus,
-    PayPalOrderResponse,
     WebhookResponse,
 )
-from app.services.paypal_service import paypal_service
+from app.services.stripe_service import StripeService
+from app.utils.auth_utils import get_current_user
 
 logger = get_logger(__name__)
 
-router = APIRouter(prefix="/payments", tags=["Payments"])
+router = APIRouter(prefix="/payments", tags=["payments"])
 
 
-@router.post("/create-order", response_model=PayPalOrderResponse)
-async def create_payment_order(
-    payment_data: PaymentCreate,
-    current_user: Annotated[User, Depends(get_current_user)],
-    session: Annotated[AsyncSession, Depends(get_session)]
+@router.post("/create-payment-intent", response_model=PaymentIntentResponse)
+async def create_payment_intent(
+    payment_data: PaymentIntentCreate,
+    current_user: UserJWT = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session)
 ):
-    """Create a PayPal payment order."""
-    # Only client hunters can create payments
-    if current_user.user_type != "client_hunter":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only client hunters can create payments"
-        )
-    
-    # Check if user already has an active payment
-    existing_payment = await session.execute(
-        select(Payment).where(
-            and_(
-                Payment.user_id == current_user.id,
-                Payment.status == PaymentStatus.COMPLETED
-            )
-        )
-    )
-    if existing_payment.scalar_one_or_none():
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User already has an active payment"
-        )
-    
+    """Create a Stripe payment intent."""
     try:
-        # Create PayPal order
-        paypal_order = await paypal_service.create_order(
-            amount=float(payment_data.amount),
+        # Create payment intent with Stripe
+        payment_intent = StripeService.create_payment_intent(
+            amount=payment_data.amount,
             currency=payment_data.currency,
-            description=f"Platform Access Fee for {current_user.email}"
+            metadata={
+                "user_id": str(current_user.user_id),
+                "description": payment_data.description or "Platform Access Fee"
+            }
         )
         
         # Create payment record in database
-        payment = Payment(
-            user_id=current_user.id,
+        payment_record = Payment(
+            user_id=current_user.user_id,
+            stripe_payment_intent_id=payment_intent["payment_intent_id"],
             amount=payment_data.amount,
             currency=payment_data.currency,
-            payment_method="paypal",
-            paypal_order_id=paypal_order["id"],
-            status=PaymentStatus.PENDING,
-            description=payment_data.description
+            status="pending",
+            description=payment_data.description,
+            payment_metadata=json.dumps(
+                payment_data.metadata) if payment_data.metadata else None
         )
         
-        session.add(payment)
+        session.add(payment_record)
         await session.commit()
-        await session.refresh(payment)
+        await session.refresh(payment_record)
         
         logger.info(
-            f"Payment order created for user {current_user.id}: "
-            f"{paypal_order['id']}"
+            f"Created payment intent for user {current_user.user_id}: "
+            f"{payment_intent['payment_intent_id']}"
         )
         
-        return PayPalOrderResponse(
-            payment_id=payment.id,
-            paypal_order_id=paypal_order["id"],
-            approval_url=paypal_order["links"][1]["href"],  # PayPal approval URL
-            amount=payment_data.amount,
-            currency=payment_data.currency
+        return PaymentIntentResponse(
+            client_secret=payment_intent["client_secret"],
+            payment_intent_id=payment_intent["payment_intent_id"],
+            amount=payment_intent["amount"],
+            currency=payment_intent["currency"],
+            status=payment_intent["status"]
         )
         
     except Exception as e:
-        logger.error(f"Failed to create payment order: {e}")
+        logger.error(f"Error creating payment intent: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to create payment order"
+            detail=f"Failed to create payment intent: {str(e)}"
         )
 
 
-@router.post("/capture/{payment_id}", response_model=PaymentCaptureResponse)
-async def capture_payment(
-    payment_id: int,
-    current_user: Annotated[User, Depends(get_current_user)],
-    session: Annotated[AsyncSession, Depends(get_session)]
+@router.get("/payment-intent/{payment_intent_id}", response_model=PaymentRead)
+async def get_payment_intent(
+    payment_intent_id: str,
+    current_user: UserJWT = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session)
 ):
-    """Capture a PayPal payment after user approval."""
-    # Get payment record
-    payment_result = await session.execute(
-        select(Payment).where(
-            and_(
-                Payment.id == payment_id,
-                Payment.user_id == current_user.id
-            )
-        )
-    )
-    payment = payment_result.scalar_one_or_none()
-    
-    if not payment:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Payment not found"
-        )
-    
-    if payment.status != PaymentStatus.PENDING:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Payment is not in pending status"
-        )
-    
+    """Get payment intent details."""
     try:
-        # Capture PayPal order
-        if not payment.paypal_order_id:
+        # Get payment from database
+        result = await session.execute(
+            select(Payment).where(
+                Payment.stripe_payment_intent_id == payment_intent_id,
+                Payment.user_id == current_user.user_id
+            )
+        )
+        payment = result.scalar_one_or_none()
+
+        if not payment:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Payment has no PayPal order ID"
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Payment not found"
             )
 
-        capture_data = await paypal_service.capture_order(payment.paypal_order_id)
-        
-        # Update payment status
-        await session.execute(
-            update(Payment).where(Payment.id == payment_id).values(
-                status=PaymentStatus.COMPLETED,
-                paypal_transaction_id=capture_data["purchase_units"][0]["payments"]["captures"][0]["id"],
-                paid_at=datetime.now(timezone.utc).replace(tzinfo=None)
-            )
-        )
-        
-        # Update user payment status
-        await session.execute(
-            update(User).where(User.id == current_user.id).values(has_paid=True)
-        )
-        
-        await session.commit()
-        
-        logger.info(f"Payment captured successfully: {payment_id}")
-        
-        return PaymentCaptureResponse(
-            message="Payment captured successfully",
-            payment_id=payment_id,
-            status=PaymentStatus.COMPLETED
-        )
-        
+        return PaymentRead.from_orm(payment)
+
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Failed to capture payment {payment_id}: {e}")
+        logger.error(f"Error retrieving payment intent: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to capture payment"
+            detail="Failed to retrieve payment intent"
         )
 
 
-@router.get("/{payment_id}", response_model=PaymentRead)
-async def get_payment(
-    payment_id: int,
-    current_user: Annotated[User, Depends(get_current_user)],
-    session: Annotated[AsyncSession, Depends(get_session)]
-):
-    """Get payment details."""
-    payment_result = await session.execute(
-        select(Payment).where(
-            and_(
-                Payment.id == payment_id,
-                Payment.user_id == current_user.id
-            )
-        )
-    )
-    payment = payment_result.scalar_one_or_none()
-    
-    if not payment:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Payment not found"
-        )
-    
-    return PaymentRead(**payment.__dict__)
-
-
-@router.get("/user/payments", response_model=list[PaymentRead])
+@router.get("/user-payments", response_model=List[PaymentRead])
 async def get_user_payments(
-    current_user: Annotated[User, Depends(get_current_user)],
-    session: Annotated[AsyncSession, Depends(get_session)]
+    current_user: UserJWT = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session)
 ):
     """Get all payments for the current user."""
-    payments_result = await session.execute(
-        select(Payment).where(
-            Payment.user_id == current_user.id
-        ).order_by(Payment.created_at.desc())
-    )
-    payments = payments_result.scalars().all()
-    
-    return [PaymentRead(**payment.__dict__) for payment in payments]
-
-
-@router.post("/webhook/paypal", response_model=WebhookResponse)
-async def paypal_webhook(
-    request: Request,
-    session: Annotated[AsyncSession, Depends(get_session)]
-):
-    """Handle PayPal webhook notifications."""
     try:
-        webhook_body = await request.body()
-        webhook_headers = dict(request.headers)
-        
-        # Verify webhook
-        is_valid, webhook_data = await paypal_service.verify_webhook(
-            webhook_body.decode(), 
-            webhook_headers
+        result = await session.execute(
+            select(Payment).where(Payment.user_id == current_user.user_id)
+            .order_by(Payment.created_at.desc())
         )
-        
-        if not is_valid or not webhook_data:
-            logger.warning("Invalid PayPal webhook received")
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid webhook"
-            )
-        
-        event_type = webhook_data.get("event_type")
-        
-        if not webhook_data:
-            logger.warning("No webhook data received")
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="No webhook data"
-            )
+        payments = result.scalars().all()
 
-        if event_type == "CHECKOUT.ORDER.APPROVED":
-            # Handle order approval
-            await _handle_order_approval(webhook_data, session)
-        elif event_type == "PAYMENT.CAPTURE.COMPLETED":
-            # Handle payment completion
-            await _handle_payment_completion(webhook_data, session)
-        elif event_type == "PAYMENT.CAPTURE.DENIED":
-            # Handle payment denial
-            await _handle_payment_denial(webhook_data, session)
-        else:
-            logger.info(f"Unhandled webhook event: {event_type}")
-        
-        return WebhookResponse(status="success")
-        
+        return [
+            PaymentRead.from_orm(payment) for payment in payments
+        ]
+
     except Exception as e:
-        logger.error(f"Webhook processing error: {e}")
+        logger.error(f"Error retrieving user payments: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve payments"
+        )
+
+
+@router.post("/webhook", response_model=WebhookResponse)
+async def stripe_webhook(
+    request: Request,
+    session: AsyncSession = Depends(get_session)
+):
+    """Handle Stripe webhook events."""
+    try:
+        payload = await request.body()
+        sig_header = request.headers.get("stripe-signature")
+
+        if not sig_header:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Missing stripe-signature header"
+            )
+
+        # Verify webhook signature
+        event = StripeService.construct_webhook_event(payload, sig_header)
+
+        # Handle different event types
+        if event["type"] == "payment_intent.succeeded":
+            await handle_payment_succeeded(event, session)
+        elif event["type"] == "payment_intent.payment_failed":
+            await handle_payment_failed(event, session)
+        elif event["type"] == "payment_intent.canceled":
+            await handle_payment_canceled(event, session)
+
+        logger.info(f"Processed webhook event: {event['type']}")
+        return {"status": "success"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error processing webhook: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail="Webhook processing failed"
         )
 
 
-async def _handle_order_approval(webhook_data: Dict, session: AsyncSession):
-    """Handle PayPal order approval webhook."""
-    order_id = webhook_data["resource"]["id"]
-    logger.info(f"PayPal order approved: {order_id}")
-    
-    # Update payment status to approved
-    await session.execute(
-        update(Payment).where(Payment.paypal_order_id ==
-                              order_id).values(status=PaymentStatus.APPROVED)
+async def handle_payment_succeeded(event: dict, session: AsyncSession):
+    """Handle payment succeeded webhook."""
+    payment_intent = event["data"]["object"]
+    payment_intent_id = payment_intent["id"]
+
+    # Update payment in database
+    result = await session.execute(
+        select(Payment).where(
+            Payment.stripe_payment_intent_id == payment_intent_id)
     )
-    await session.commit()
+    payment = result.scalar_one_or_none()
 
+    if payment:
+        payment.status = "succeeded"
+        payment.paid_at = datetime.utcnow()
+        payment.payment_method = payment_intent.get(
+            "payment_method", {}).get("type")
 
-async def _handle_payment_completion(webhook_data: Dict, session: AsyncSession):
-    """Handle PayPal payment completion webhook."""
-    capture_id = webhook_data["resource"]["id"]
-    order_id = webhook_data["resource"]["custom_id"]
-    
-    logger.info(f"PayPal payment completed: {capture_id}")
-    
-    # Update payment status to completed
-    await session.execute(
-        update(Payment).where(Payment.paypal_order_id == order_id).values(
-            status=PaymentStatus.COMPLETED,
-            paypal_transaction_id=capture_id,
-            paid_at=datetime.now(timezone.utc).replace(tzinfo=None)
+        # Update user payment status
+        from app.models.user import User
+        user_result = await session.execute(
+            select(User).where(User.id == payment.user_id)
         )
-    )
-    
-    # Update user payment status
-    await session.execute(
-        update(User).where(User.id == (
-            select(Payment.user_id).where(Payment.paypal_order_id == order_id)
-        )).values(has_paid=True)
-    )
-    
-    await session.commit()
+        user = user_result.scalar_one_or_none()
+        if user:
+            user.has_paid = True
+
+        await session.commit()
+        logger.info(f"Payment succeeded: {payment_intent_id}")
 
 
-async def _handle_payment_denial(webhook_data: Dict, session: AsyncSession):
-    """Handle PayPal payment denial webhook."""
-    order_id = webhook_data["resource"]["custom_id"]
-    
-    logger.info(f"PayPal payment denied: {order_id}")
-    
-    # Update payment status to failed
-    await session.execute(
-        update(Payment).where(Payment.paypal_order_id ==
-                              order_id).values(status=PaymentStatus.FAILED)
+async def handle_payment_failed(event: dict, session: AsyncSession):
+    """Handle payment failed webhook."""
+    payment_intent = event["data"]["object"]
+    payment_intent_id = payment_intent["id"]
+
+    # Update payment in database
+    result = await session.execute(
+        select(Payment).where(
+            Payment.stripe_payment_intent_id == payment_intent_id)
     )
-    await session.commit()
+    payment = result.scalar_one_or_none()
+
+    if payment:
+        payment.status = "failed"
+        payment.failed_at = datetime.utcnow()
+        await session.commit()
+        logger.info(f"Payment failed: {payment_intent_id}")
+
+
+async def handle_payment_canceled(event: dict, session: AsyncSession):
+    """Handle payment canceled webhook."""
+    payment_intent = event["data"]["object"]
+    payment_intent_id = payment_intent["id"]
+
+    # Update payment in database
+    result = await session.execute(
+        select(Payment).where(
+            Payment.stripe_payment_intent_id == payment_intent_id)
+    )
+    payment = result.scalar_one_or_none()
+
+    if payment:
+        payment.status = "canceled"
+        payment.canceled_at = datetime.utcnow()
+        await session.commit()
+        logger.info(f"Payment canceled: {payment_intent_id}")
+
+
+@router.get("/invoice/{payment_id}", response_class=StreamingResponse)
+async def download_invoice(
+    payment_id: int,
+    current_user: UserJWT = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session)
+):
+    """Download payment invoice as PDF."""
+    try:
+        # Get payment details
+        result = await session.execute(
+            select(Payment).where(
+                Payment.id == payment_id,
+                Payment.user_id == current_user.user_id
+            )
+        )
+        payment = result.scalar_one_or_none()
+
+        if not payment:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Payment not found"
+            )
+
+        # Get user details
+        from app.models.user import User
+        user_result = await session.execute(
+            select(User).where(User.id == current_user.user_id)
+        )
+        user = user_result.scalar_one_or_none()
+
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+
+        # Generate PDF invoice
+        buffer = io.BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=letter)
+        styles = getSampleStyleSheet()
+
+        # Create custom styles
+        title_style = ParagraphStyle(
+            'CustomTitle',
+            parent=styles['Heading1'],
+            fontSize=24,
+            spaceAfter=30,
+            alignment=1  # Center alignment
+        )
+
+        heading_style = ParagraphStyle(
+            'CustomHeading',
+            parent=styles['Heading2'],
+            fontSize=16,
+            spaceAfter=12
+        )
+
+        # Build PDF content
+        story = []
+
+        # Title
+        story.append(Paragraph("INVOICE", title_style))
+        story.append(Spacer(1, 20))
+        
+        # Invoice details
+        story.append(Paragraph("Invoice Details", heading_style))
+        invoice_data = [
+            ['Invoice Number:', f"INV-{payment.id:06d}"],
+            ['Date:', payment.created_at.strftime("%B %d, %Y")],
+            ['Payment ID:', payment.stripe_payment_intent_id],
+            ['Status:', payment.status.upper()],
+        ]
+        
+        if payment.paid_at:
+            invoice_data.append(
+                ['Paid Date:', payment.paid_at.strftime("%B %d, %Y")])
+        
+        invoice_table = Table(invoice_data, colWidths=[2*inch, 3*inch])
+        invoice_table.setStyle(TableStyle([
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 12),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+        ]))
+        
+        story.append(invoice_table)
+        story.append(Spacer(1, 20))
+
+        # Customer details
+        story.append(Paragraph("Bill To", heading_style))
+        customer_data = [
+            ['Name:', f"{user.first_name} {user.last_name}"],
+            ['Email:', user.email],
+        ]
+        
+        if user.phone:
+            customer_data.append(['Phone:', user.phone])
+        
+        customer_table = Table(customer_data, colWidths=[2*inch, 3*inch])
+        customer_table.setStyle(TableStyle([
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 12),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+        ]))
+
+        story.append(customer_table)
+        story.append(Spacer(1, 20))
+
+        # Payment details
+        story.append(Paragraph("Payment Details", heading_style))
+        payment_data = [
+            ['Description', 'Amount'],
+            [payment.description or 'Platform Access Fee',
+                f"${payment.amount / 100:.2f}"],
+            ['', ''],
+            ['Total', f"${payment.amount / 100:.2f}"]
+        ]
+
+        payment_table = Table(payment_data, colWidths=[4*inch, 1*inch])
+        payment_table.setStyle(TableStyle([
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 12),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+            ('LINEBELOW', (0, 0), (-1, 0), 1, colors.black),
+            ('LINEBELOW', (0, -2), (-1, -2), 1, colors.black),
+            ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
+        ]))
+
+        story.append(payment_table)
+        story.append(Spacer(1, 30))
+
+        # Footer
+        story.append(Paragraph(
+            "Thank you for your business!<br/>"
+            "This invoice was generated automatically by Find a Freelancer.",
+            styles['Normal']
+        ))
+
+        # Build PDF
+        doc.build(story)
+        buffer.seek(0)
+
+        # Return PDF as streaming response
+        return StreamingResponse(
+            io.BytesIO(buffer.getvalue()),
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f"attachment; filename=invoice_{payment.id}.pdf"
+            }
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error generating invoice: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to generate invoice"
+        )
+
+
+@router.get("/config", response_model=PaymentConfigResponse)
+async def get_payment_config():
+    """Get payment configuration for frontend."""
+    return PaymentConfigResponse(
+        publishable_key=StripeService.get_publishable_key(),
+        platform_fee_amount=5000,  # $50.00 in cents
+        currency="usd"
+    )

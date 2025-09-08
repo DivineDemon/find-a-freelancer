@@ -42,6 +42,8 @@ class User(BaseModel):
     user_type: Mapped[UserType] = mapped_column(Enum(UserType), nullable=False)
     is_active: Mapped[bool] = mapped_column(
         Boolean, default=True, nullable=False)
+    has_paid: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False)
 
     chats_as_initiator: Mapped[list["Chat"]] = relationship(
         "Chat", 

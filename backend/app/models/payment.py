@@ -1,71 +1,49 @@
-import enum
-from datetime import datetime, timezone
+"""Payment model for tracking Stripe payments."""
+
+from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import DateTime, Enum, Float, ForeignKey, Integer, String, Text
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import Boolean, DateTime, Integer, String, Text
+from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.base import BaseModel
-from app.models.user import User
-
-
-class PaymentStatus(str, enum.Enum):
-    """Enum for payment statuses."""
-    PENDING = "pending"
-    COMPLETED = "completed"
-    FAILED = "failed"
-    CANCELLED = "cancelled"
-    REFUNDED = "refunded"
-
-
-class PaymentType(str, enum.Enum):
-    """Enum for payment types."""
-    ONE_TIME_FEE = "one_time_fee"
-    SUBSCRIPTION = "subscription"
-    PROJECT_PAYMENT = "project_payment"
 
 
 class Payment(BaseModel):
-    """Payment model for PayPal integration and financial transactions."""
+    """Model for tracking payments."""
     __tablename__ = "payments"
     
-    user_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("users.id"), nullable=False)
-    amount: Mapped[float] = mapped_column(Float, nullable=False)
+    user_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    stripe_payment_intent_id: Mapped[str] = mapped_column(
+        String, unique=True, nullable=False, index=True)
+    stripe_customer_id: Mapped[Optional[str]] = mapped_column(
+        String, nullable=True, index=True)
+    amount: Mapped[int] = mapped_column(
+        Integer, nullable=False)  # Amount in cents
     currency: Mapped[str] = mapped_column(
-        String, default="USD", nullable=False)
-    payment_type: Mapped[PaymentType] = mapped_column(
-        Enum(PaymentType), nullable=False)
-    
-    paypal_payment_id: Mapped[Optional[str]] = mapped_column(
-        String, nullable=True, unique=True)
-    paypal_order_id: Mapped[Optional[str]] = mapped_column(
-        String, nullable=True, unique=True)
-    paypal_transaction_id: Mapped[Optional[str]] = mapped_column(
-        String, nullable=True, unique=True)
-    
-    status: Mapped[PaymentStatus] = mapped_column(
-        Enum(PaymentStatus), default=PaymentStatus.PENDING, nullable=False)
+        String, default="usd", nullable=False)
+    # pending, succeeded, failed, canceled
+    status: Mapped[str] = mapped_column(String, nullable=False)
+    payment_method: Mapped[Optional[str]
+                           ] = mapped_column(String, nullable=True)
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    
+    payment_metadata: Mapped[Optional[str]] = mapped_column(
+        Text, nullable=True)  # JSON string
     paid_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime, nullable=True)
-    expires_at: Mapped[Optional[datetime]] = mapped_column(
+    failed_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime, nullable=True)
-    
-    user: Mapped["User"] = relationship("User", backref="payments")
-    
+    canceled_at: Mapped[Optional[datetime]
+                        ] = mapped_column(DateTime, nullable=True)
+    refunded: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False)
+    refunded_at: Mapped[Optional[datetime]
+                        ] = mapped_column(DateTime, nullable=True)
+    refund_amount: Mapped[Optional[int]] = mapped_column(
+        Integer, nullable=True)
+
     def __repr__(self):
         return (
-            f"<Payment(id={self.id}, "
-            f"user_id={self.user_id}, "
-            f"amount={self.amount}, "
-            f"status={self.status})>"
+            f"<Payment(id={self.id}, user_id={self.user_id}, "
+            f"amount={self.amount}, status={self.status})>"
         )
-    
-    def mark_completed(self, paypal_payment_id: str, paypal_transaction_id: str):
-        """Mark payment as completed with PayPal details."""
-        self.status = PaymentStatus.COMPLETED
-        self.paypal_payment_id = paypal_payment_id
-        self.paypal_transaction_id = paypal_transaction_id
-        self.paid_at = datetime.now(timezone.utc).replace(tzinfo=None)

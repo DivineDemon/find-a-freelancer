@@ -28,5 +28,6 @@ pytest-asyncio>=0.21.0
 httpx>=0.25.0
 
 # Payment processing
-paypal-checkout-serversdk>=1.0.1
+stripe>=7.0.0
 requests>=2.31.0
+reportlab>=4.0.0

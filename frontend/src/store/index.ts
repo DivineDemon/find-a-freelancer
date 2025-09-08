@@ -4,6 +4,7 @@ import { persistReducer, persistStore } from "redux-persist";
 import storage from "redux-persist/lib/storage";
 import { api } from "./services/core";
 import globalReducer from "./slices/global";
+import paymentReducer from "./slices/payment";
 
 const persistConfig = {
   key: "root",
@@ -15,6 +16,7 @@ const store = configureStore({
     [api.reducerPath]: api.reducer,
     // @ts-expect-error ype 'Reducer<GlobalState & PersistPartial, UnknownAction>' is not assignable to type 'Reducer<unknown, UnknownAction, unknown>'
     global: persistReducer(persistConfig, globalReducer),
+    payment: paymentReducer,
   },
   middleware: (getDefaultMiddleware) => getDefaultMiddleware({ serializableCheck: false }).concat(api.middleware),
 });

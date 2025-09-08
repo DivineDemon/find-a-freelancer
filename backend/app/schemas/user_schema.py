@@ -47,6 +47,7 @@ class UserRead(UserBase):
     profile_picture: Optional[str] = None
     user_type: str
     is_active: bool
+    has_paid: bool
     created_at: datetime
     updated_at: datetime
 

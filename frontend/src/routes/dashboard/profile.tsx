@@ -38,7 +38,7 @@ function Profile() {
       phone: user?.phone || "",
       last_name: user?.last_name || "",
       first_name: user?.first_name || "",
-      profile_picture: user?.image_url || "",
+      image_url: user?.image_url || "",
       is_active: user?.account_status === "active" || false,
     },
   });
@@ -53,7 +53,7 @@ function Profile() {
         userUpdate: {
           first_name: data.first_name,
           last_name: data.last_name,
-          profile_picture: data.profile_picture || null,
+          profile_picture: data.image_url || null,
         },
       });
 

@@ -15,9 +15,6 @@ from app.models import (
     ClientHunter,
     Freelancer,
     Message,
-    Payment,
-    PaymentStatus,
-    PaymentType,
     Project,
     User,
     UserType,
@@ -293,17 +290,6 @@ async def seed_payments(
         if not user_id:
             logger.error(f"User not found for email: {user_email}")
             continue
-
-        payment_data["status"] = PaymentStatus(payment_data["status"])
-        payment_data["payment_type"] = PaymentType(payment_data["payment_type"])
-        
-        for date_field in ["paid_at", "expires_at"]:
-            if payment_data.get(date_field):
-                date_str = payment_data[date_field].replace("Z", "+00:00")
-                payment_data[date_field] = datetime.fromisoformat(date_str)
-        
-        payment = Payment(user_id=user_id, **payment_data)
-        session.add(payment)
     
     await session.commit()
     logger.info(f"Seeded {len(payments_data)} payments")
@@ -351,7 +337,6 @@ async def force_reseed_database() -> bool:
     
     async with AsyncSessionLocal() as session:
         try:
-            await session.execute(delete(Payment))
             await session.execute(delete(Message))
             await session.execute(delete(Chat))
             await session.execute(delete(Project))

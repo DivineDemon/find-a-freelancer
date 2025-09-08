@@ -37,3 +37,17 @@ export const passwordSchema = z
     message: "Passwords don't match",
     path: ["confirm_password"],
   });
+
+export const paymentSchema = z.object({
+  card_number: z.string().min(16, "Card number must be 16 digits").max(16, "Card number must be 16 digits"),
+  expiry_month: z
+    .string()
+    .min(1, "Month is required")
+    .regex(/^(0[1-9]|1[0-2])$/, "Invalid month"),
+  expiry_year: z
+    .string()
+    .min(1, "Year is required")
+    .regex(/^(2[0-9][0-9][0-9])$/, "Invalid year"),
+  cvv: z.string().min(3, "CVV must be 3 digits").max(4, "CVV must be 3-4 digits"),
+  cardholder_name: z.string().min(1, "Cardholder name is required"),
+});

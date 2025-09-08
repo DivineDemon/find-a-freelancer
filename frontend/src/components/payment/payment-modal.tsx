@@ -3,13 +3,7 @@ import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import type { RootState } from "@/store";
 import { useCreatePaymentIntentPaymentsCreatePaymentIntentPostMutation } from "@/store/services/apis";
 import { hideModal } from "@/store/slices/payment";
@@ -25,11 +19,8 @@ function PaymentModal({ amount, description }: PaymentModalProps) {
   const dispatch = useDispatch();
   const [isLoading, setIsLoading] = useState(false);
 
-  const { showModal, pendingAction } = useSelector(
-    (state: RootState) => state.payment
-  );
-  const [createPaymentIntent] =
-    useCreatePaymentIntentPaymentsCreatePaymentIntentPostMutation();
+  const { showModal, pendingAction } = useSelector((state: RootState) => state.payment);
+  const [createPaymentIntent] = useCreatePaymentIntentPaymentsCreatePaymentIntentPostMutation();
 
   const handleClose = () => {
     dispatch(hideModal());
@@ -42,9 +33,7 @@ function PaymentModal({ amount, description }: PaymentModalProps) {
       pendingAction();
     }
 
-    toast.success(
-      "Payment successful! You now have access to premium features."
-    );
+    toast.success("Payment successful! You now have access to premium features.");
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -73,22 +62,17 @@ function PaymentModal({ amount, description }: PaymentModalProps) {
         },
       }).unwrap();
 
-      const { error, paymentIntent } = await stripe.confirmCardPayment(
-        paymentIntentResponse.client_secret,
-        {
-          payment_method: {
-            card: cardElement,
-          },
-        }
-      );
+      const { error, paymentIntent } = await stripe.confirmCardPayment(paymentIntentResponse.client_secret, {
+        payment_method: {
+          card: cardElement,
+        },
+      });
 
       if (error) {
-        console.error("Stripe payment error:", error);
         toast.error(error.message || "Payment failed");
       } else if (paymentIntent && paymentIntent.status === "succeeded") {
         handleSuccess();
       } else {
-        console.error("Payment intent status:", paymentIntent?.status);
         toast.error("Payment was not completed successfully");
       }
     } catch (error) {
@@ -96,11 +80,7 @@ function PaymentModal({ amount, description }: PaymentModalProps) {
         toast.error(`Error data: ${error.data}`);
       }
 
-      toast.error(
-        `Payment failed: ${
-          error instanceof Error ? error.message : "Please try again."
-        }`
-      );
+      toast.error(`Payment failed: ${error instanceof Error ? error.message : "Please try again."}`);
     } finally {
       setIsLoading(false);
     }

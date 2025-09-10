@@ -248,9 +248,9 @@ const injectedRtkApi = api
         query: () => ({ url: `/payments/webhook`, method: "POST" }),
         invalidatesTags: ["payments"],
       }),
-      downloadReceiptPaymentsReceiptPaymentIdGet: build.query<
-        DownloadReceiptPaymentsReceiptPaymentIdGetApiResponse,
-        DownloadReceiptPaymentsReceiptPaymentIdGetApiArg
+      getReceiptUrlPaymentsReceiptPaymentIdGet: build.query<
+        GetReceiptUrlPaymentsReceiptPaymentIdGetApiResponse,
+        GetReceiptUrlPaymentsReceiptPaymentIdGetApiArg
       >({
         query: (queryArg) => ({
           url: `/payments/receipt/${queryArg.paymentId}`,
@@ -409,8 +409,9 @@ export type GetUserPaymentsPaymentsUserPaymentsGetApiResponse = /** status 200 S
 export type GetUserPaymentsPaymentsUserPaymentsGetApiArg = void;
 export type StripeWebhookPaymentsWebhookPostApiResponse = /** status 200 Successful Response */ WebhookResponse;
 export type StripeWebhookPaymentsWebhookPostApiArg = void;
-export type DownloadReceiptPaymentsReceiptPaymentIdGetApiResponse = unknown;
-export type DownloadReceiptPaymentsReceiptPaymentIdGetApiArg = {
+export type GetReceiptUrlPaymentsReceiptPaymentIdGetApiResponse =
+  /** status 200 Successful Response */ ReceiptUrlResponse;
+export type GetReceiptUrlPaymentsReceiptPaymentIdGetApiArg = {
   paymentId: number;
 };
 export type GetPaymentConfigPaymentsConfigGetApiResponse = /** status 200 Successful Response */ PaymentConfigResponse;
@@ -720,6 +721,9 @@ export type PaymentRead = {
 export type WebhookResponse = {
   status: string;
 };
+export type ReceiptUrlResponse = {
+  receipt_url: string;
+};
 export type PaymentConfigResponse = {
   publishable_key: string;
   platform_fee_amount: number;
@@ -761,7 +765,7 @@ export const {
   useGetPaymentIntentPaymentsPaymentIntentPaymentIntentIdGetQuery,
   useGetUserPaymentsPaymentsUserPaymentsGetQuery,
   useStripeWebhookPaymentsWebhookPostMutation,
-  useDownloadReceiptPaymentsReceiptPaymentIdGetQuery,
+  useGetReceiptUrlPaymentsReceiptPaymentIdGetQuery,
   useGetPaymentConfigPaymentsConfigGetQuery,
   useCheckPaymentStatusPaymentsCheckPaymentStatusPostMutation,
   useManualPaymentUpdatePaymentsManualPaymentUpdatePaymentIntentIdPostMutation,

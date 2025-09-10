@@ -1,12 +1,11 @@
 """Payment router for Stripe integration."""
 
-import io
 import json
 from datetime import datetime, timezone
 from typing import List
 
+import stripe
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -23,6 +22,7 @@ from app.schemas.payment_schema import (
     PaymentIntentResponse,
     PaymentRead,
     PaymentStatusResponse,
+    ReceiptUrlResponse,
     WebhookResponse,
 )
 from app.services.stripe_service import StripeService
@@ -320,67 +320,97 @@ async def handle_payment_canceled(event: dict, session: AsyncSession):
         logger.info(f"Payment canceled: {payment_intent_id}")
 
 
-@router.get("/receipt/{payment_id}", response_class=StreamingResponse)
-async def download_receipt(
+@router.get("/receipt/{payment_id}", response_model=ReceiptUrlResponse)
+async def get_receipt_url(
     payment_id: int,
     current_user: UserJWT = Depends(get_current_user),
     session: AsyncSession = Depends(get_db)
 ):
-    """Download payment receipt from Stripe."""
-    try:
-        # Get payment details
-        result = await session.execute(
-            select(Payment).where(
-                Payment.id == payment_id,
-                Payment.user_id == int(current_user.sub)
-            )
-        )
-        payment = result.scalar_one_or_none()
-
-        if not payment:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Payment not found"
-            )
-
-        if payment.status != "succeeded":
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Receipt is only available for successful payments"
-            )
-
-        # Get receipt from Stripe
-        stripe_data = StripeService.retrieve_payment_intent_with_receipt(
-            payment.stripe_payment_intent_id
-        )
-
-        if not stripe_data.get("receipt_url"):
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Receipt not available from Stripe"
-            )
-
-        # Download receipt PDF from Stripe
-        receipt_pdf = StripeService.download_receipt_pdf(
-            stripe_data["receipt_url"])
-
-        # Return PDF as streaming response
-        return StreamingResponse(
-            io.BytesIO(receipt_pdf),
-            media_type="application/pdf",
-            headers={
-                "Content-Disposition": f"attachment; filename=receipt_{payment.id}.pdf"
-            }
-        )
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error downloading receipt: {str(e)}")
+    """Get receipt URL from Stripe for a payment."""
+    if payment_id <= 0:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to download receipt"
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid payment ID"
         )
+
+    # Step 1: Get stripe_payment_intent_id from payments table
+    result = await session.execute(
+        select(Payment).where(
+            Payment.id == payment_id,
+            Payment.user_id == int(current_user.sub)
+        )
+    )
+    payment = result.scalar_one_or_none()
+    if not payment:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Payment not found"
+        )
+    if payment.status != "succeeded":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Receipt is only available for successful payments"
+        )
+
+    stripe_payment_intent_id = payment.stripe_payment_intent_id
+    logger.info(f"Step 1: Found payment intent ID: {stripe_payment_intent_id}")
+
+    # Step 2: Retrieve payment intent from Stripe
+    try:
+        payment_intent = stripe.PaymentIntent.retrieve(
+            stripe_payment_intent_id)
+        logger.info(f"Step 2: Retrieved payment intent: {payment_intent.id}")
+        logger.info(f"Step 2: Payment intent type: {type(payment_intent)}")
+        logger.info(f"Step 2: Payment intent data: {payment_intent}")
+    except stripe.StripeError as e:
+        logger.error(f"Stripe error retrieving payment intent: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Failed to retrieve payment intent from Stripe"
+        )
+
+    # Step 3: Extract latest_charge from payment intent
+    latest_charge_id = payment_intent.latest_charge
+    logger.info(f"Step 3: Latest charge field: {latest_charge_id}")
+    logger.info(f"Step 3: Latest charge field type: {type(latest_charge_id)}")
+
+    if not latest_charge_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No charge found for this payment intent"
+        )
+
+    logger.info(f"Step 3: Using charge ID: {latest_charge_id}")
+
+    # Step 4: Retrieve charge details using charge_id
+    try:
+        logger.info(
+            f"Step 4: Retrieving charge with ID: {latest_charge_id} "
+            f"(type: {type(latest_charge_id)})")
+        charge = stripe.Charge.retrieve(latest_charge_id)  # pyright: ignore[reportArgumentType]
+        logger.info(f"Step 4: Retrieved charge: {charge.id}")
+        logger.info(f"Step 4: Charge type: {type(charge)}")
+        logger.info(f"Step 4: Charge data: {charge}")
+    except stripe.StripeError as e:
+        logger.error(f"Stripe error retrieving charge: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Failed to retrieve charge from Stripe"
+        )
+
+    # Step 5: Extract receipt_url from charge data
+    receipt_url = charge.receipt_url
+    logger.info(f"Step 5: Receipt URL: {receipt_url}")
+    logger.info(f"Step 5: Receipt URL type: {type(receipt_url)}")
+
+    if not receipt_url:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Receipt URL not available from Stripe"
+        )
+    logger.info(f"Step 5: Successfully found receipt URL: {receipt_url}")
+
+    return {"receipt_url": receipt_url}
 
 
 @router.get("/config", response_model=PaymentConfigResponse)

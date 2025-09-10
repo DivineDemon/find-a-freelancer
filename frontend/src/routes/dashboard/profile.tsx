@@ -6,17 +6,19 @@ import { useSelector } from "react-redux";
 import { toast } from "sonner";
 import { z } from "zod";
 import MaxWidthWrapper from "@/components/max-width-wrapper";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import ImageUploader from "@/components/ui/image-uploader";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { passwordSchema, profileSchema } from "@/lib/form-schemas";
 import { requireAuth } from "@/lib/route-guard";
+import { cn } from "@/lib/utils";
 import type { RootState } from "@/store";
 import {
   useChangePasswordAuthChangePasswordPostMutation,
   useCheckPaymentStatusPaymentsCheckPaymentStatusPostMutation,
+  useGetReceiptUrlPaymentsReceiptPaymentIdGetQuery,
   useGetUserPaymentsPaymentsUserPaymentsGetQuery,
   useUpdateCurrentUserProfileAuthMePutMutation,
 } from "@/store/services/apis";
@@ -35,6 +37,16 @@ function Profile() {
   const [checkPaymentStatus, { isLoading: checkingPayment }] =
     useCheckPaymentStatusPaymentsCheckPaymentStatusPostMutation();
   const { data: payments, refetch: refetchPayments } = useGetUserPaymentsPaymentsUserPaymentsGetQuery();
+
+  const { data: receipt } = useGetReceiptUrlPaymentsReceiptPaymentIdGetQuery(
+    {
+      paymentId: payments?.[0]?.id || 0,
+    },
+    {
+      skip: !payments?.[0]?.id,
+      refetchOnMountOrArgChange: true,
+    },
+  );
 
   const profileForm = useForm<z.infer<typeof profileSchema>>({
     resolver: zodResolver(profileSchema),
@@ -96,33 +108,6 @@ function Profile() {
     }
   };
 
-  const handleDownloadInvoice = (paymentId: number) => {
-    const token = localStorage.getItem("access_token");
-    if (!token) {
-      toast.error("Authentication required");
-      return;
-    }
-
-    const url = `${import.meta.env.VITE_BASE_API_URL}/payments/invoice/${paymentId}`;
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", `invoice_${paymentId}.pdf`);
-    link.setAttribute("Authorization", `Bearer ${token}`);
-
-    // Create a hidden iframe to trigger the download
-    const iframe = document.createElement("iframe");
-    iframe.style.display = "none";
-    iframe.src = url;
-    document.body.appendChild(iframe);
-
-    // Clean up after a short delay
-    setTimeout(() => {
-      document.body.removeChild(iframe);
-    }, 1000);
-
-    toast.success("Invoice download started");
-  };
-
   if (!user) {
     return (
       <div className="flex h-full w-full items-center justify-center">
@@ -153,9 +138,12 @@ function Profile() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div
-                className={`h-3 w-3 rounded-full ${user.payment_status === "succeeded" ? "bg-green-500" : "bg-red-500"}`}
+                className={cn("size-3 rounded-full", {
+                  "bg-green-500": user.payment_status === "paid",
+                  "bg-red-500": user.payment_status !== "paid",
+                })}
               />
-              <span className="font-medium">{user.payment_status}</span>
+              <span className="font-medium capitalize">{user.payment_status}</span>
             </div>
 
             <div className="flex gap-2">
@@ -180,20 +168,27 @@ function Profile() {
                     </div>
                     <div className="flex items-center gap-2">
                       <span
-                        className={`rounded-full px-2 py-1 font-medium text-xs ${
-                          payment.status === "succeeded"
-                            ? "bg-green-100 text-green-800"
-                            : payment.status === "pending"
-                              ? "bg-yellow-100 text-yellow-800"
-                              : "bg-red-100 text-red-800"
-                        }`}
+                        className={cn("rounded-full px-4 py-2 font-medium text-[12px] capitalize leading-[12px]", {
+                          "bg-green-500/20 text-green-500": payment.status === "succeeded",
+                          "bg-yellow-500/20 text-yellow-500": payment.status === "pending",
+                          "bg-red-500/20 text-red-500": payment.status === "failed",
+                        })}
                       >
                         {payment.status}
                       </span>
-                      {payment.status === "succeeded" && (
-                        <Button variant="outline" size="sm" onClick={() => handleDownloadInvoice(payment.id)}>
-                          Download Invoice
-                        </Button>
+                      {payment.status === "succeeded" && receipt?.receipt_url && (
+                        <a
+                          target="_blank"
+                          href={receipt.receipt_url}
+                          className={cn(
+                            buttonVariants({
+                              variant: "outline",
+                              size: "sm",
+                            }),
+                          )}
+                        >
+                          Download Receipt
+                        </a>
                       )}
                     </div>
                   </div>

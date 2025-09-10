@@ -104,3 +104,8 @@ class ManualPaymentUpdateResponse(BaseModel):
     """Schema for manual payment update response."""
     status: str
     message: str
+
+
+class ReceiptUrlResponse(BaseModel):
+    """Schema for receipt URL response."""
+    receipt_url: str

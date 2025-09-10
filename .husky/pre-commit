@@ -1,11 +1,13 @@
 echo "🚀 Running pre-commit lint & fix…"
 
 # Frontend
+echo "📱 Linting frontend..."
 cd frontend || exit 1
-pnpm run lint
+pnpm run lint || exit 1
 
 # Backend
+echo "🐍 Linting backend..."
 cd ../backend || exit 1
-ruff check . --fix
+ruff check . --fix || exit 1
 
 echo "✅ pre-commit checks passed."

@@ -8,11 +8,10 @@ from sqlalchemy import and_, desc, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.core.db import get_session
+from app.core.db import get_db
 from app.models.chat import Chat
 from app.models.message import Message
 from app.models.user import User, UserType
-from app.routers.auth_router import get_current_user
 from app.routers.chat_router import get_chat_participant
 from app.schemas.message_schema import (
     MessageCreate,
@@ -20,6 +19,7 @@ from app.schemas.message_schema import (
     MessageRead,
     MessageWithSender,
 )
+from app.utils.auth_utils import get_current_user
 
 router = APIRouter(prefix="/messages", tags=["Message Management"])
 
@@ -28,7 +28,7 @@ router = APIRouter(prefix="/messages", tags=["Message Management"])
 async def send_message(
     message_data: MessageCreate,
     current_user: Annotated[User, Depends(get_current_user)],
-    session: Annotated[AsyncSession, Depends(get_session)]
+    session: Annotated[AsyncSession, Depends(get_db)]
 ):
     """Send a new message in a chat."""
     # Verify chat exists and user is a participant
@@ -75,7 +75,7 @@ async def send_message(
 @router.get("/chat/{chat_id}", response_model=MessageList)
 async def get_chat_messages(
     chat: Annotated[Chat, Depends(get_chat_participant)],
-    session: Annotated[AsyncSession, Depends(get_session)],
+    session: Annotated[AsyncSession, Depends(get_db)],
     page: int = Query(1, ge=1, description="Page number"),
     size: int = Query(50, ge=1, le=200, description="Page size")
 ):
@@ -123,7 +123,7 @@ async def get_chat_messages(
 async def get_message(
     message_id: int,
     current_user: Annotated[User, Depends(get_current_user)],
-    session: Annotated[AsyncSession, Depends(get_session)]
+    session: Annotated[AsyncSession, Depends(get_db)]
 ):
     """Get a specific message by ID."""
     # Get message with sender information
@@ -176,7 +176,7 @@ async def get_message(
 @router.get("/search", response_model=MessageList)
 async def search_messages(
     current_user: Annotated[User, Depends(get_current_user)],
-    session: Annotated[AsyncSession, Depends(get_session)],
+    session: Annotated[AsyncSession, Depends(get_db)],
     query: str = Query(
         ...,
         min_length=1,

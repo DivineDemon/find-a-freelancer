@@ -17,7 +17,7 @@ from app.routers.index import router as main_router
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(_app: FastAPI):
     """Application lifespan manager."""
     # Startup
     await init_db(engine)

@@ -47,7 +47,6 @@ class UserRead(UserBase):
     profile_picture: Optional[str] = None
     user_type: str
     is_active: bool
-    has_paid: bool
     created_at: datetime
     updated_at: datetime
 
@@ -91,16 +90,6 @@ class UserStatsSummary(BaseModel):
     active_users: int
 
 
-class OnlineUsersResponse(BaseModel):
-    """Schema for online users response."""
-    online_users: List[int]
-    total_online: int
-
-
-class UserStatusResponse(BaseModel):
-    """Schema for user status response."""
-    user_id: int
-    is_online: bool
 
 
 class ProjectSummary(BaseModel):
@@ -165,3 +154,9 @@ class ComprehensiveUserResponse(UserRead):
     freelancer_profile: Optional[FreelancerProfileSummary] = None
     client_hunter_profile: Optional[ClientHunterProfileSummary] = None
     projects: Optional[List[ProjectSummary]] = None
+
+
+class ProfileCreationResponse(BaseModel):
+    """Response schema for profile creation."""
+    message: str
+    user_type: str

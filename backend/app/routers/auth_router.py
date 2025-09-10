@@ -6,8 +6,11 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.core.db import get_session
+from app.core.db import get_db
 from app.core.jwt import create_access_token, verify_access_token
+from app.core.logger import get_logger
+from app.models.client_hunter import ClientHunter
+from app.models.freelancer import Freelancer
 from app.models.user import User
 from app.schemas.user_schema import (
     LoginResponse,
@@ -22,11 +25,12 @@ from app.schemas.user_schema import (
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 security = HTTPBearer()
+logger = get_logger(__name__)
 
 
 async def get_current_user(
     credentials: Annotated[HTTPAuthorizationCredentials, Depends(security)],
-    session: Annotated[AsyncSession, Depends(get_session)]
+    session: Annotated[AsyncSession, Depends(get_db)]
 ) -> User:
     """Get the current authenticated user from JWT token."""
     token = credentials.credentials
@@ -89,46 +93,82 @@ async def get_current_user(
 )
 async def register_user(
     user_data: UserCreate,
-    session: Annotated[AsyncSession, Depends(get_session)]
+    session: Annotated[AsyncSession, Depends(get_db)]
 ):
     """Register a new user."""
-    result = await session.execute(
-        select(User).where(User.email == user_data.email)
-    )
-    if result.scalar_one_or_none():
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered"
+    try:
+        # Use the injected session instead of creating a new one
+        result = await session.execute(
+            select(User).where(User.email == user_data.email)
         )
-    
-    user_data_dict = user_data.model_dump(exclude={"password"})
-    if "image_url" in user_data_dict:
-        user_data_dict["profile_picture"] = user_data_dict.pop("image_url")
-    if user_data_dict.get("profile_picture") == "":
-        user_data_dict["profile_picture"] = None
+        if result.scalar_one_or_none():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email already registered"
+            )
 
-    user = User(**user_data_dict)
-    user.set_password(user_data.password)
-    session.add(user)
-    await session.commit()
-    await session.refresh(user)
-    
-    access_token = create_access_token(
-        data={"sub": str(user.id)},
-        expires_delta=settings.JWT_EXPIRATION_MINUTES
-    )
-    
-    return UserWithToken(
-        user=UserRead.from_orm(user),
-        access_token=access_token,
-        token_type="bearer"
-    )
+        user_data_dict = user_data.model_dump(exclude={"password"})
+        if "image_url" in user_data_dict:
+            user_data_dict["profile_picture"] = user_data_dict.pop(
+                "image_url")
+        if user_data_dict.get("profile_picture") == "":
+            user_data_dict["profile_picture"] = None
+
+        user = User(**user_data_dict)
+        user.set_password(user_data.password)
+        session.add(user)
+        await session.commit()
+        await session.refresh(user)
+
+        # Create profile based on user type
+        if user.user_type == "client_hunter":
+            client_hunter = ClientHunter(
+                user_id=user.id,
+                first_name=user.first_name,
+                last_name=user.last_name,
+                country="Unknown"  # Default value, can be updated later
+            )
+            session.add(client_hunter)
+        elif user.user_type == "freelancer":
+            freelancer = Freelancer(
+                user_id=user.id,
+                title="Freelancer",
+                bio="",
+                hourly_rate=0.0,
+                years_of_experience=0,
+                skills=[],
+                is_available=True,
+                country="Unknown"  # Default value, can be updated later
+            )
+            session.add(freelancer)
+
+        await session.commit()
+        await session.refresh(user)
+
+        access_token = create_access_token(
+            data={"sub": str(user.id)},
+            expires_delta=settings.JWT_EXPIRATION_MINUTES
+        )
+
+        return UserWithToken(
+            user=UserRead.model_validate(user),
+            access_token=access_token,
+            token_type="bearer"
+        )
+    except Exception as e:
+        logger.error(f"Registration error: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Registration failed: {str(e)}"
+        )
 
 
 @router.post("/login", response_model=LoginResponse)
 async def login_user(
     user_credentials: UserLogin,
-    session: Annotated[AsyncSession, Depends(get_session)]
+    session: Annotated[AsyncSession, Depends(get_db)]
 ):
     """Login user with email and password."""
     result = await session.execute(
@@ -154,7 +194,17 @@ async def login_user(
         expires_delta=settings.JWT_EXPIRATION_MINUTES
     )
     
-    payment_status = "paid" if user.has_paid else "unpaid"
+    # Determine payment status based on user type
+    if user.user_type == "freelancer":
+        payment_status = "paid"  # Freelancers don't need to pay
+    else:
+        # For client hunters, check their payment status
+        from app.models.client_hunter import ClientHunter
+        client_hunter_result = await session.execute(
+            select(ClientHunter).where(ClientHunter.user_id == user.id)
+        )
+        client_hunter = client_hunter_result.scalar_one_or_none()
+        payment_status = "paid" if client_hunter and client_hunter.is_paid else "unpaid"
 
     return LoginResponse(
         access_token=access_token,
@@ -183,7 +233,7 @@ async def get_current_user_profile(
 async def update_current_user_profile(
     user_update: UserUpdate,
     current_user: Annotated[User, Depends(get_current_user)],
-    session: Annotated[AsyncSession, Depends(get_session)]
+    session: Annotated[AsyncSession, Depends(get_db)]
 ):
     """Update current user's profile."""
     for field, value in user_update.dict(exclude_unset=True).items():
@@ -216,7 +266,7 @@ async def refresh_access_token(
 async def change_password(
     password_data: PasswordChange,
     current_user: Annotated[User, Depends(get_current_user)],
-    session: Annotated[AsyncSession, Depends(get_session)]
+    session: Annotated[AsyncSession, Depends(get_db)]
 ):
     """Change user's password."""
     # Verify current password

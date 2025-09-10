@@ -26,16 +26,13 @@ from app.schemas.message_schema import (
     MessageSearch,
     MessageUpdate,
     MessageWithSender,
-    WebSocketMessage,
 )
 from app.schemas.user_schema import (
-    OnlineUsersResponse,
     UserBase,
     UserCreate,
     UserLogin,
     UserRead,
     UserStatsSummary,
-    UserStatusResponse,
     UserUpdate,
     UserWithToken,
 )
@@ -44,7 +41,7 @@ from app.schemas.user_schema import (
 __all__ = [
     # User schemas
     "UserBase", "UserCreate", "UserLogin", "UserUpdate", "UserRead",
-    "UserWithToken", "UserStatsSummary", "OnlineUsersResponse", "UserStatusResponse",
+    "UserWithToken", "UserStatsSummary",
     # Freelancer schemas
     "FreelancerBase", "FreelancerCreate", "FreelancerUpdate",
     "FreelancerRead", "FreelancerSearch",
@@ -54,5 +51,5 @@ __all__ = [
     # Message schemas
     "MessageBase", "MessageCreate", "MessageUpdate", "MessageRead",
     "MessageWithSender", "MessageList", "MessageFilter",
-    "WebSocketMessage", "MessageReaction", "MessageSearch",
+    "MessageReaction", "MessageSearch",
 ]

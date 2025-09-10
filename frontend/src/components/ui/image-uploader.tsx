@@ -1,9 +1,10 @@
-import { Upload, X } from "lucide-react";
-import { useCallback } from "react";
+import { Loader2, Upload, X } from "lucide-react";
+import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import type { ControllerRenderProps, FieldError, FieldPath, FieldValues } from "react-hook-form";
 import { toast } from "sonner";
 import { FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { uploadToImgbb } from "@/lib/utils";
 import { Button } from "./button";
 
 interface ImageUploaderProps<TFieldValues extends FieldValues, TName extends FieldPath<TFieldValues>> {
@@ -15,6 +16,10 @@ interface ImageUploaderProps<TFieldValues extends FieldValues, TName extends Fie
   maxFiles?: number;
 }
 
+/**
+ * ImageUploader component that automatically uploads images to ImgBB and returns URLs.
+ * The field value will be a string (URL) for single mode or string[] (URLs) for multiple mode.
+ */
 const ImageUploader = <TFieldValues extends FieldValues, TName extends FieldPath<TFieldValues>>({
   field,
   error,
@@ -24,11 +29,22 @@ const ImageUploader = <TFieldValues extends FieldValues, TName extends FieldPath
   maxFiles = 5,
 }: ImageUploaderProps<TFieldValues, TName>) => {
   const { value: files, onChange, onBlur } = field;
+  const [isUploading, setIsUploading] = useState(false);
 
-  const normalizedFiles = multiple ? (Array.isArray(files) ? files : files ? [files] : []) : files ? [files] : [];
+  const normalizedFiles = multiple
+    ? Array.isArray(files)
+      ? files.filter(Boolean)
+      : files
+        ? [files]
+        : []
+    : files
+      ? [files]
+      : [];
 
   const onDrop = useCallback(
-    (acceptedFiles: File[]) => {
+    async (acceptedFiles: File[]) => {
+      if (isUploading) return;
+
       if (multiple) {
         const currentFiles = normalizedFiles;
 
@@ -36,28 +52,48 @@ const ImageUploader = <TFieldValues extends FieldValues, TName extends FieldPath
           toast.error(`Maximum limit reached: ${maxFiles} images only.`);
           return;
         }
-
-        const newFiles = [...currentFiles, ...acceptedFiles];
-        onChange(newFiles);
-      } else {
-        onChange(acceptedFiles[0]);
       }
 
-      if (onFileSelected && acceptedFiles.length > 0) {
-        onFileSelected(acceptedFiles[0]);
+      setIsUploading(true);
+
+      try {
+        const uploadPromises = acceptedFiles.map(async (file) => {
+          const url = await uploadToImgbb(file);
+          return url;
+        });
+
+        const uploadedUrls = await Promise.all(uploadPromises);
+
+        if (multiple) {
+          const currentFiles = normalizedFiles;
+          const newFiles = [...currentFiles, ...uploadedUrls];
+          onChange(newFiles);
+        } else {
+          onChange(uploadedUrls[0]);
+        }
+
+        if (onFileSelected && acceptedFiles.length > 0) {
+          onFileSelected(acceptedFiles[0]);
+        }
+
+        toast.success(`${acceptedFiles.length} image(s) uploaded successfully!`);
+      } catch (_error) {
+        toast.error("Failed to upload image(s). Please try again.");
+      } finally {
+        setIsUploading(false);
       }
     },
-    [onChange, normalizedFiles, onFileSelected, multiple, maxFiles],
+    [onChange, normalizedFiles, onFileSelected, multiple, maxFiles, isUploading],
   );
 
   const removeFile = useCallback(
     (indexToRemove: number) => {
       if (multiple) {
         const currentFiles = normalizedFiles;
-        const newFiles = currentFiles.filter((_, index) => index !== indexToRemove);
+        const newFiles = currentFiles.filter((_: string, index: number) => index !== indexToRemove);
         onChange(newFiles);
       } else {
-        onChange(null);
+        onChange("");
       }
     },
     [onChange, normalizedFiles, multiple],
@@ -82,15 +118,16 @@ const ImageUploader = <TFieldValues extends FieldValues, TName extends FieldPath
         <input {...getInputProps()} onBlur={onBlur} />
         {isDragActive ? (
           <span className="font-semibold text-lg">Drop the image(s) here…</span>
+        ) : isUploading ? (
+          <div className="flex w-full flex-col items-center justify-center">
+            <Loader2 className="size-8 animate-spin text-primary" />
+            <span className="mt-2 font-medium text-[16px] leading-[16px]">Uploading image(s)...</span>
+          </div>
         ) : normalizedFiles.length > 0 ? (
           <div className={`flex ${multiple ? "gap-2 overflow-x-auto px-2 py-2" : "justify-center"}`}>
-            {normalizedFiles.map((file: File | string, index: number) => (
+            {normalizedFiles.map((file: string, index: number) => (
               <div key={index} className="relative flex-shrink-0">
-                <img
-                  src={typeof file === "string" ? file : URL.createObjectURL(file)}
-                  alt={`preview-${index}`}
-                  className="aspect-square h-24 w-24 rounded-md object-cover"
-                />
+                <img src={file} alt={`preview-${index}`} className="aspect-square h-24 w-24 rounded-md object-cover" />
                 <Button
                   type="button"
                   variant="destructive"

@@ -19,8 +19,7 @@ def get_current_user(
                 detail="Could not validate credentials",
                 headers={"WWW-Authenticate": "Bearer"}
             )
-        filtered = {k: payload[k] for k in ("sub", "user_id") if k in payload}
-        return UserJWT.model_validate(filtered)
+        return UserJWT.model_validate(payload)
     except JWTError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

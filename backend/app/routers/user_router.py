@@ -2,20 +2,20 @@
 
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.core.db import get_session
+from app.core.db import get_db
 from app.core.logger import get_logger
 from app.models.freelancer import Freelancer
 from app.models.user import User
-from app.routers.auth_router import get_current_user
 from app.schemas.freelancer_schema import (
     DashboardFreelancerResponse,
 )
+from app.schemas.generic import UserJWT
 from app.schemas.user_schema import (
     ClientHunterProfileSummary,
     ComprehensiveUserResponse,
@@ -23,6 +23,7 @@ from app.schemas.user_schema import (
     ProjectSummary,
     UserRead,
 )
+from app.utils.auth_utils import get_current_user
 
 logger = get_logger(__name__)
 router = APIRouter(prefix="/users", tags=["User Management"])
@@ -45,16 +46,29 @@ class UserStatsResponse(BaseModel):
 
 
 @router.get("/me", response_model=UserRead)
-async def get_current_user_info(current_user: User = Depends(get_current_user)):
+async def get_current_user_info(
+    current_user: UserJWT = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db)
+):
     """Get current user information."""
-    return current_user
+    # Get the full user object from the database
+    user_result = await session.execute(
+        select(User).where(User.id == int(current_user.sub))
+    )
+    user = user_result.scalar_one_or_none()
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+
+    return UserRead.model_validate(user)
 
 
 @router.get("/{user_id}", response_model=ComprehensiveUserResponse)
-async def get_user(user_id: int, session: AsyncSession = Depends(get_session)):
+async def get_user(user_id: int, session: AsyncSession = Depends(get_db)):
     """Get comprehensive user data by ID including profile and projects."""
-    from sqlalchemy.orm import selectinload
-
     # Get user with all related data
     result = await session.execute(
         select(User)
@@ -149,9 +163,8 @@ async def list_users(
     min_experience: Optional[int] = Query(None, ge=0),
     max_experience: Optional[int] = Query(None, ge=0),
     skills: Optional[str] = Query(None),
-    work_type: Optional[str] = Query(None),
     search_query: Optional[str] = Query(None),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_db)
 ):
     """List freelancers with user information and filtering options."""
     try:
@@ -181,7 +194,6 @@ async def list_users(
         if skills:
             skill_list = [skill.strip().lower() for skill in skills.split(",")]
             # Use PostgreSQL JSON contains operator for skills filtering
-            from sqlalchemy import text
             skill_conditions = []
             for i, skill in enumerate(skill_list):
                 skill_conditions.append(
@@ -234,7 +246,7 @@ async def list_users(
 
 
 @router.get("/filters/options", response_model=FilterOptionsResponse)
-async def get_filter_options(session: AsyncSession = Depends(get_session)):
+async def get_filter_options(session: AsyncSession = Depends(get_db)):
     """Get available filter options for user discovery."""
     try:
         # Get skills from freelancers
@@ -285,7 +297,7 @@ async def get_filter_options(session: AsyncSession = Depends(get_session)):
 
 
 @router.get("/stats/summary", response_model=UserStatsResponse)
-async def get_user_stats(session: AsyncSession = Depends(get_session)):
+async def get_user_stats(session: AsyncSession = Depends(get_db)):
     """Get user statistics summary."""
     try:
         # Count total users
@@ -318,3 +330,6 @@ async def get_user_stats(session: AsyncSession = Depends(get_session)):
 
 
 # Removed redundant PUT /me endpoint - use /auth/me instead
+
+
+# Profile creation is now handled automatically during registration

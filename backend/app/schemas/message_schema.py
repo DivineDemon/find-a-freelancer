@@ -68,18 +68,6 @@ class MessageFilter(BaseModel):
     size: int = Field(50, ge=1, le=200, description="Page size")
 
 
-class WebSocketMessage(BaseModel):
-    """Schema for WebSocket message format."""
-    type: str = Field(
-        ..., description="Message type (chat, notification, status)"
-    )
-    chat_id: Optional[int] = Field(
-        None, description="Chat ID for chat messages")
-    message: Optional[MessageWithSender] = Field(
-        None, description="Message content")
-    notification: Optional[str] = Field(None, description="Notification text")
-    status: Optional[str] = Field(None, description="Status update")
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
 
 
 class MessageReaction(BaseModel):

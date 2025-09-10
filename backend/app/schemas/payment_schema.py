@@ -92,3 +92,15 @@ class PaymentConfigResponse(BaseModel):
     publishable_key: str
     platform_fee_amount: int
     currency: str
+
+
+class PaymentStatusResponse(BaseModel):
+    """Schema for payment status response."""
+    has_paid: bool
+    payment_status: str
+
+
+class ManualPaymentUpdateResponse(BaseModel):
+    """Schema for manual payment update response."""
+    status: str
+    message: str

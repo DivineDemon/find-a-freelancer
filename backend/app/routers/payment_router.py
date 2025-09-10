@@ -2,28 +2,27 @@
 
 import io
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import StreamingResponse
-from reportlab.lib import colors
-from reportlab.lib.pagesizes import letter
-from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
-from reportlab.lib.units import inch
-from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.db import get_session
+from app.core.db import get_db
 from app.core.logger import get_logger
+from app.models.client_hunter import ClientHunter
 from app.models.payment import Payment
+from app.models.user import User
 from app.schemas.generic import UserJWT
 from app.schemas.payment_schema import (
+    ManualPaymentUpdateResponse,
     PaymentConfigResponse,
     PaymentIntentCreate,
     PaymentIntentResponse,
     PaymentRead,
+    PaymentStatusResponse,
     WebhookResponse,
 )
 from app.services.stripe_service import StripeService
@@ -38,7 +37,7 @@ router = APIRouter(prefix="/payments", tags=["payments"])
 async def create_payment_intent(
     payment_data: PaymentIntentCreate,
     current_user: UserJWT = Depends(get_current_user),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_db)
 ):
     """Create a Stripe payment intent."""
     try:
@@ -47,14 +46,14 @@ async def create_payment_intent(
             amount=payment_data.amount,
             currency=payment_data.currency,
             metadata={
-                "user_id": str(current_user.user_id),
+                "user_id": str(current_user.sub),
                 "description": payment_data.description or "Platform Access Fee"
             }
         )
         
         # Create payment record in database
         payment_record = Payment(
-            user_id=current_user.user_id,
+            user_id=int(current_user.sub),
             stripe_payment_intent_id=payment_intent["payment_intent_id"],
             amount=payment_data.amount,
             currency=payment_data.currency,
@@ -69,7 +68,7 @@ async def create_payment_intent(
         await session.refresh(payment_record)
         
         logger.info(
-            f"Created payment intent for user {current_user.user_id}: "
+            f"Created payment intent for user {current_user.sub}: "
             f"{payment_intent['payment_intent_id']}"
         )
         
@@ -93,7 +92,7 @@ async def create_payment_intent(
 async def get_payment_intent(
     payment_intent_id: str,
     current_user: UserJWT = Depends(get_current_user),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_db)
 ):
     """Get payment intent details."""
     try:
@@ -101,7 +100,7 @@ async def get_payment_intent(
         result = await session.execute(
             select(Payment).where(
                 Payment.stripe_payment_intent_id == payment_intent_id,
-                Payment.user_id == current_user.user_id
+                Payment.user_id == int(current_user.sub)
             )
         )
         payment = result.scalar_one_or_none()
@@ -112,7 +111,7 @@ async def get_payment_intent(
                 detail="Payment not found"
             )
 
-        return PaymentRead.from_orm(payment)
+        return PaymentRead.model_validate(payment)
 
     except HTTPException:
         raise
@@ -127,18 +126,18 @@ async def get_payment_intent(
 @router.get("/user-payments", response_model=List[PaymentRead])
 async def get_user_payments(
     current_user: UserJWT = Depends(get_current_user),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_db)
 ):
     """Get all payments for the current user."""
     try:
         result = await session.execute(
-            select(Payment).where(Payment.user_id == current_user.user_id)
+            select(Payment).where(Payment.user_id == int(current_user.sub))
             .order_by(Payment.created_at.desc())
         )
         payments = result.scalars().all()
 
         return [
-            PaymentRead.from_orm(payment) for payment in payments
+            PaymentRead.model_validate(payment) for payment in payments
         ]
 
     except Exception as e:
@@ -152,14 +151,18 @@ async def get_user_payments(
 @router.post("/webhook", response_model=WebhookResponse)
 async def stripe_webhook(
     request: Request,
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_db)
 ):
     """Handle Stripe webhook events."""
     try:
         payload = await request.body()
         sig_header = request.headers.get("stripe-signature")
 
+        logger.info(f"Webhook received - Headers: {dict(request.headers)}")
+        logger.info(f"Webhook payload size: {len(payload)} bytes")
+
         if not sig_header:
+            logger.error("Missing stripe-signature header in webhook request")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Missing stripe-signature header"
@@ -167,22 +170,32 @@ async def stripe_webhook(
 
         # Verify webhook signature
         event = StripeService.construct_webhook_event(payload, sig_header)
+        logger.info(
+            f"Webhook event verified: {event['type']} - {event.get('id', 'no-id')}"
+        )
 
         # Handle different event types
         if event["type"] == "payment_intent.succeeded":
+            logger.info("Processing payment_intent.succeeded event")
             await handle_payment_succeeded(event, session)
         elif event["type"] == "payment_intent.payment_failed":
+            logger.info("Processing payment_intent.payment_failed event")
             await handle_payment_failed(event, session)
         elif event["type"] == "payment_intent.canceled":
+            logger.info("Processing payment_intent.canceled event")
             await handle_payment_canceled(event, session)
+        else:
+            logger.info(f"Unhandled webhook event type: {event['type']}")
 
-        logger.info(f"Processed webhook event: {event['type']}")
+        logger.info(f"Successfully processed webhook event: {event['type']}")
         return {"status": "success"}
         
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error processing webhook: {str(e)}")
+        import traceback
+        logger.error(f"Webhook error traceback: {traceback.format_exc()}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Webhook processing failed"
@@ -194,6 +207,10 @@ async def handle_payment_succeeded(event: dict, session: AsyncSession):
     payment_intent = event["data"]["object"]
     payment_intent_id = payment_intent["id"]
 
+    logger.info(
+        f"Processing payment succeeded webhook for payment intent: {payment_intent_id}"
+    )
+
     # Update payment in database
     result = await session.execute(
         select(Payment).where(
@@ -201,23 +218,55 @@ async def handle_payment_succeeded(event: dict, session: AsyncSession):
     )
     payment = result.scalar_one_or_none()
 
-    if payment:
-        payment.status = "succeeded"
-        payment.paid_at = datetime.utcnow()
-        payment.payment_method = payment_intent.get(
-            "payment_method", {}).get("type")
-
-        # Update user payment status
-        from app.models.user import User
-        user_result = await session.execute(
-            select(User).where(User.id == payment.user_id)
+    if not payment:
+        logger.error(
+            f"Payment not found in database for payment intent: {payment_intent_id}"
         )
-        user = user_result.scalar_one_or_none()
-        if user:
-            user.has_paid = True
+        return
 
-        await session.commit()
-        logger.info(f"Payment succeeded: {payment_intent_id}")
+    logger.info(
+        f"Found payment in database: {payment.id} for user: {payment.user_id}")
+
+    payment.status = "succeeded"
+    payment.paid_at = datetime.now(timezone.utc)
+    payment.payment_method = payment_intent.get(
+        "payment_method", {}).get("type")
+
+    # Update user payment status
+    user_result = await session.execute(
+        select(User).where(User.id == payment.user_id)
+    )
+    user = user_result.scalar_one_or_none()
+
+    if not user:
+        logger.error(f"User not found for payment: {payment.user_id}")
+        return
+
+    # Update client hunter profile if user is a client hunter
+    if user.user_type == "client_hunter":
+        client_hunter_result = await session.execute(
+            select(ClientHunter).where(ClientHunter.user_id == user.id)
+        )
+        client_hunter = client_hunter_result.scalar_one_or_none()
+        if client_hunter:
+            logger.info(
+                f"Updating client hunter profile {client_hunter.id} "
+                f"payment status for user {user.id} ({user.email})"
+            )
+            client_hunter.is_paid = True
+            client_hunter.payment_date = datetime.now(
+                timezone.utc).strftime("%Y-%m-%d")
+        else:
+            logger.error(
+                f"Client hunter profile not found for user: {user.id}")
+    else:
+        logger.info(
+            f"User {user.id} ({user.email}) is a freelancer - "
+            f"no payment status to update"
+        )
+
+    await session.commit()
+    logger.info(f"Payment succeeded and database updated: {payment_intent_id}")
 
 
 async def handle_payment_failed(event: dict, session: AsyncSession):
@@ -234,7 +283,7 @@ async def handle_payment_failed(event: dict, session: AsyncSession):
 
     if payment:
         payment.status = "failed"
-        payment.failed_at = datetime.utcnow()
+        payment.failed_at = datetime.now(timezone.utc)
         await session.commit()
         logger.info(f"Payment failed: {payment_intent_id}")
 
@@ -253,24 +302,24 @@ async def handle_payment_canceled(event: dict, session: AsyncSession):
 
     if payment:
         payment.status = "canceled"
-        payment.canceled_at = datetime.utcnow()
+        payment.canceled_at = datetime.now(timezone.utc)
         await session.commit()
         logger.info(f"Payment canceled: {payment_intent_id}")
 
 
-@router.get("/invoice/{payment_id}", response_class=StreamingResponse)
-async def download_invoice(
+@router.get("/receipt/{payment_id}", response_class=StreamingResponse)
+async def download_receipt(
     payment_id: int,
     current_user: UserJWT = Depends(get_current_user),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_db)
 ):
-    """Download payment invoice as PDF."""
+    """Download payment receipt from Stripe."""
     try:
         # Get payment details
         result = await session.execute(
             select(Payment).where(
                 Payment.id == payment_id,
-                Payment.user_id == current_user.user_id
+                Payment.user_id == int(current_user.sub)
             )
         )
         payment = result.scalar_one_or_none()
@@ -281,144 +330,43 @@ async def download_invoice(
                 detail="Payment not found"
             )
 
-        # Get user details
-        from app.models.user import User
-        user_result = await session.execute(
-            select(User).where(User.id == current_user.user_id)
-        )
-        user = user_result.scalar_one_or_none()
-
-        if not user:
+        if payment.status != "succeeded":
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User not found"
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Receipt is only available for successful payments"
             )
 
-        # Generate PDF invoice
-        buffer = io.BytesIO()
-        doc = SimpleDocTemplate(buffer, pagesize=letter)
-        styles = getSampleStyleSheet()
-
-        # Create custom styles
-        title_style = ParagraphStyle(
-            'CustomTitle',
-            parent=styles['Heading1'],
-            fontSize=24,
-            spaceAfter=30,
-            alignment=1  # Center alignment
+        # Get receipt from Stripe
+        stripe_data = StripeService.retrieve_payment_intent_with_receipt(
+            payment.stripe_payment_intent_id
         )
 
-        heading_style = ParagraphStyle(
-            'CustomHeading',
-            parent=styles['Heading2'],
-            fontSize=16,
-            spaceAfter=12
-        )
+        if not stripe_data.get("receipt_url"):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Receipt not available from Stripe"
+            )
 
-        # Build PDF content
-        story = []
-
-        # Title
-        story.append(Paragraph("INVOICE", title_style))
-        story.append(Spacer(1, 20))
-        
-        # Invoice details
-        story.append(Paragraph("Invoice Details", heading_style))
-        invoice_data = [
-            ['Invoice Number:', f"INV-{payment.id:06d}"],
-            ['Date:', payment.created_at.strftime("%B %d, %Y")],
-            ['Payment ID:', payment.stripe_payment_intent_id],
-            ['Status:', payment.status.upper()],
-        ]
-        
-        if payment.paid_at:
-            invoice_data.append(
-                ['Paid Date:', payment.paid_at.strftime("%B %d, %Y")])
-        
-        invoice_table = Table(invoice_data, colWidths=[2*inch, 3*inch])
-        invoice_table.setStyle(TableStyle([
-            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-            ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, -1), 12),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
-        ]))
-        
-        story.append(invoice_table)
-        story.append(Spacer(1, 20))
-
-        # Customer details
-        story.append(Paragraph("Bill To", heading_style))
-        customer_data = [
-            ['Name:', f"{user.first_name} {user.last_name}"],
-            ['Email:', user.email],
-        ]
-        
-        if user.phone:
-            customer_data.append(['Phone:', user.phone])
-        
-        customer_table = Table(customer_data, colWidths=[2*inch, 3*inch])
-        customer_table.setStyle(TableStyle([
-            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-            ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, -1), 12),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
-        ]))
-
-        story.append(customer_table)
-        story.append(Spacer(1, 20))
-
-        # Payment details
-        story.append(Paragraph("Payment Details", heading_style))
-        payment_data = [
-            ['Description', 'Amount'],
-            [payment.description or 'Platform Access Fee',
-                f"${payment.amount / 100:.2f}"],
-            ['', ''],
-            ['Total', f"${payment.amount / 100:.2f}"]
-        ]
-
-        payment_table = Table(payment_data, colWidths=[4*inch, 1*inch])
-        payment_table.setStyle(TableStyle([
-            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-            ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, -1), 12),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
-            ('LINEBELOW', (0, 0), (-1, 0), 1, colors.black),
-            ('LINEBELOW', (0, -2), (-1, -2), 1, colors.black),
-            ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
-        ]))
-
-        story.append(payment_table)
-        story.append(Spacer(1, 30))
-
-        # Footer
-        story.append(Paragraph(
-            "Thank you for your business!<br/>"
-            "This invoice was generated automatically by Find a Freelancer.",
-            styles['Normal']
-        ))
-
-        # Build PDF
-        doc.build(story)
-        buffer.seek(0)
+        # Download receipt PDF from Stripe
+        receipt_pdf = StripeService.download_receipt_pdf(
+            stripe_data["receipt_url"])
 
         # Return PDF as streaming response
         return StreamingResponse(
-            io.BytesIO(buffer.getvalue()),
+            io.BytesIO(receipt_pdf),
             media_type="application/pdf",
             headers={
-                "Content-Disposition": f"attachment; filename=invoice_{payment.id}.pdf"
+                "Content-Disposition": f"attachment; filename=receipt_{payment.id}.pdf"
             }
         )
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error generating invoice: {str(e)}")
+        logger.error(f"Error downloading receipt: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to generate invoice"
+            detail="Failed to download receipt"
         )
 
 
@@ -430,3 +378,170 @@ async def get_payment_config():
         platform_fee_amount=5000,  # $50.00 in cents
         currency="usd"
     )
+
+
+@router.post("/check-payment-status", response_model=PaymentStatusResponse)
+async def check_payment_status(
+    current_user: UserJWT = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db)
+):
+    """Check and update payment status for current user."""
+    try:
+        user_result = await session.execute(
+            select(User).where(User.id == int(current_user.sub))
+        )
+        user = user_result.scalar_one_or_none()
+
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+
+        # For freelancers, they don't need to pay
+        if user.user_type == "freelancer":
+            return PaymentStatusResponse(
+                has_paid=True,  # Freelancers don't need to pay
+                payment_status="paid"
+            )
+
+        # For client hunters, check their payment status
+        if user.user_type == "client_hunter":
+            client_hunter_result = await session.execute(
+                select(ClientHunter).where(ClientHunter.user_id == user.id)
+            )
+            client_hunter = client_hunter_result.scalar_one_or_none()
+
+            if not client_hunter:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Client hunter profile not found"
+                )
+
+            # Check if user has any successful payments
+            result = await session.execute(
+                select(Payment).where(
+                    Payment.user_id == int(current_user.sub),
+                    Payment.status == "succeeded"
+                )
+            )
+            successful_payment = result.scalar_one_or_none()
+
+            # Update client hunter payment status if payment exists
+            # but profile not updated
+            if successful_payment and not client_hunter.is_paid:
+                client_hunter.is_paid = True
+                client_hunter.payment_date = (
+                    successful_payment.paid_at.strftime("%Y-%m-%d")
+                    if successful_payment.paid_at
+                    else datetime.now(timezone.utc).strftime("%Y-%m-%d")
+                )
+                await session.commit()
+                logger.info(
+                    f"Updated payment status for client hunter {client_hunter.id}"
+                )
+
+            return PaymentStatusResponse(
+                has_paid=client_hunter.is_paid,
+                payment_status="paid" if client_hunter.is_paid else "unpaid"
+            )
+
+        # This should not happen, but just in case
+        return PaymentStatusResponse(
+            has_paid=False,
+            payment_status="unpaid"
+        )
+
+    except Exception as e:
+        logger.error(f"Error checking payment status: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to check payment status"
+        )
+
+
+@router.post(
+    "/manual-payment-update/{payment_intent_id}",
+    response_model=ManualPaymentUpdateResponse
+)
+async def manual_payment_update(
+    payment_intent_id: str,
+    current_user: UserJWT = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db)
+):
+    """Manually update payment status for testing purposes."""
+    try:
+        logger.info(
+            f"Manual payment update requested for payment intent: {payment_intent_id}"
+        )
+
+        # Find the payment in database
+        payment_result = await session.execute(
+            select(Payment).where(
+                Payment.stripe_payment_intent_id == payment_intent_id,
+                Payment.user_id == int(current_user.sub)
+            )
+        )
+        payment = payment_result.scalar_one_or_none()
+
+        if not payment:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Payment not found"
+            )
+
+        logger.info(
+            f"Found payment: {payment.id} with status: {payment.status}")
+
+        # Get user
+        user_result = await session.execute(
+            select(User).where(User.id == int(current_user.sub))
+        )
+        user = user_result.scalar_one_or_none()
+
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+
+        # Update payment status
+        payment.status = "succeeded"
+        payment.paid_at = datetime.now(timezone.utc)
+        payment.payment_method = "card"
+
+        # Update client hunter profile if user is a client hunter
+        if user.user_type == "client_hunter":
+            client_hunter_result = await session.execute(
+                select(ClientHunter).where(ClientHunter.user_id == user.id)
+            )
+            client_hunter = client_hunter_result.scalar_one_or_none()
+
+            if client_hunter:
+                logger.info(
+                    f"Updating client hunter profile {client_hunter.id}")
+                client_hunter.is_paid = True
+                client_hunter.payment_date = datetime.now(
+                    timezone.utc).strftime("%Y-%m-%d")
+            else:
+                logger.error(
+                    f"Client hunter profile not found for user: {user.id}")
+
+        await session.commit()
+        logger.info(
+            f"Manual payment update completed for payment intent: {payment_intent_id}"
+        )
+
+        return ManualPaymentUpdateResponse(
+            status="success",
+            message="Payment status updated manually"
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in manual payment update: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update payment status"
+        )

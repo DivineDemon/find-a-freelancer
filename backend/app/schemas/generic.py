@@ -12,6 +12,5 @@ class ResponseModel(BaseModel, Generic[T]):
 
 class UserJWT(BaseModel):
   sub: str
-  user_id: int
 
-  model_config = ConfigDict(from_attributes=True, extra="forbid")
+  model_config = ConfigDict(from_attributes=True, extra="ignore")

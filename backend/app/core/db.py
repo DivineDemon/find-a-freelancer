@@ -29,12 +29,3 @@ async def get_db():
         yield db
     finally:
         await db.close()
-
-
-async def get_session():
-    """Get database session dependency."""
-    db = AsyncSessionLocal()
-    try:
-        yield db
-    finally:
-        await db.close()

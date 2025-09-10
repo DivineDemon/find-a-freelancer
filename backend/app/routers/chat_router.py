@@ -6,12 +6,12 @@ from typing import Annotated, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import and_, desc, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
-from app.core.db import get_session
+from app.core.db import get_db
 from app.models.chat import Chat
 from app.models.message import Message
 from app.models.user import User, UserType
-from app.routers.auth_router import get_current_user
 from app.schemas.chat_schema import (
     ChatCreate,
     ChatList,
@@ -20,6 +20,7 @@ from app.schemas.chat_schema import (
     ChatUpdate,
     ChatWithParticipants,
 )
+from app.utils.auth_utils import get_current_user
 
 router = APIRouter(prefix="/chats", tags=["Chat Management"])
 
@@ -27,11 +28,9 @@ router = APIRouter(prefix="/chats", tags=["Chat Management"])
 async def get_chat_participant(
     chat_id: int,
     current_user: Annotated[User, Depends(get_current_user)],
-    session: Annotated[AsyncSession, Depends(get_session)]
+    session: Annotated[AsyncSession, Depends(get_db)]
 ) -> Chat:
     """Get chat and verify current user is a participant."""
-    from sqlalchemy.orm import selectinload
-
     result = await session.execute(
         select(Chat)
         .options(
@@ -63,7 +62,7 @@ async def get_chat_participant(
 async def create_chat(
     chat_data: ChatCreate,
     current_user: Annotated[User, Depends(get_current_user)],
-    session: Annotated[AsyncSession, Depends(get_session)]
+    session: Annotated[AsyncSession, Depends(get_db)]
 ):
     """Create a new chat with another user."""
     # Verify participant exists and is different from current user
@@ -124,7 +123,7 @@ async def create_chat(
 @router.get("/", response_model=ChatList)
 async def list_user_chats(
     current_user: Annotated[User, Depends(get_current_user)],
-    session: Annotated[AsyncSession, Depends(get_session)],
+    session: Annotated[AsyncSession, Depends(get_db)],
     is_archived_by_initiator: Optional[bool] = Query(
         None, description="Filter by archive status for initiator"),
     is_archived_by_participant: Optional[bool] = Query(
@@ -161,8 +160,6 @@ async def list_user_chats(
     query = query.offset((page - 1) * size).limit(size)
 
     # Execute query with relationships loaded
-    from sqlalchemy.orm import selectinload
-
     query = query.options(
         selectinload(Chat.initiator),
         selectinload(Chat.participant)
@@ -270,7 +267,7 @@ async def get_chat(
 async def update_chat(
     chat_update: ChatUpdate,
     chat: Annotated[Chat, Depends(get_chat_participant)],
-    session: Annotated[AsyncSession, Depends(get_session)]
+    session: Annotated[AsyncSession, Depends(get_db)]
 ):
     """Update chat information."""
     # Update fields
@@ -291,7 +288,7 @@ async def update_chat(
 async def archive_chat(
     chat: Annotated[Chat, Depends(get_chat_participant)],
     current_user: Annotated[User, Depends(get_current_user)],
-    session: Annotated[AsyncSession, Depends(get_session)]
+    session: Annotated[AsyncSession, Depends(get_db)]
 ):
     """Archive a chat for the current user."""
     # Determine if current user is initiator or participant
@@ -313,7 +310,7 @@ async def archive_chat(
 async def unarchive_chat(
     chat: Annotated[Chat, Depends(get_chat_participant)],
     current_user: Annotated[User, Depends(get_current_user)],
-    session: Annotated[AsyncSession, Depends(get_session)]
+    session: Annotated[AsyncSession, Depends(get_db)]
 ):
     """Unarchive a chat for the current user."""
     # Determine if current user is initiator or participant
@@ -334,7 +331,7 @@ async def unarchive_chat(
 @router.get("/stats/summary", response_model=ChatStats)
 async def get_chat_stats(
     current_user: Annotated[User, Depends(get_current_user)],
-    session: Annotated[AsyncSession, Depends(get_session)]
+    session: Annotated[AsyncSession, Depends(get_db)]
 ):
     """Get chat statistics for the current user."""
     # Get total chats

@@ -92,7 +92,6 @@ const injectedRtkApi = api
             min_experience: queryArg.minExperience,
             max_experience: queryArg.maxExperience,
             skills: queryArg.skills,
-            work_type: queryArg.workType,
             search_query: queryArg.searchQuery,
           },
         }),
@@ -249,12 +248,12 @@ const injectedRtkApi = api
         query: () => ({ url: `/payments/webhook`, method: "POST" }),
         invalidatesTags: ["payments"],
       }),
-      downloadInvoicePaymentsInvoicePaymentIdGet: build.query<
-        DownloadInvoicePaymentsInvoicePaymentIdGetApiResponse,
-        DownloadInvoicePaymentsInvoicePaymentIdGetApiArg
+      downloadReceiptPaymentsReceiptPaymentIdGet: build.query<
+        DownloadReceiptPaymentsReceiptPaymentIdGetApiResponse,
+        DownloadReceiptPaymentsReceiptPaymentIdGetApiArg
       >({
         query: (queryArg) => ({
-          url: `/payments/invoice/${queryArg.paymentId}`,
+          url: `/payments/receipt/${queryArg.paymentId}`,
         }),
         providesTags: ["payments"],
       }),
@@ -264,6 +263,26 @@ const injectedRtkApi = api
       >({
         query: () => ({ url: `/payments/config` }),
         providesTags: ["payments"],
+      }),
+      checkPaymentStatusPaymentsCheckPaymentStatusPost: build.mutation<
+        CheckPaymentStatusPaymentsCheckPaymentStatusPostApiResponse,
+        CheckPaymentStatusPaymentsCheckPaymentStatusPostApiArg
+      >({
+        query: () => ({
+          url: `/payments/check-payment-status`,
+          method: "POST",
+        }),
+        invalidatesTags: ["payments"],
+      }),
+      manualPaymentUpdatePaymentsManualPaymentUpdatePaymentIntentIdPost: build.mutation<
+        ManualPaymentUpdatePaymentsManualPaymentUpdatePaymentIntentIdPostApiResponse,
+        ManualPaymentUpdatePaymentsManualPaymentUpdatePaymentIntentIdPostApiArg
+      >({
+        query: (queryArg) => ({
+          url: `/payments/manual-payment-update/${queryArg.paymentIntentId}`,
+          method: "POST",
+        }),
+        invalidatesTags: ["payments"],
       }),
     }),
     overrideExisting: false,
@@ -306,7 +325,6 @@ export type ListUsersUsersGetApiArg = {
   minExperience?: number | null;
   maxExperience?: number | null;
   skills?: string | null;
-  workType?: string | null;
   searchQuery?: string | null;
 };
 export type GetFilterOptionsUsersFiltersOptionsGetApiResponse =
@@ -391,12 +409,20 @@ export type GetUserPaymentsPaymentsUserPaymentsGetApiResponse = /** status 200 S
 export type GetUserPaymentsPaymentsUserPaymentsGetApiArg = void;
 export type StripeWebhookPaymentsWebhookPostApiResponse = /** status 200 Successful Response */ WebhookResponse;
 export type StripeWebhookPaymentsWebhookPostApiArg = void;
-export type DownloadInvoicePaymentsInvoicePaymentIdGetApiResponse = unknown;
-export type DownloadInvoicePaymentsInvoicePaymentIdGetApiArg = {
+export type DownloadReceiptPaymentsReceiptPaymentIdGetApiResponse = unknown;
+export type DownloadReceiptPaymentsReceiptPaymentIdGetApiArg = {
   paymentId: number;
 };
 export type GetPaymentConfigPaymentsConfigGetApiResponse = /** status 200 Successful Response */ PaymentConfigResponse;
 export type GetPaymentConfigPaymentsConfigGetApiArg = void;
+export type CheckPaymentStatusPaymentsCheckPaymentStatusPostApiResponse =
+  /** status 200 Successful Response */ PaymentStatusResponse;
+export type CheckPaymentStatusPaymentsCheckPaymentStatusPostApiArg = void;
+export type ManualPaymentUpdatePaymentsManualPaymentUpdatePaymentIntentIdPostApiResponse =
+  /** status 200 Successful Response */ ManualPaymentUpdateResponse;
+export type ManualPaymentUpdatePaymentsManualPaymentUpdatePaymentIntentIdPostApiArg = {
+  paymentIntentId: string;
+};
 export type HealthBase = {
   status: string;
   message: string;
@@ -415,7 +441,6 @@ export type UserRead = {
   profile_picture?: string | null;
   user_type: string;
   is_active: boolean;
-  has_paid: boolean;
   created_at: string;
   updated_at: string;
 };
@@ -516,7 +541,6 @@ export type ComprehensiveUserResponse = {
   profile_picture?: string | null;
   user_type: string;
   is_active: boolean;
-  has_paid: boolean;
   created_at: string;
   updated_at: string;
   freelancer_profile?: FreelancerProfileSummary | null;
@@ -701,6 +725,14 @@ export type PaymentConfigResponse = {
   platform_fee_amount: number;
   currency: string;
 };
+export type PaymentStatusResponse = {
+  has_paid: boolean;
+  payment_status: string;
+};
+export type ManualPaymentUpdateResponse = {
+  status: string;
+  message: string;
+};
 export const {
   useHealthCheckGetQuery,
   useRegisterUserAuthRegisterPostMutation,
@@ -729,6 +761,8 @@ export const {
   useGetPaymentIntentPaymentsPaymentIntentPaymentIntentIdGetQuery,
   useGetUserPaymentsPaymentsUserPaymentsGetQuery,
   useStripeWebhookPaymentsWebhookPostMutation,
-  useDownloadInvoicePaymentsInvoicePaymentIdGetQuery,
+  useDownloadReceiptPaymentsReceiptPaymentIdGetQuery,
   useGetPaymentConfigPaymentsConfigGetQuery,
+  useCheckPaymentStatusPaymentsCheckPaymentStatusPostMutation,
+  useManualPaymentUpdatePaymentsManualPaymentUpdatePaymentIntentIdPostMutation,
 } = injectedRtkApi;

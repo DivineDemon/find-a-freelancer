@@ -193,37 +193,31 @@
     {
       "initiator_email": "john.client@example.com",
       "participant_email": "sarah.dev@example.com",
-      "title": "E-commerce Platform Development",
       "project_title": "Custom E-commerce Solution",
       "project_description": "Looking for a developer to build a custom e-commerce platform with React frontend and Python backend. Need inventory management, payment integration, and admin dashboard.",
       "project_budget": "$15,000 - $20,000",
-      "is_archived": false,
-      "is_deleted": false,
-      "status": "active",
+      "is_archived_by_initiator": false,
+      "is_archived_by_participant": false,
       "last_message_at": "2024-02-15T10:30:00Z"
     },
     {
       "initiator_email": "david.agency@example.com",
       "participant_email": "alex.fullstack@example.com",
-      "title": "DevOps Infrastructure Setup",
       "project_title": "Cloud Infrastructure & CI/CD",
       "project_description": "Need help setting up AWS infrastructure with Docker containers, CI/CD pipeline, and monitoring for a client's web application.",
       "project_budget": "$8,000 - $12,000",
-      "is_archived": false,
-      "is_deleted": false,
-      "status": "active",
+      "is_archived_by_initiator": false,
+      "is_archived_by_participant": false,
       "last_message_at": "2024-02-14T16:45:00Z"
     },
     {
       "initiator_email": "mike.startup@example.com",
       "participant_email": "emma.mobile@example.com",
-      "title": "Mobile App MVP",
       "project_title": "FinTech Mobile App",
       "project_description": "Building MVP for a personal finance mobile app. Need React Native development with secure authentication and data visualization.",
       "project_budget": "$12,000 - $18,000",
-      "is_archived": false,
-      "is_deleted": false,
-      "status": "active",
+      "is_archived_by_initiator": false,
+      "is_archived_by_participant": false,
       "last_message_at": "2024-02-13T14:20:00Z"
     }
   ],
@@ -233,84 +227,42 @@
       "chat_participant_email": "sarah.dev@example.com",
       "sender_email": "john.client@example.com",
       "content": "Hi Sarah! I came across your profile and I'm impressed with your full-stack experience. I have an e-commerce project that might be a perfect fit for your skills.",
-      "content_type": "text",
-      "is_flagged": false,
-      "flag_reason": null,
-      "is_edited": false,
-      "original_content": null,
-      "is_deleted": false,
-      "deleted_at": null,
-      "edited_at": null
+      "content_type": "text"
     },
     {
       "chat_initiator_email": "john.client@example.com",
       "chat_participant_email": "sarah.dev@example.com",
       "sender_email": "sarah.dev@example.com",
       "content": "Thank you for reaching out! I'd love to learn more about your e-commerce project. Could you share some details about the requirements and timeline?",
-      "content_type": "text",
-      "is_flagged": false,
-      "flag_reason": null,
-      "is_edited": false,
-      "original_content": null,
-      "is_deleted": false,
-      "deleted_at": null,
-      "edited_at": null
+      "content_type": "text"
     },
     {
       "chat_initiator_email": "john.client@example.com",
       "chat_participant_email": "sarah.dev@example.com",
       "sender_email": "john.client@example.com",
       "content": "Great! We need a custom solution with React frontend, Python/FastAPI backend, PostgreSQL database, and Stripe payment integration. The timeline is about 8-10 weeks. Are you available for this timeline?",
-      "content_type": "text",
-      "is_flagged": false,
-      "flag_reason": null,
-      "is_edited": false,
-      "original_content": null,
-      "is_deleted": false,
-      "deleted_at": null,
-      "edited_at": null
+      "content_type": "text"
     },
     {
       "chat_initiator_email": "david.agency@example.com",
       "chat_participant_email": "alex.fullstack@example.com",
       "sender_email": "david.agency@example.com",
       "content": "Hi Alex! I need help with DevOps setup for a client project. Looking at your profile, you seem to have exactly the experience we need.",
-      "content_type": "text",
-      "is_flagged": false,
-      "flag_reason": null,
-      "is_edited": false,
-      "original_content": null,
-      "is_deleted": false,
-      "deleted_at": null,
-      "edited_at": null
+      "content_type": "text"
     },
     {
       "chat_initiator_email": "david.agency@example.com",
       "chat_participant_email": "alex.fullstack@example.com",
       "sender_email": "alex.fullstack@example.com",
       "content": "Hi David! I'd be happy to help with your DevOps needs. Could you tell me more about the current setup and what specific infrastructure you're looking to implement?",
-      "content_type": "text",
-      "is_flagged": false,
-      "flag_reason": null,
-      "is_edited": false,
-      "original_content": null,
-      "is_deleted": false,
-      "deleted_at": null,
-      "edited_at": null
+      "content_type": "text"
     },
     {
       "chat_initiator_email": "mike.startup@example.com",
       "chat_participant_email": "emma.mobile@example.com",
       "sender_email": "mike.startup@example.com",
       "content": "Emma, your mobile development portfolio looks amazing! We're building a FinTech MVP and need someone with React Native expertise. Interested?",
-      "content_type": "text",
-      "is_flagged": false,
-      "flag_reason": null,
-      "is_edited": false,
-      "original_content": null,
-      "is_deleted": false,
-      "deleted_at": null,
-      "edited_at": null
+      "content_type": "text"
     }
   ],
   "payments": [

@@ -40,7 +40,7 @@ class StripeService:
                 "currency": intent.currency,
                 "status": intent.status
             }
-        except stripe.error.StripeError as e:
+        except stripe.StripeError as e:
             logger.error(f"Stripe error creating payment intent: {str(e)}")
             raise Exception(f"Payment creation failed: {str(e)}")
 
@@ -57,7 +57,7 @@ class StripeService:
                 "metadata": intent.metadata,
                 "client_secret": intent.client_secret
             }
-        except stripe.error.StripeError as e:
+        except stripe.StripeError as e:
             logger.error(
             f"Stripe error retrieving payment intent: {str(e)}"
         )
@@ -75,7 +75,7 @@ class StripeService:
                 "status": intent.status,
                 "metadata": intent.metadata
             }
-        except stripe.error.StripeError as e:
+        except stripe.StripeError as e:
             logger.error(f"Stripe error confirming payment intent: {str(e)}")
             raise Exception(f"Payment confirmation failed: {str(e)}")
 
@@ -99,7 +99,7 @@ class StripeService:
                 "name": customer.name,
                 "metadata": customer.metadata
             }
-        except stripe.error.StripeError as e:
+        except stripe.StripeError as e:
             logger.error(f"Stripe error creating customer: {str(e)}")
             raise Exception(f"Customer creation failed: {str(e)}")
 
@@ -116,7 +116,7 @@ class StripeService:
         except ValueError as e:
             logger.error(f"Invalid payload: {str(e)}")
             raise Exception("Invalid payload")
-        except stripe.error.SignatureVerificationError as e:
+        except stripe.SignatureVerificationError as e:
             logger.error(f"Invalid signature: {str(e)}")
             raise Exception("Invalid signature")
 
@@ -124,3 +124,36 @@ class StripeService:
     def get_publishable_key() -> str:
         """Get the Stripe publishable key."""
         return settings.STRIPE_PUBLISHABLE_KEY
+
+    @staticmethod
+    def retrieve_payment_intent_with_receipt(payment_intent_id: str) -> Dict[str, Any]:
+        """Retrieve a Stripe payment intent with receipt URL."""
+        try:
+            intent = stripe.PaymentIntent.retrieve(payment_intent_id)
+            return {
+                "id": intent.id,
+                "amount": intent.amount,
+                "currency": intent.currency,
+                "status": intent.status,
+                "metadata": intent.metadata,
+                "client_secret": intent.client_secret,
+                "receipt_url": (
+                    intent.charges.data[0].receipt_url
+                    if intent.charges.data else None
+                )
+            }
+        except stripe.StripeError as e:
+            logger.error(f"Stripe error retrieving payment intent: {str(e)}")
+            raise Exception(f"Payment retrieval failed: {str(e)}")
+
+    @staticmethod
+    def download_receipt_pdf(receipt_url: str) -> bytes:
+        """Download receipt PDF from Stripe."""
+        try:
+            import requests
+            response = requests.get(receipt_url)
+            response.raise_for_status()
+            return response.content
+        except Exception as e:
+            logger.error(f"Error downloading receipt PDF: {str(e)}")
+            raise Exception(f"Receipt download failed: {str(e)}")

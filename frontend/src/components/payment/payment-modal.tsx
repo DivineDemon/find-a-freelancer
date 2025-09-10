@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import type { RootState } from "@/store";
 import { useCreatePaymentIntentPaymentsCreatePaymentIntentPostMutation } from "@/store/services/apis";
 import { hideModal } from "@/store/slices/payment";
+import { useTheme } from "../theme-provider";
 
 interface PaymentModalProps {
   amount: number;
@@ -15,6 +16,7 @@ interface PaymentModalProps {
 
 function PaymentModal({ amount, description }: PaymentModalProps) {
   const stripe = useStripe();
+  const { theme } = useTheme();
   const elements = useElements();
   const dispatch = useDispatch();
   const [isLoading, setIsLoading] = useState(false);
@@ -101,7 +103,7 @@ function PaymentModal({ amount, description }: PaymentModalProps) {
                 style: {
                   base: {
                     fontSize: "16px",
-                    color: "#374151",
+                    color: theme === "dark" ? "#FFFFFF" : "#000000",
                     fontFamily: "system-ui, sans-serif",
                     "::placeholder": {
                       color: "#9CA3AF",

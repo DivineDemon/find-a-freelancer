@@ -210,6 +210,12 @@ async def handle_payment_succeeded(event: dict, session: AsyncSession):
     logger.info(
         f"Processing payment succeeded webhook for payment intent: {payment_intent_id}"
     )
+    logger.info(f"Payment intent data: {payment_intent}")
+    payment_method_field = payment_intent.get('payment_method')
+    logger.info(
+        f"Payment method field: {payment_method_field} "
+        f"(type: {type(payment_method_field)})"
+    )
 
     # Update payment in database
     result = await session.execute(
@@ -229,8 +235,15 @@ async def handle_payment_succeeded(event: dict, session: AsyncSession):
 
     payment.status = "succeeded"
     payment.paid_at = datetime.now(timezone.utc)
-    payment.payment_method = payment_intent.get(
-        "payment_method", {}).get("type")
+    # Extract payment method type safely
+    payment_method = payment_intent.get("payment_method")
+    if isinstance(payment_method, dict):
+        payment.payment_method = payment_method.get("type", "card")
+    elif isinstance(payment_method, str):
+        # If it's a string (payment method ID), default to card
+        payment.payment_method = "card"
+    else:
+        payment.payment_method = "card"
 
     # Update user payment status
     user_result = await session.execute(

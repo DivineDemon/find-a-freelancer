@@ -234,7 +234,7 @@ async def handle_payment_succeeded(event: dict, session: AsyncSession):
         f"Found payment in database: {payment.id} for user: {payment.user_id}")
 
     payment.status = "succeeded"
-    payment.paid_at = datetime.now(timezone.utc)
+    payment.paid_at = datetime.now(timezone.utc).replace(tzinfo=None)
     # Extract payment method type safely
     payment_method = payment_intent.get("payment_method")
     if isinstance(payment_method, dict):
@@ -296,7 +296,7 @@ async def handle_payment_failed(event: dict, session: AsyncSession):
 
     if payment:
         payment.status = "failed"
-        payment.failed_at = datetime.now(timezone.utc)
+        payment.failed_at = datetime.now(timezone.utc).replace(tzinfo=None)
         await session.commit()
         logger.info(f"Payment failed: {payment_intent_id}")
 
@@ -315,7 +315,7 @@ async def handle_payment_canceled(event: dict, session: AsyncSession):
 
     if payment:
         payment.status = "canceled"
-        payment.canceled_at = datetime.now(timezone.utc)
+        payment.canceled_at = datetime.now(timezone.utc).replace(tzinfo=None)
         await session.commit()
         logger.info(f"Payment canceled: {payment_intent_id}")
 
@@ -447,7 +447,8 @@ async def check_payment_status(
                 client_hunter.payment_date = (
                     successful_payment.paid_at.strftime("%Y-%m-%d")
                     if successful_payment.paid_at
-                    else datetime.now(timezone.utc).strftime("%Y-%m-%d")
+                    else datetime.now(timezone.utc).replace(
+                        tzinfo=None).strftime("%Y-%m-%d")
                 )
                 await session.commit()
                 logger.info(
@@ -520,7 +521,7 @@ async def manual_payment_update(
 
         # Update payment status
         payment.status = "succeeded"
-        payment.paid_at = datetime.now(timezone.utc)
+        payment.paid_at = datetime.now(timezone.utc).replace(tzinfo=None)
         payment.payment_method = "card"
 
         # Update client hunter profile if user is a client hunter

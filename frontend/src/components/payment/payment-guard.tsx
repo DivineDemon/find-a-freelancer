@@ -12,15 +12,12 @@ interface PaymentGuardProps {
 }
 
 function PaymentGuard({ children }: PaymentGuardProps) {
-  const { data: config } = useGetPaymentConfigPaymentsConfigGetQuery();
-  const [stripePromise, setStripePromise] = useState<Promise<Stripe | null> | null>(null);
-  const [currentPath, setCurrentPath] = useState(window.location.pathname);
-
-  // Get user state from Redux
   const user = useSelector((state: RootState) => state.global.user);
+  const { data: config } = useGetPaymentConfigPaymentsConfigGetQuery();
+  const [currentPath, setCurrentPath] = useState(window.location.pathname);
   const accessToken = useSelector((state: RootState) => state.global.access_token);
+  const [stripePromise, setStripePromise] = useState<Promise<Stripe | null> | null>(null);
 
-  // Check payment on route changes
   useEffect(() => {
     const handleRouteChange = () => {
       const newPath = window.location.pathname;
@@ -28,10 +25,8 @@ function PaymentGuard({ children }: PaymentGuardProps) {
       checkPaymentAndRedirect(newPath);
     };
 
-    // Listen for popstate events (back/forward navigation)
     window.addEventListener("popstate", handleRouteChange);
 
-    // Listen for pushstate/replacestate (programmatic navigation)
     const originalPushState = history.pushState;
     const originalReplaceState = history.replaceState;
 
@@ -45,7 +40,6 @@ function PaymentGuard({ children }: PaymentGuardProps) {
       setTimeout(handleRouteChange, 0);
     };
 
-    // Check payment on initial load
     handleRouteChange();
 
     return () => {
@@ -55,10 +49,8 @@ function PaymentGuard({ children }: PaymentGuardProps) {
     };
   }, []);
 
-  // Check payment when user state changes (login/logout)
   useEffect(() => {
     if (accessToken && user) {
-      // User is logged in, check if payment is required for current route
       checkPaymentAndRedirect(currentPath);
     }
   }, [accessToken, user, currentPath]);

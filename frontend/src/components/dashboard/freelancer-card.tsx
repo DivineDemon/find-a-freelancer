@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { MessageCircleMore } from "lucide-react";
 import { hasUserPaid, triggerPaymentModal } from "@/lib/route-guard";
 import { cn } from "@/lib/utils";
@@ -10,11 +10,16 @@ interface FreelancerCardProps {
 }
 
 function FreelancerCard({ freelancer }: FreelancerCardProps) {
+  const navigate = useNavigate();
+
   const handleChatClick = () => {
     if (!hasUserPaid()) {
       triggerPaymentModal();
     } else {
-      // Intentionally Empty
+      navigate({
+        to: "/chat/$freelancerId",
+        params: { freelancerId: `${freelancer.user_id}` },
+      });
     }
   };
 

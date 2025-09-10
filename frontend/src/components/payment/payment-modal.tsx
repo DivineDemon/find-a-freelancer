@@ -46,7 +46,6 @@ function PaymentModal({ amount, description }: PaymentModalProps) {
       return;
     }
 
-    // Check if card element is mounted
     const cardElement = elements.getElement(CardElement);
     if (!cardElement) {
       toast.error("Card input not ready. Please wait a moment and try again.");

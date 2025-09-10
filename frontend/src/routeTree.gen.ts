@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as DashboardProfileRouteImport } from './routes/dashboard/profile'
 import { Route as DashboardChatHistoryRouteImport } from './routes/dashboard/chat-history'
+import { Route as ChatFreelancerIdIndexRouteImport } from './routes/chat/$freelancerId/index'
 import { Route as DashboardFreelancerProfileUserIdIndexRouteImport } from './routes/dashboard/freelancer-profile/$userId/index'
 
 const IndexRoute = IndexRouteImport.update({
@@ -35,6 +36,11 @@ const DashboardChatHistoryRoute = DashboardChatHistoryRouteImport.update({
   path: '/dashboard/chat-history',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ChatFreelancerIdIndexRoute = ChatFreelancerIdIndexRouteImport.update({
+  id: '/chat/$freelancerId/',
+  path: '/chat/$freelancerId/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DashboardFreelancerProfileUserIdIndexRoute =
   DashboardFreelancerProfileUserIdIndexRouteImport.update({
     id: '/dashboard/freelancer-profile/$userId/',
@@ -47,6 +53,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/chat-history': typeof DashboardChatHistoryRoute
   '/dashboard/profile': typeof DashboardProfileRoute
   '/dashboard': typeof DashboardIndexRoute
+  '/chat/$freelancerId': typeof ChatFreelancerIdIndexRoute
   '/dashboard/freelancer-profile/$userId': typeof DashboardFreelancerProfileUserIdIndexRoute
 }
 export interface FileRoutesByTo {
@@ -54,6 +61,7 @@ export interface FileRoutesByTo {
   '/dashboard/chat-history': typeof DashboardChatHistoryRoute
   '/dashboard/profile': typeof DashboardProfileRoute
   '/dashboard': typeof DashboardIndexRoute
+  '/chat/$freelancerId': typeof ChatFreelancerIdIndexRoute
   '/dashboard/freelancer-profile/$userId': typeof DashboardFreelancerProfileUserIdIndexRoute
 }
 export interface FileRoutesById {
@@ -62,6 +70,7 @@ export interface FileRoutesById {
   '/dashboard/chat-history': typeof DashboardChatHistoryRoute
   '/dashboard/profile': typeof DashboardProfileRoute
   '/dashboard/': typeof DashboardIndexRoute
+  '/chat/$freelancerId/': typeof ChatFreelancerIdIndexRoute
   '/dashboard/freelancer-profile/$userId/': typeof DashboardFreelancerProfileUserIdIndexRoute
 }
 export interface FileRouteTypes {
@@ -71,6 +80,7 @@ export interface FileRouteTypes {
     | '/dashboard/chat-history'
     | '/dashboard/profile'
     | '/dashboard'
+    | '/chat/$freelancerId'
     | '/dashboard/freelancer-profile/$userId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -78,6 +88,7 @@ export interface FileRouteTypes {
     | '/dashboard/chat-history'
     | '/dashboard/profile'
     | '/dashboard'
+    | '/chat/$freelancerId'
     | '/dashboard/freelancer-profile/$userId'
   id:
     | '__root__'
@@ -85,6 +96,7 @@ export interface FileRouteTypes {
     | '/dashboard/chat-history'
     | '/dashboard/profile'
     | '/dashboard/'
+    | '/chat/$freelancerId/'
     | '/dashboard/freelancer-profile/$userId/'
   fileRoutesById: FileRoutesById
 }
@@ -93,6 +105,7 @@ export interface RootRouteChildren {
   DashboardChatHistoryRoute: typeof DashboardChatHistoryRoute
   DashboardProfileRoute: typeof DashboardProfileRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
+  ChatFreelancerIdIndexRoute: typeof ChatFreelancerIdIndexRoute
   DashboardFreelancerProfileUserIdIndexRoute: typeof DashboardFreelancerProfileUserIdIndexRoute
 }
 
@@ -126,6 +139,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardChatHistoryRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/chat/$freelancerId/': {
+      id: '/chat/$freelancerId/'
+      path: '/chat/$freelancerId'
+      fullPath: '/chat/$freelancerId'
+      preLoaderRoute: typeof ChatFreelancerIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dashboard/freelancer-profile/$userId/': {
       id: '/dashboard/freelancer-profile/$userId/'
       path: '/dashboard/freelancer-profile/$userId'
@@ -141,6 +161,7 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardChatHistoryRoute: DashboardChatHistoryRoute,
   DashboardProfileRoute: DashboardProfileRoute,
   DashboardIndexRoute: DashboardIndexRoute,
+  ChatFreelancerIdIndexRoute: ChatFreelancerIdIndexRoute,
   DashboardFreelancerProfileUserIdIndexRoute:
     DashboardFreelancerProfileUserIdIndexRoute,
 }

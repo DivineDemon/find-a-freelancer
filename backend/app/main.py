@@ -12,6 +12,7 @@ from app.core.middleware import (
     SecurityMiddleware,
 )
 from app.routers.index import router as main_router
+from app.routers.websocket_router import router as websocket_router
 
 
 @asynccontextmanager
@@ -40,6 +41,7 @@ app.add_middleware(SecurityMiddleware)
 app.add_middleware(RateLimitMiddleware, requests_per_minute=100)
 
 app.include_router(main_router)
+app.include_router(websocket_router)
 
 if __name__ == "__main__":
     uvicorn.run(

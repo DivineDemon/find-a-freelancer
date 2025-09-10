@@ -97,7 +97,7 @@ async def register_user(
                 detail="Email already registered"
             )
 
-        user_data_dict = user_data.model_dump(exclude={"password"})
+        user_data_dict = user_data.model_dump(exclude={"password", "country"})
         if "image_url" in user_data_dict:
             user_data_dict["profile_picture"] = user_data_dict.pop(
                 "image_url")
@@ -194,6 +194,7 @@ async def login_user(
     return LoginResponse(
         access_token=access_token,
         user=LoginUserResponse(
+            user_id=user.id,
             email=user.email,
             first_name=user.first_name,
             last_name=user.last_name,

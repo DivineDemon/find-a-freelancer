@@ -1,15 +1,11 @@
 import { createSlice } from "@reduxjs/toolkit";
-import type { LoginResponse, UserRead } from "../services/apis";
-
-// Extended user type that includes both has_paid and payment_status
-export interface ExtendedUser extends UserRead {
-  payment_status?: string | null;
-}
+import type { LoginResponse } from "../services/apis";
 
 const initialState: LoginResponse = {
   user: {
     email: "",
     phone: "",
+    user_id: 0,
     last_name: "",
     image_url: "",
     user_type: "",

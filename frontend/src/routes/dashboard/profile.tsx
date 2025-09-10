@@ -128,13 +128,11 @@ function Profile() {
             Manage your account information and settings
           </span>
         </div>
-        {/* Payment Status Section */}
         <div className="w-full rounded-xl border bg-card p-5 shadow">
           <div className="mb-4">
             <h3 className="font-semibold text-lg">Payment Status</h3>
             <p className="text-muted-foreground text-sm">Manage your payment information and download invoices</p>
           </div>
-
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div
@@ -145,14 +143,12 @@ function Profile() {
               />
               <span className="font-medium capitalize">{user.payment_status}</span>
             </div>
-
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={handleCheckPaymentStatus} disabled={checkingPayment}>
                 {checkingPayment ? <Loader2 className="h-4 w-4 animate-spin" /> : "Refresh Status"}
               </Button>
             </div>
           </div>
-
           {payments && payments.length > 0 && (
             <div className="mt-4">
               <h4 className="mb-2 font-medium">Payment History</h4>
@@ -197,7 +193,6 @@ function Profile() {
             </div>
           )}
         </div>
-
         <div className="grid w-full grid-cols-2 items-start justify-start divide-x rounded-xl border bg-card shadow">
           <Form {...profileForm}>
             <form

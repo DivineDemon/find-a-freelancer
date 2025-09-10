@@ -57,6 +57,7 @@ class UserWithToken(BaseModel):
 
 class LoginUserResponse(BaseModel):
 
+    user_id: int
     email: str
     first_name: str
     last_name: str

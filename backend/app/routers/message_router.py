@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import and_, desc, func, or_, select
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -10,6 +10,7 @@ from app.core.db import get_db
 from app.models.chat import Chat
 from app.models.message import Message
 from app.models.user import User, UserType
+from app.routers.auth_router import get_current_user
 from app.routers.chat_router import get_chat_participant
 from app.schemas.message_schema import (
     MessageCreate,
@@ -17,7 +18,6 @@ from app.schemas.message_schema import (
     MessageRead,
     MessageWithSender,
 )
-from app.utils.auth_utils import get_current_user
 
 router = APIRouter(prefix="/messages", tags=["Message Management"])
 
@@ -81,7 +81,7 @@ async def get_chat_messages(
         selectinload(Message.sender)
     ).where(
         Message.chat_id == chat.id
-    ).order_by(desc(Message.created_at))
+    ).order_by(Message.created_at)
 
     query = query.offset((page - 1) * size).limit(size)
     result = await session.execute(query)
@@ -194,7 +194,7 @@ async def search_messages(
     count_query = select(func.count()).select_from(message_query.subquery())
     total_result = await session.execute(count_query)
     total = total_result.scalar() or 0
-    message_query = message_query.order_by(desc(Message.created_at))
+    message_query = message_query.order_by(Message.created_at)
     message_query = message_query.offset((page - 1) * size).limit(size)
 
     message_query = message_query.options(

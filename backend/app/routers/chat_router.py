@@ -10,6 +10,7 @@ from app.core.db import get_db
 from app.models.chat import Chat
 from app.models.message import Message
 from app.models.user import User, UserType
+from app.routers.auth_router import get_current_user
 from app.schemas.chat_schema import (
     ChatCreate,
     ChatList,
@@ -18,7 +19,6 @@ from app.schemas.chat_schema import (
     ChatUpdate,
     ChatWithParticipants,
 )
-from app.utils.auth_utils import get_current_user
 
 router = APIRouter(prefix="/chats", tags=["Chat Management"])
 

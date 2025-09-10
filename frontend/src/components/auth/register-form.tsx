@@ -27,7 +27,10 @@ function RegisterForm({ setIsLogin }: RegisterFormProps) {
   const handleRegister = async (data: z.infer<typeof registerSchema>) => {
     try {
       const response = await register({
-        userCreate: data,
+        userCreate: {
+          ...data,
+          country: "Pakistan",
+        },
       });
 
       if (response.data) {

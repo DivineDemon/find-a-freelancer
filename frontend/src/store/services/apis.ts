@@ -284,6 +284,12 @@ const injectedRtkApi = api
         }),
         invalidatesTags: ["payments"],
       }),
+      getChatStatusWsStatusChatIdGet: build.query<
+        GetChatStatusWsStatusChatIdGetApiResponse,
+        GetChatStatusWsStatusChatIdGetApiArg
+      >({
+        query: (queryArg) => ({ url: `/ws/status/${queryArg.chatId}` }),
+      }),
     }),
     overrideExisting: false,
   });
@@ -424,6 +430,10 @@ export type ManualPaymentUpdatePaymentsManualPaymentUpdatePaymentIntentIdPostApi
 export type ManualPaymentUpdatePaymentsManualPaymentUpdatePaymentIntentIdPostApiArg = {
   paymentIntentId: string;
 };
+export type GetChatStatusWsStatusChatIdGetApiResponse = /** status 200 Successful Response */ ChatStatusResponse;
+export type GetChatStatusWsStatusChatIdGetApiArg = {
+  chatId: string;
+};
 export type HealthBase = {
   status: string;
   message: string;
@@ -469,6 +479,7 @@ export type UserCreate = {
   country?: string | null;
 };
 export type LoginUserResponse = {
+  user_id: number;
   email: string;
   first_name: string;
   last_name: string;
@@ -738,6 +749,11 @@ export type ManualPaymentUpdateResponse = {
   status: string;
   message: string;
 };
+export type ChatStatusResponse = {
+  chat_id: string;
+  online_users: number[];
+  connection_count: number;
+};
 export const {
   useHealthCheckGetQuery,
   useRegisterUserAuthRegisterPostMutation,
@@ -770,4 +786,5 @@ export const {
   useGetPaymentConfigPaymentsConfigGetQuery,
   useCheckPaymentStatusPaymentsCheckPaymentStatusPostMutation,
   useManualPaymentUpdatePaymentsManualPaymentUpdatePaymentIntentIdPostMutation,
+  useGetChatStatusWsStatusChatIdGetQuery,
 } = injectedRtkApi;

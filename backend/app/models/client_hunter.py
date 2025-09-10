@@ -9,7 +9,6 @@ if TYPE_CHECKING:
     from app.models.user import User
 
 class ClientHunter(BaseModel):
-    """Client Hunter profile model for users who outsource work."""
     __tablename__ = "client_hunters"
 
     user_id: Mapped[int] = mapped_column(

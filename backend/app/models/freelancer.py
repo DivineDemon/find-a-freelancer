@@ -9,9 +9,7 @@ if TYPE_CHECKING:
     from app.models.project import Project
     from app.models.user import User
 
-
 class Freelancer(BaseModel):
-    """Freelancer profile model with skills, rates, and experience."""
     __tablename__ = "freelancers"
 
     user_id: Mapped[int] = mapped_column(

@@ -9,7 +9,6 @@ class ResponseModel(BaseModel, Generic[T]):
     data: T | None = None
     message: str = "Success"
 
-
 class UserJWT(BaseModel):
   sub: str
 

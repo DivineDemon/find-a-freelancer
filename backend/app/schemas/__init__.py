@@ -1,4 +1,4 @@
-# Import all schemas
+
 from app.schemas.chat_schema import (
     ChatBase,
     ChatCreate,
@@ -37,18 +37,17 @@ from app.schemas.user_schema import (
     UserWithToken,
 )
 
-# Export all schemas
 __all__ = [
-    # User schemas
+
     "UserBase", "UserCreate", "UserLogin", "UserUpdate", "UserRead",
     "UserWithToken", "UserStatsSummary",
-    # Freelancer schemas
+
     "FreelancerBase", "FreelancerCreate", "FreelancerUpdate",
     "FreelancerRead", "FreelancerSearch",
-    # Chat schemas
+
     "ChatBase", "ChatCreate", "ChatUpdate", "ChatRead",
     "ChatWithParticipants", "ChatList", "ChatSearch", "ChatStats",
-    # Message schemas
+
     "MessageBase", "MessageCreate", "MessageUpdate", "MessageRead",
     "MessageWithSender", "MessageList", "MessageFilter",
     "MessageReaction", "MessageSearch",

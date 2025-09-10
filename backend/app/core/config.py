@@ -12,19 +12,16 @@ class Settings(BaseSettings):
     CORS_ORIGINS: Sequence[str] = ["*"]
     JWT_EXPIRATION_MINUTES: int = 60 * 24
     APP_NAME: str = "Find a Freelancer BE"
-
-    # Stripe Configuration
     STRIPE_PUBLISHABLE_KEY: str = ""
     STRIPE_SECRET_KEY: str = ""
     STRIPE_WEBHOOK_SECRET: str = ""
-    STRIPE_MODE: str = "test"  # "test" or "live"
-
-    # Platform Settings
+    STRIPE_MODE: str = "test"
     PLATFORM_FEE_AMOUNT: float = 50.00
     PLATFORM_FEE_CURRENCY: str = "USD"
 
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
+
 
 settings = Settings() # type: ignore

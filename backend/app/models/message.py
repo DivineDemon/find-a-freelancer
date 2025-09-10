@@ -9,9 +9,7 @@ if TYPE_CHECKING:
     from app.models.chat import Chat
     from app.models.user import User
 
-
 class Message(BaseModel):
-    """Message model for chat conversations."""
     __tablename__ = "messages"
 
     content: Mapped[str] = mapped_column(Text, nullable=False)

@@ -11,8 +11,6 @@ logger = get_logger(__name__)
 
 
 class LoggingMiddleware(BaseHTTPMiddleware):
-    """Middleware for logging HTTP requests and responses."""
-    
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         request_id = str(uuid4())
         request.state.request_id = request_id
@@ -53,8 +51,6 @@ class LoggingMiddleware(BaseHTTPMiddleware):
 
 
 class SecurityMiddleware(BaseHTTPMiddleware):
-    """Middleware for adding security headers."""
-    
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         response = await call_next(request)
         
@@ -70,8 +66,6 @@ class SecurityMiddleware(BaseHTTPMiddleware):
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
-    """Basic rate limiting middleware."""
-    
     def __init__(self, app, requests_per_minute: int = 60):
         super().__init__(app)
         self.requests_per_minute = requests_per_minute
@@ -79,7 +73,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         client_ip = request.client.host if request.client else "unknown"
-        current_time = int(time.time() / 60)  # Current minute
+        current_time = int(time.time() / 60)
         
         if client_ip not in self.request_counts:
             self.request_counts[client_ip] = {}

@@ -1,5 +1,3 @@
-"""Stripe payment service for handling payments."""
-
 from typing import Any, Dict, Optional
 
 import stripe
@@ -9,12 +7,9 @@ from app.core.logger import get_logger
 
 logger = get_logger(__name__)
 
-# Configure Stripe
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
-
 class StripeService:
-    """Service for handling Stripe payments."""
 
     @staticmethod
     def create_payment_intent(
@@ -22,7 +17,7 @@ class StripeService:
         currency: str = "usd", 
         metadata: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
-        """Create a Stripe payment intent."""
+        
         try:
             intent = stripe.PaymentIntent.create(
                 amount=amount,
@@ -32,7 +27,6 @@ class StripeService:
                     'enabled': True,
                 },
             )
-            logger.info(f"Created payment intent: {intent.id}")
             return {
                 "client_secret": intent.client_secret,
                 "payment_intent_id": intent.id,
@@ -46,7 +40,7 @@ class StripeService:
 
     @staticmethod
     def retrieve_payment_intent(payment_intent_id: str) -> Dict[str, Any]:
-        """Retrieve a Stripe payment intent."""
+        
         try:
             intent = stripe.PaymentIntent.retrieve(payment_intent_id)
             return {
@@ -65,7 +59,7 @@ class StripeService:
 
     @staticmethod
     def confirm_payment_intent(payment_intent_id: str) -> Dict[str, Any]:
-        """Confirm a Stripe payment intent."""
+        
         try:
             intent = stripe.PaymentIntent.confirm(payment_intent_id)
             return {
@@ -85,14 +79,13 @@ class StripeService:
         name: str, 
         metadata: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
-        """Create a Stripe customer."""
+        
         try:
             customer = stripe.Customer.create(
                 email=email,
                 name=name,
                 metadata=metadata or {}
             )
-            logger.info(f"Created Stripe customer: {customer.id}")
             return {
                 "id": customer.id,
                 "email": customer.email,
@@ -107,7 +100,7 @@ class StripeService:
     def construct_webhook_event(
         payload: bytes, sig_header: str
     ) -> Dict[str, Any]:
-        """Construct and verify a Stripe webhook event."""
+        
         try:
             event = stripe.Webhook.construct_event(
                 payload, sig_header, settings.STRIPE_WEBHOOK_SECRET
@@ -122,12 +115,12 @@ class StripeService:
 
     @staticmethod
     def get_publishable_key() -> str:
-        """Get the Stripe publishable key."""
+        
         return settings.STRIPE_PUBLISHABLE_KEY
 
     @staticmethod
     def retrieve_payment_intent_with_receipt(payment_intent_id: str) -> Dict[str, Any]:
-        """Retrieve a Stripe payment intent with receipt URL."""
+        
         try:
             intent = stripe.PaymentIntent.retrieve(payment_intent_id)
             return {
@@ -138,8 +131,8 @@ class StripeService:
                 "metadata": intent.metadata,
                 "client_secret": intent.client_secret,
                 "receipt_url": (
-                    intent.charges.data[0].receipt_url
-                    if intent.charges.data else None
+                    intent.charges.data[0].receipt_url # type: ignore
+                    if intent.charges.data else None # type: ignore
                 )
             }
         except stripe.StripeError as e:
@@ -148,7 +141,7 @@ class StripeService:
 
     @staticmethod
     def download_receipt_pdf(receipt_url: str) -> bytes:
-        """Download receipt PDF from Stripe."""
+        
         try:
             import requests
             response = requests.get(receipt_url)

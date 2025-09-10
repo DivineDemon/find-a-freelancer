@@ -27,12 +27,10 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 security = HTTPBearer()
 logger = get_logger(__name__)
 
-
 async def get_current_user(
     credentials: Annotated[HTTPAuthorizationCredentials, Depends(security)],
     session: Annotated[AsyncSession, Depends(get_db)]
 ) -> User:
-    """Get the current authenticated user from JWT token."""
     token = credentials.credentials
     payload = verify_access_token(token)
     
@@ -59,11 +57,6 @@ async def get_current_user(
             detail="Invalid authentication credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
     
     result = await session.execute(
         select(User).where(User.id == user_id)
@@ -85,7 +78,6 @@ async def get_current_user(
     
     return user
 
-
 @router.post(
     "/register", 
     response_model=UserWithToken, 
@@ -95,9 +87,7 @@ async def register_user(
     user_data: UserCreate,
     session: Annotated[AsyncSession, Depends(get_db)]
 ):
-    """Register a new user."""
     try:
-        # Use the injected session instead of creating a new one
         result = await session.execute(
             select(User).where(User.email == user_data.email)
         )
@@ -120,13 +110,12 @@ async def register_user(
         await session.commit()
         await session.refresh(user)
 
-        # Create profile based on user type
         if user.user_type == "client_hunter":
             client_hunter = ClientHunter(
                 user_id=user.id,
                 first_name=user.first_name,
                 last_name=user.last_name,
-                country="Unknown"  # Default value, can be updated later
+                country=user_data.country or "Unknown"
             )
             session.add(client_hunter)
         elif user.user_type == "freelancer":
@@ -138,7 +127,7 @@ async def register_user(
                 years_of_experience=0,
                 skills=[],
                 is_available=True,
-                country="Unknown"  # Default value, can be updated later
+                country=user_data.country or "Unknown"
             )
             session.add(freelancer)
 
@@ -164,13 +153,11 @@ async def register_user(
             detail=f"Registration failed: {str(e)}"
         )
 
-
 @router.post("/login", response_model=LoginResponse)
 async def login_user(
     user_credentials: UserLogin,
     session: Annotated[AsyncSession, Depends(get_db)]
 ):
-    """Login user with email and password."""
     result = await session.execute(
         select(User).where(User.email == user_credentials.email)
     )
@@ -193,12 +180,10 @@ async def login_user(
         data={"sub": str(user.id)},
         expires_delta=settings.JWT_EXPIRATION_MINUTES
     )
-    
-    # Determine payment status based on user type
+
     if user.user_type == "freelancer":
-        payment_status = "paid"  # Freelancers don't need to pay
+        payment_status = "paid"
     else:
-        # For client hunters, check their payment status
         from app.models.client_hunter import ClientHunter
         client_hunter_result = await session.execute(
             select(ClientHunter).where(ClientHunter.user_id == user.id)
@@ -220,14 +205,11 @@ async def login_user(
         )
     )
 
-
 @router.get("/me", response_model=UserRead)
 async def get_current_user_profile(
     current_user: Annotated[User, Depends(get_current_user)]
 ):
-    """Get current user's profile."""
     return UserRead.model_validate(current_user)
-
 
 @router.put("/me", response_model=UserRead)
 async def update_current_user_profile(
@@ -235,8 +217,7 @@ async def update_current_user_profile(
     current_user: Annotated[User, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_db)]
 ):
-    """Update current user's profile."""
-    for field, value in user_update.dict(exclude_unset=True).items():
+    for field, value in user_update.model_dump(exclude_unset=True).items():
         setattr(current_user, field, value)
     
     await session.commit()
@@ -244,12 +225,10 @@ async def update_current_user_profile(
     
     return UserRead.model_validate(current_user)
 
-
 @router.post("/refresh", response_model=UserWithToken)
 async def refresh_access_token(
     current_user: Annotated[User, Depends(get_current_user)]
 ):
-    """Refresh user's access token."""
     access_token = create_access_token(
         data={"sub": str(current_user.id)},
         expires_delta=settings.JWT_EXPIRATION_MINUTES
@@ -261,29 +240,24 @@ async def refresh_access_token(
         token_type="bearer"
     )
 
-
 @router.post("/change-password", response_model=dict)
 async def change_password(
     password_data: PasswordChange,
     current_user: Annotated[User, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_db)]
 ):
-    """Change user's password."""
-    # Verify current password
     if not current_user.verify_password(password_data.current_password):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Current password is incorrect"
         )
 
-    # Validate new password strength (basic validation)
     if len(password_data.new_password) < 8:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="New password must be at least 8 characters long"
         )
 
-    # Update password
     current_user.set_password(password_data.new_password)
     await session.commit()
 

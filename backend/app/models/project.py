@@ -8,9 +8,7 @@ from app.core.base import BaseModel
 if TYPE_CHECKING:
     from app.models.freelancer import Freelancer
 
-
 class Project(BaseModel):
-    """Project model for freelancers to showcase their work."""
     __tablename__ = "projects"
 
     freelancer_id: Mapped[int] = mapped_column(

@@ -1,5 +1,3 @@
-"""User management router for admin operations and user listing."""
-
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -28,30 +26,25 @@ from app.utils.auth_utils import get_current_user
 logger = get_logger(__name__)
 router = APIRouter(prefix="/users", tags=["User Management"])
 
-
-# Response models for API documentation
 class FilterOptionsResponse(BaseModel):
-    """Response model for filter options."""
+
     skills: List[str]
     hourly_rate_range: dict
     experience_range: dict
 
-
 class UserStatsResponse(BaseModel):
-    """Response model for user statistics."""
+
     total_users: int
     client_hunters: int
     freelancers: int
     active_users: int
-
 
 @router.get("/me", response_model=UserRead)
 async def get_current_user_info(
     current_user: UserJWT = Depends(get_current_user),
     session: AsyncSession = Depends(get_db)
 ):
-    """Get current user information."""
-    # Get the full user object from the database
+
     user_result = await session.execute(
         select(User).where(User.id == int(current_user.sub))
     )
@@ -65,11 +58,9 @@ async def get_current_user_info(
 
     return UserRead.model_validate(user)
 
-
 @router.get("/{user_id}", response_model=ComprehensiveUserResponse)
 async def get_user(user_id: int, session: AsyncSession = Depends(get_db)):
-    """Get comprehensive user data by ID including profile and projects."""
-    # Get user with all related data
+
     result = await session.execute(
         select(User)
         .options(
@@ -84,7 +75,6 @@ async def get_user(user_id: int, session: AsyncSession = Depends(get_db)):
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # Build comprehensive response
     response_data = {
         "id": user.id,
         "email": user.email,
@@ -96,12 +86,8 @@ async def get_user(user_id: int, session: AsyncSession = Depends(get_db)):
         "is_active": user.is_active,
         "created_at": user.created_at,
         "updated_at": user.updated_at,
-        "freelancer_profile": None,
-        "client_hunter_profile": None,
-        "projects": None
     }
 
-    # Add freelancer profile and projects if user is a freelancer
     if user.user_type == "freelancer" and user.freelancer_profile:
         freelancer = user.freelancer_profile
         response_data["freelancer_profile"] = FreelancerProfileSummary(
@@ -120,7 +106,6 @@ async def get_user(user_id: int, session: AsyncSession = Depends(get_db)):
             updated_at=freelancer.updated_at
         )
 
-        # Add projects if they exist
         if freelancer.projects:
             response_data["projects"] = [
                 ProjectSummary(
@@ -137,7 +122,6 @@ async def get_user(user_id: int, session: AsyncSession = Depends(get_db)):
                 for project in freelancer.projects
             ]
 
-    # Add client hunter profile if user is a client hunter
     elif user.user_type == "client_hunter" and user.client_hunter_profile:
         client_hunter = user.client_hunter_profile
         response_data["client_hunter_profile"] = ClientHunterProfileSummary(
@@ -153,7 +137,6 @@ async def get_user(user_id: int, session: AsyncSession = Depends(get_db)):
 
     return response_data
 
-
 @router.get("", response_model=List[DashboardFreelancerResponse])
 async def list_users(
     skip: int = Query(0, ge=0),
@@ -166,9 +149,9 @@ async def list_users(
     search_query: Optional[str] = Query(None),
     session: AsyncSession = Depends(get_db)
 ):
-    """List freelancers with user information and filtering options."""
+
     try:
-        # Start with base query for freelancers with user data
+
         query = (
             select(Freelancer, User)
             .options(selectinload(Freelancer.projects))
@@ -176,7 +159,6 @@ async def list_users(
             .where(User.user_type == "freelancer")
         )
 
-        # Apply filters
         if min_hourly_rate is not None:
             query = query.where(Freelancer.hourly_rate >= min_hourly_rate)
 
@@ -193,7 +175,7 @@ async def list_users(
 
         if skills:
             skill_list = [skill.strip().lower() for skill in skills.split(",")]
-            # Use PostgreSQL JSON contains operator for skills filtering
+
             skill_conditions = []
             for i, skill in enumerate(skill_list):
                 skill_conditions.append(
@@ -202,7 +184,6 @@ async def list_users(
                         **{f"skill_pattern_{i}": f"%{skill}%"})
                 )
             query = query.where(or_(*skill_conditions))
-
 
         if search_query:
             search_term = f"%{search_query.lower()}%"
@@ -215,14 +196,11 @@ async def list_users(
                 )
             )
 
-        # Apply pagination
         query = query.offset(skip).limit(limit)
 
-        # Execute query
         result = await session.execute(query)
         rows = result.all()
 
-        # Map to dashboard response format
         dashboard_freelancers = []
         for freelancer, user in rows:
             freelancer_data = {
@@ -244,12 +222,11 @@ async def list_users(
         logger.error(f"Error listing freelancers: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
-
 @router.get("/filters/options", response_model=FilterOptionsResponse)
 async def get_filter_options(session: AsyncSession = Depends(get_db)):
-    """Get available filter options for user discovery."""
+
     try:
-        # Get skills from freelancers
+
         skills_result = await session.execute(
             select(Freelancer.skills)
         )
@@ -258,7 +235,6 @@ async def get_filter_options(session: AsyncSession = Depends(get_db)):
             if row[0]:
                 all_skills.extend(row[0])
 
-        # Get price and experience ranges
         rates_result = await session.execute(
             select(func.min(Freelancer.hourly_rate),
                    func.max(Freelancer.hourly_rate))
@@ -288,22 +264,20 @@ async def get_filter_options(session: AsyncSession = Depends(get_db)):
 
     except Exception as e:
         logger.error(f"Error getting filter options: {e}")
-        # Return default values on error
+
         return {
             "skills": [],
             "hourly_rate_range": {"min": 0, "max": 100},
             "experience_range": {"min": 0, "max": 20}
         }
 
-
 @router.get("/stats/summary", response_model=UserStatsResponse)
 async def get_user_stats(session: AsyncSession = Depends(get_db)):
-    """Get user statistics summary."""
+
     try:
-        # Count total users
+
         total_users = await session.scalar(select(func.count(User.id)))
 
-        # Count by user type
         client_hunters = await session.scalar(
             select(func.count(User.id)).where(
                 User.user_type == "client_hunter")
@@ -312,7 +286,6 @@ async def get_user_stats(session: AsyncSession = Depends(get_db)):
             select(func.count(User.id)).where(User.user_type == "freelancer")
         )
 
-        # Count active users
         active_users = await session.scalar(
             select(func.count(User.id)).where(User.is_active)
         )
@@ -328,8 +301,3 @@ async def get_user_stats(session: AsyncSession = Depends(get_db)):
         logger.error(f"Error getting user stats: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
-
-# Removed redundant PUT /me endpoint - use /auth/me instead
-
-
-# Profile creation is now handled automatically during registration

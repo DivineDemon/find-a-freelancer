@@ -1,5 +1,3 @@
-"""Message router for managing chat messages."""
-
 from datetime import datetime, timezone
 from typing import Annotated, Optional
 
@@ -23,15 +21,12 @@ from app.utils.auth_utils import get_current_user
 
 router = APIRouter(prefix="/messages", tags=["Message Management"])
 
-
 @router.post("/", response_model=MessageRead, status_code=status.HTTP_201_CREATED)
 async def send_message(
     message_data: MessageCreate,
     current_user: Annotated[User, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_db)]
 ):
-    """Send a new message in a chat."""
-    # Verify chat exists and user is a participant
     chat_result = await session.execute(
         select(Chat).where(
             and_(
@@ -51,7 +46,6 @@ async def send_message(
             detail="Chat not found or access denied"
         )
 
-    # Create message
     message = Message(
         content=message_data.content,
         content_type=message_data.content_type,
@@ -61,7 +55,6 @@ async def send_message(
 
     session.add(message)
 
-    # Update chat's last_message_at
     setattr(chat, 'last_message_at', datetime.now(
         timezone.utc).replace(tzinfo=None))
     session.add(chat)
@@ -71,7 +64,6 @@ async def send_message(
 
     return message
 
-
 @router.get("/chat/{chat_id}", response_model=MessageList)
 async def get_chat_messages(
     chat: Annotated[Chat, Depends(get_chat_participant)],
@@ -79,15 +71,12 @@ async def get_chat_messages(
     page: int = Query(1, ge=1, description="Page number"),
     size: int = Query(50, ge=1, le=200, description="Page size")
 ):
-    """Get messages from a specific chat with pagination."""
-    # Get total count
     count_query = select(func.count(Message.id)).where(
         Message.chat_id == chat.id
     )
     total_result = await session.execute(count_query)
     total = total_result.scalar() or 0
 
-    # Get messages with pagination and sender information
     query = select(Message).options(
         selectinload(Message.sender)
     ).where(
@@ -98,14 +87,13 @@ async def get_chat_messages(
     result = await session.execute(query)
     messages = result.scalars().all()
 
-    # Build response with sender information
     message_list = []
     for msg in messages:
         message_with_sender = MessageWithSender(
             **msg.__dict__,
-            sender_name=msg.sender.full_name if msg.sender else "Unknown",
+            sender_name=msg.sender.full_name if msg.sender else "",
             sender_type=msg.sender.user_type if msg.sender else UserType.CLIENT_HUNTER,
-            sender_avatar=None  # Will be implemented later
+            sender_avatar=msg.sender.profile_picture if msg.sender else None
         )
         message_list.append(message_with_sender)
 
@@ -118,15 +106,12 @@ async def get_chat_messages(
         has_prev=page > 1
     )
 
-
 @router.get("/{message_id}", response_model=MessageWithSender)
 async def get_message(
     message_id: int,
     current_user: Annotated[User, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_db)]
 ):
-    """Get a specific message by ID."""
-    # Get message with sender information
     result = await session.execute(
         select(Message).options(
             selectinload(Message.sender)
@@ -142,7 +127,6 @@ async def get_message(
             detail="Message not found"
         )
 
-    # Verify user has access to the chat
     chat_result = await session.execute(
         select(Chat).where(
             and_(
@@ -164,14 +148,11 @@ async def get_message(
 
     return MessageWithSender(
         **message.__dict__,
-        sender_name=message.sender.full_name if message.sender else "Unknown",
+        sender_name=message.sender.full_name if message.sender else "",
         sender_type=message.sender.user_type if message.sender else
         UserType.CLIENT_HUNTER,
-        sender_avatar=None  # Will be implemented later
+        sender_avatar=message.sender.profile_picture if message.sender else None
     )
-
-
-
 
 @router.get("/search", response_model=MessageList)
 async def search_messages(
@@ -191,8 +172,6 @@ async def search_messages(
     page: int = Query(1, ge=1, description="Page number"),
     size: int = Query(20, ge=1, le=100, description="Page size")
 ):
-    """Search messages across user's chats."""
-    # Build base query for user's chats
     user_chats_query = select(Chat.id).where(
         or_(
             Chat.initiator_id == current_user.id,
@@ -200,7 +179,6 @@ async def search_messages(
         )
     )
 
-    # Build message search query
     message_query = select(Message).where(
         and_(
             Message.chat_id.in_(user_chats_query),
@@ -208,22 +186,17 @@ async def search_messages(
         )
     )
 
-    # Apply additional filters
     if chat_id:
         message_query = message_query.where(Message.chat_id == chat_id)
     if sender_id:
         message_query = message_query.where(Message.sender_id == sender_id)
 
-    # Get total count
     count_query = select(func.count()).select_from(message_query.subquery())
     total_result = await session.execute(count_query)
     total = total_result.scalar() or 0
-
-    # Apply pagination and ordering
     message_query = message_query.order_by(desc(Message.created_at))
     message_query = message_query.offset((page - 1) * size).limit(size)
 
-    # Execute query with sender information
     message_query = message_query.options(
         selectinload(Message.sender)
     )
@@ -231,14 +204,13 @@ async def search_messages(
     result = await session.execute(message_query)
     messages = result.scalars().all()
 
-    # Build response with sender information
     message_list = []
     for msg in messages:
         message_with_sender = MessageWithSender(
             **msg.__dict__,
-            sender_name=msg.sender.full_name if msg.sender else "Unknown",
+            sender_name=msg.sender.full_name if msg.sender else "",
             sender_type=msg.sender.user_type if msg.sender else UserType.CLIENT_HUNTER,
-            sender_avatar=None  # Will be implemented later
+            sender_avatar=msg.sender.profile_picture if msg.sender else None
         )
         message_list.append(message_with_sender)
 

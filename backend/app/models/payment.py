@@ -1,5 +1,3 @@
-"""Payment model for tracking Stripe payments."""
-
 from datetime import datetime
 from typing import Optional
 
@@ -10,7 +8,6 @@ from app.core.base import BaseModel
 
 
 class Payment(BaseModel):
-    """Model for tracking payments."""
     __tablename__ = "payments"
     
     user_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
@@ -19,16 +16,15 @@ class Payment(BaseModel):
     stripe_customer_id: Mapped[Optional[str]] = mapped_column(
         String, nullable=True, index=True)
     amount: Mapped[int] = mapped_column(
-        Integer, nullable=False)  # Amount in cents
+        Integer, nullable=False)
     currency: Mapped[str] = mapped_column(
         String, default="usd", nullable=False)
-    # pending, succeeded, failed, canceled
     status: Mapped[str] = mapped_column(String, nullable=False)
     payment_method: Mapped[Optional[str]
                            ] = mapped_column(String, nullable=True)
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     payment_metadata: Mapped[Optional[str]] = mapped_column(
-        Text, nullable=True)  # JSON string
+        Text, nullable=True)
     paid_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime, nullable=True)
     failed_at: Mapped[Optional[datetime]] = mapped_column(

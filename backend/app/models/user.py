@@ -19,15 +19,11 @@ pwd_context = CryptContext(
     bcrypt__rounds=12
 )
 
-
 class UserType(str, enum.Enum):
-    """Enum for user types."""
     CLIENT_HUNTER = "client_hunter"
     FREELANCER = "freelancer"
 
-
 class User(BaseModel):
-    """Base user model for both Client Hunters and Freelancers."""
     __tablename__ = "users"
     
     email: Mapped[str] = mapped_column(
@@ -65,14 +61,11 @@ class User(BaseModel):
         return f"<User(id={self.id}, email={self.email}, type={self.user_type})>"
     
     def set_password(self, password: str):
-        """Hash and set the user's password."""
         self.password_hash = pwd_context.hash(password)
     
     def verify_password(self, password: str) -> bool:
-        """Verify the user's password."""
         return pwd_context.verify(password, str(self.password_hash))
     
     @property
     def full_name(self) -> str:
-        """Get the user's full name."""
         return f"{self.first_name} {self.last_name}"

@@ -9,9 +9,7 @@ if TYPE_CHECKING:
     from app.models.message import Message
     from app.models.user import User
 
-
 class Chat(BaseModel):
-    """Chat model for conversations between Client Hunters and Freelancers."""
     __tablename__ = "chats"
 
     initiator_id: Mapped[int] = mapped_column(

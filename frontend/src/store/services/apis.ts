@@ -466,6 +466,7 @@ export type UserCreate = {
   password: string;
   user_type: string;
   image_url?: string | null;
+  country?: string | null;
 };
 export type LoginUserResponse = {
   email: string;

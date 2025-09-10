@@ -5,7 +5,7 @@ from pydantic import BaseModel, EmailStr, Field, HttpUrl
 
 
 class ProjectBase(BaseModel):
-    """Base project schema."""
+    
     title: str
     description: Optional[str] = None
     url: Optional[HttpUrl] = None
@@ -13,14 +13,12 @@ class ProjectBase(BaseModel):
     earned: float
     time_taken: Optional[str] = None
 
-
 class ProjectCreate(ProjectBase):
-    """Schema for creating a new project."""
+    
     pass
 
-
 class ProjectUpdate(BaseModel):
-    """Schema for updating project information."""
+    
     title: Optional[str] = None
     description: Optional[str] = None
     url: Optional[HttpUrl] = None
@@ -28,9 +26,8 @@ class ProjectUpdate(BaseModel):
     earned: Optional[float] = None
     time_taken: Optional[str] = None
 
-
 class ProjectRead(ProjectBase):
-    """Schema for reading project information."""
+    
     id: int
     freelancer_id: int
     created_at: datetime
@@ -39,9 +36,8 @@ class ProjectRead(ProjectBase):
     class Config:
         from_attributes = True
 
-
 class FreelancerBase(BaseModel):
-    """Base freelancer schema."""
+    
     title: str
     bio: Optional[str] = None
     hourly_rate: float
@@ -53,14 +49,12 @@ class FreelancerBase(BaseModel):
     is_available: bool
     country: str
 
-
 class FreelancerCreate(FreelancerBase):
-    """Schema for creating a new freelancer profile."""
+    
     pass
 
-
 class FreelancerUpdate(BaseModel):
-    """Schema for updating freelancer profile."""
+    
     title: Optional[str] = None
     bio: Optional[str] = None
     hourly_rate: Optional[float] = None
@@ -72,9 +66,8 @@ class FreelancerUpdate(BaseModel):
     is_available: Optional[bool] = None
     country: Optional[str] = None
 
-
 class FreelancerRead(FreelancerBase):
-    """Schema for reading freelancer profile."""
+    
     id: int
     user_id: int
     projects: List[ProjectRead]
@@ -84,10 +77,8 @@ class FreelancerRead(FreelancerBase):
     class Config:
         from_attributes = True
 
-
 class FreelancerWithUser(FreelancerRead):
-    """Schema for freelancer with user information."""
-    # User information
+
     email: EmailStr
     first_name: str
     last_name: str
@@ -101,9 +92,8 @@ class FreelancerWithUser(FreelancerRead):
     class Config:
         from_attributes = True
 
-
 class DashboardFreelancerResponse(BaseModel):
-    """Schema for dashboard freelancer response."""
+    
     freelancer_image: Optional[str] = None
     freelancer_position: str
     freelancer_rate: float
@@ -117,9 +107,8 @@ class DashboardFreelancerResponse(BaseModel):
     class Config:
         from_attributes = True
 
-
 class FreelancerSearch(BaseModel):
-    """Schema for freelancer search parameters."""
+    
     skills: Optional[List[str]] = None
     min_rate: Optional[float] = None
     max_rate: Optional[float] = None

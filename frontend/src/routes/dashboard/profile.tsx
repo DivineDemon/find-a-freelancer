@@ -152,8 +152,10 @@ function Profile() {
 
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className={`h-3 w-3 rounded-full ${user.has_paid ? "bg-green-500" : "bg-red-500"}`} />
-              <span className="font-medium">{user.has_paid ? "Paid" : "Unpaid"}</span>
+              <div
+                className={`h-3 w-3 rounded-full ${user.payment_status === "succeeded" ? "bg-green-500" : "bg-red-500"}`}
+              />
+              <span className="font-medium">{user.payment_status}</span>
             </div>
 
             <div className="flex gap-2">

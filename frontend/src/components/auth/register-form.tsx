@@ -2,7 +2,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, Send } from "lucide-react";
 import type { Dispatch, SetStateAction } from "react";
 import { useForm } from "react-hook-form";
-import { useDispatch } from "react-redux";
 import { toast } from "sonner";
 import { z } from "zod";
 import Logo from "@/assets/img/logo.png";
@@ -19,7 +18,6 @@ interface RegisterFormProps {
 }
 
 function RegisterForm({ setIsLogin }: RegisterFormProps) {
-  const _dispatch = useDispatch();
   const registerForm = useForm<z.infer<typeof registerSchema>>({
     resolver: zodResolver(registerSchema),
   });

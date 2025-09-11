@@ -8,7 +8,7 @@ import MaxWidthWrapper from "@/components/max-width-wrapper";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useWebSocket } from "@/hooks/use-web-socket";
-import { cn } from "@/lib/utils";
+import { cn, uploadToImgbb } from "@/lib/utils";
 import type { RootState } from "@/store";
 import {
   type MessageWithSender,
@@ -23,12 +23,17 @@ export const Route = createFileRoute("/chat/$freelancerId/")({
 
 function RouteComponent() {
   const { freelancerId } = Route.useParams();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const [messageInput, setMessageInput] = useState("");
   const lastTempMessageId = useRef<number | null>(null);
   const [chatId, setChatId] = useState<number | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const { user } = useSelector((state: RootState) => state.global);
   const [messages, setMessages] = useState<MessageWithSender[]>([]);
   const [showProjectDialog, setShowProjectDialog] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [createChat, { isLoading: isCreatingChat }] = useCreateChatChatsPostMutation();
 
   const { data: freelancerData, isLoading: isLoadingFreelancer } = useGetUserUsersUserIdGetQuery(
@@ -112,30 +117,125 @@ function RouteComponent() {
     [freelancerId, createChat],
   );
 
-  const handleSendMessage = () => {
-    if (!messageInput.trim() || !chatId || !isConnected) return;
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
 
-    const messageContent = messageInput.trim();
-    setMessageInput("");
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file");
+      return;
+    }
 
-    const tempId = Date.now();
-    lastTempMessageId.current = tempId;
-    const tempMessage: MessageWithSender = {
-      id: tempId,
-      chat_id: chatId,
-      sender_id: user?.user_id || 0,
-      content: messageContent,
-      content_type: "text",
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      sender_name: `${user?.first_name} ${user?.last_name}`,
-      sender_avatar: user?.image_url || null,
-      sender_type: "client_hunter" as const,
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setImagePreview(e.target?.result as string);
     };
+    reader.readAsDataURL(file);
+    setSelectedFile(file);
 
-    setMessages((prev) => [...prev, tempMessage]);
+    event.target.value = "";
+  };
 
-    sendWebSocketMessage(messageContent, "text");
+  const handleImageButtonClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const scrollToBottom = useCallback(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, []);
+
+  const renderMessageContent = (message: MessageWithSender) => {
+    if (message.content_type === "image") {
+      return (
+        <img
+          src={message.content}
+          alt="Shared image"
+          className="max-w-xs rounded-lg"
+          onError={(e) => {
+            e.currentTarget.style.display = "none";
+          }}
+        />
+      );
+    }
+
+    const hasImageUrl =
+      message.content.includes("http") &&
+      (message.content.includes(".jpg") ||
+        message.content.includes(".jpeg") ||
+        message.content.includes(".png") ||
+        message.content.includes(".gif") ||
+        message.content.includes(".webp"));
+
+    if (hasImageUrl) {
+      const lines = message.content.split("\n");
+      const textLines = lines.filter((line) => !line.includes("http"));
+      const imageUrls = lines.filter((line) => line.includes("http"));
+
+      return (
+        <div className="space-y-2">
+          {textLines.length > 0 && <p className="whitespace-pre-wrap">{textLines.join("\n")}</p>}
+          {imageUrls.map((url, index) => (
+            <img
+              key={index}
+              src={url}
+              alt="Shared image"
+              className="max-w-xs rounded-lg"
+              onError={(e) => {
+                e.currentTarget.style.display = "none";
+              }}
+            />
+          ))}
+        </div>
+      );
+    }
+
+    return <p className="whitespace-pre-wrap">{message.content}</p>;
+  };
+
+  const handleSendMessage = async () => {
+    if ((!messageInput.trim() && !selectedFile) || !chatId || !isConnected) return;
+
+    setIsUploadingImage(true);
+    try {
+      let messageContent = messageInput.trim();
+      let contentType = "text";
+
+      if (selectedFile) {
+        const imageUrl = await uploadToImgbb(selectedFile);
+        if (messageContent) {
+          messageContent = `${messageContent}\n${imageUrl}`;
+        } else {
+          messageContent = imageUrl;
+          contentType = "image";
+        }
+      }
+
+      setMessageInput("");
+      setImagePreview(null);
+      setSelectedFile(null);
+
+      const tempId = Date.now();
+      lastTempMessageId.current = tempId;
+      const tempMessage: MessageWithSender = {
+        id: tempId,
+        chat_id: chatId,
+        sender_id: user?.user_id || 0,
+        content: messageContent,
+        content_type: contentType,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        sender_name: `${user?.first_name} ${user?.last_name}`,
+        sender_avatar: user?.image_url || null,
+        sender_type: "client_hunter" as const,
+      };
+
+      setMessages((prev) => [...prev, tempMessage]);
+      sendWebSocketMessage(messageContent, contentType);
+    } catch (_error) {
+      toast.error("Failed to send message");
+    } finally {
+      setIsUploadingImage(false);
+    }
   };
 
   useEffect(() => {
@@ -163,6 +263,15 @@ function RouteComponent() {
       requestChatHistory(1, 20);
     }
   }, [isConnected, chatId, requestChatHistory]);
+
+  useEffect(() => {
+    if (messages.length > 0) {
+      const timer = setTimeout(() => {
+        scrollToBottom();
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [messages, scrollToBottom]);
 
   if (isLoadingFreelancer || isLoadingChats) {
     return (
@@ -241,9 +350,9 @@ function RouteComponent() {
                   return (
                     <div
                       key={message.id}
-                      className={cn("flex w-full max-w-2/3 gap-2.5", {
-                        "ml-auto items-end justify-end": isCurrentUser,
-                        "mr-auto items-start justify-start": !isCurrentUser,
+                      className={cn("flex w-full max-w-2/3 items-start gap-2.5", {
+                        "ml-auto justify-end": isCurrentUser,
+                        "mr-auto justify-start": !isCurrentUser,
                       })}
                     >
                       <img
@@ -266,7 +375,7 @@ function RouteComponent() {
                             "bg-muted text-left": !isCurrentUser,
                           })}
                         >
-                          {message.content}
+                          {renderMessageContent(message)}
                         </span>
                         <span
                           className={cn("text-[10px] text-muted-foreground", {
@@ -284,6 +393,7 @@ function RouteComponent() {
                   );
                 })
               )}
+              <div ref={messagesEndRef} />
             </div>
             {chatId && (
               <div className="flex w-full items-center justify-center gap-2 text-sm">
@@ -308,6 +418,24 @@ function RouteComponent() {
                 </div>
               </div>
             )}
+            {imagePreview && (
+              <div className="flex w-full items-center justify-center">
+                <div className="relative max-w-xs">
+                  <img src={imagePreview} alt="Preview" className="rounded-lg" />
+                  <Button
+                    variant="destructive"
+                    size="icon"
+                    className="-right-2 -top-2 absolute h-6 w-6"
+                    onClick={() => {
+                      setImagePreview(null);
+                      setSelectedFile(null);
+                    }}
+                  >
+                    ×
+                  </Button>
+                </div>
+              </div>
+            )}
             <div className="flex w-full items-center justify-center gap-2.5">
               <Input
                 type="text"
@@ -322,13 +450,19 @@ function RouteComponent() {
                 variant="outline"
                 size="icon"
                 onClick={handleSendMessage}
-                disabled={!messageInput.trim() || !chatId || !isConnected}
+                disabled={(!messageInput.trim() && !selectedFile) || !chatId || !isConnected || isUploadingImage}
               >
-                <Send className="size-4" />
+                <Send className={cn("size-4", { "animate-spin": isUploadingImage })} />
               </Button>
-              <Button variant="outline" size="icon" disabled={!chatId || !isConnected}>
-                <Image />
+              <Button
+                variant="outline"
+                size="icon"
+                disabled={!chatId || !isConnected || isUploadingImage}
+                onClick={handleImageButtonClick}
+              >
+                <Image className={cn("size-4", { "animate-spin": isUploadingImage })} />
               </Button>
+              <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
             </div>
           </div>
         </MaxWidthWrapper>

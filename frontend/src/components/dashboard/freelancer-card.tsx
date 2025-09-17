@@ -28,13 +28,6 @@ function FreelancerCard({ freelancer }: FreelancerCardProps) {
     }
   };
 
-  const getProfileLink = () => {
-    if (user?.user_type === "client_hunter") {
-      return "/client-hunter/freelancer/$userId";
-    }
-    return "/dashboard/freelancer-profile/$userId";
-  };
-
   return (
     <div className="flex h-fit w-full flex-col gap-5 rounded-lg border bg-card p-5 shadow">
       <div className="flex w-full items-center justify-center gap-5">
@@ -73,18 +66,20 @@ function FreelancerCard({ freelancer }: FreelancerCardProps) {
         </span>
       </div>
       <div className="flex w-full items-end justify-end gap-2">
-        <Link
-          to={getProfileLink()}
-          params={{ userId: `${freelancer.user_id}` }}
-          className={cn(buttonVariants({ size: "sm", variant: "default" }))}
-        >
-          Visit Profile
-        </Link>
         {user?.user_type === "client_hunter" && (
-          <Button size="sm" variant="default" onClick={handleChatClick}>
-            <MessageCircleMore />
-            Chat
-          </Button>
+          <>
+            <Link
+              to="/client-hunter/freelancer/$userId"
+              params={{ userId: `${freelancer.user_id}` }}
+              className={cn(buttonVariants({ size: "sm", variant: "default" }))}
+            >
+              Visit Profile
+            </Link>
+            <Button size="sm" variant="default" onClick={handleChatClick}>
+              <MessageCircleMore />
+              Chat
+            </Button>
+          </>
         )}
       </div>
     </div>

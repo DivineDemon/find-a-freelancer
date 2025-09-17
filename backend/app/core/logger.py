@@ -9,8 +9,9 @@ LOG_CONFIG = {
     "disable_existing_loggers": False,
     "formatters": {
         "default": {
-            "format": "[%(asctime)s] %(levelname)s \
-                  in %(module)s:%(lineno)d - %(message)s",
+            "format": (
+                "[%(asctime)s] %(levelname)s in %(module)s:%(lineno)d - %(message)s"
+            ),
         },
     },
     "handlers": {

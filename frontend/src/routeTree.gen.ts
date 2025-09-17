@@ -10,103 +10,147 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
-import { Route as DashboardProfileRouteImport } from './routes/dashboard/profile'
-import { Route as DashboardChatHistoryRouteImport } from './routes/dashboard/chat-history'
-import { Route as ChatFreelancerIdIndexRouteImport } from './routes/chat/$freelancerId/index'
-import { Route as DashboardFreelancerProfileUserIdIndexRouteImport } from './routes/dashboard/freelancer-profile/$userId/index'
+import { Route as FreelancerIndexRouteImport } from './routes/freelancer/index'
+import { Route as ClientHunterIndexRouteImport } from './routes/client-hunter/index'
+import { Route as FreelancerChatHistoryIndexRouteImport } from './routes/freelancer/chat-history/index'
+import { Route as ClientHunterProfileIndexRouteImport } from './routes/client-hunter/profile/index'
+import { Route as ClientHunterChatHistoryIndexRouteImport } from './routes/client-hunter/chat-history/index'
+import { Route as FreelancerChatClientHunterIdIndexRouteImport } from './routes/freelancer/chat/$clientHunterId/index'
+import { Route as ClientHunterFreelancerUserIdIndexRouteImport } from './routes/client-hunter/freelancer/$userId/index'
+import { Route as ClientHunterChatFreelancerIdIndexRouteImport } from './routes/client-hunter/chat/$freelancerId/index'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DashboardIndexRoute = DashboardIndexRouteImport.update({
-  id: '/dashboard/',
-  path: '/dashboard/',
+const FreelancerIndexRoute = FreelancerIndexRouteImport.update({
+  id: '/freelancer/',
+  path: '/freelancer/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DashboardProfileRoute = DashboardProfileRouteImport.update({
-  id: '/dashboard/profile',
-  path: '/dashboard/profile',
+const ClientHunterIndexRoute = ClientHunterIndexRouteImport.update({
+  id: '/client-hunter/',
+  path: '/client-hunter/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DashboardChatHistoryRoute = DashboardChatHistoryRouteImport.update({
-  id: '/dashboard/chat-history',
-  path: '/dashboard/chat-history',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ChatFreelancerIdIndexRoute = ChatFreelancerIdIndexRouteImport.update({
-  id: '/chat/$freelancerId/',
-  path: '/chat/$freelancerId/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DashboardFreelancerProfileUserIdIndexRoute =
-  DashboardFreelancerProfileUserIdIndexRouteImport.update({
-    id: '/dashboard/freelancer-profile/$userId/',
-    path: '/dashboard/freelancer-profile/$userId/',
+const FreelancerChatHistoryIndexRoute =
+  FreelancerChatHistoryIndexRouteImport.update({
+    id: '/freelancer/chat-history/',
+    path: '/freelancer/chat-history/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ClientHunterProfileIndexRoute =
+  ClientHunterProfileIndexRouteImport.update({
+    id: '/client-hunter/profile/',
+    path: '/client-hunter/profile/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ClientHunterChatHistoryIndexRoute =
+  ClientHunterChatHistoryIndexRouteImport.update({
+    id: '/client-hunter/chat-history/',
+    path: '/client-hunter/chat-history/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const FreelancerChatClientHunterIdIndexRoute =
+  FreelancerChatClientHunterIdIndexRouteImport.update({
+    id: '/freelancer/chat/$clientHunterId/',
+    path: '/freelancer/chat/$clientHunterId/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ClientHunterFreelancerUserIdIndexRoute =
+  ClientHunterFreelancerUserIdIndexRouteImport.update({
+    id: '/client-hunter/freelancer/$userId/',
+    path: '/client-hunter/freelancer/$userId/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ClientHunterChatFreelancerIdIndexRoute =
+  ClientHunterChatFreelancerIdIndexRouteImport.update({
+    id: '/client-hunter/chat/$freelancerId/',
+    path: '/client-hunter/chat/$freelancerId/',
     getParentRoute: () => rootRouteImport,
   } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/dashboard/chat-history': typeof DashboardChatHistoryRoute
-  '/dashboard/profile': typeof DashboardProfileRoute
-  '/dashboard': typeof DashboardIndexRoute
-  '/chat/$freelancerId': typeof ChatFreelancerIdIndexRoute
-  '/dashboard/freelancer-profile/$userId': typeof DashboardFreelancerProfileUserIdIndexRoute
+  '/client-hunter': typeof ClientHunterIndexRoute
+  '/freelancer': typeof FreelancerIndexRoute
+  '/client-hunter/chat-history': typeof ClientHunterChatHistoryIndexRoute
+  '/client-hunter/profile': typeof ClientHunterProfileIndexRoute
+  '/freelancer/chat-history': typeof FreelancerChatHistoryIndexRoute
+  '/client-hunter/chat/$freelancerId': typeof ClientHunterChatFreelancerIdIndexRoute
+  '/client-hunter/freelancer/$userId': typeof ClientHunterFreelancerUserIdIndexRoute
+  '/freelancer/chat/$clientHunterId': typeof FreelancerChatClientHunterIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/dashboard/chat-history': typeof DashboardChatHistoryRoute
-  '/dashboard/profile': typeof DashboardProfileRoute
-  '/dashboard': typeof DashboardIndexRoute
-  '/chat/$freelancerId': typeof ChatFreelancerIdIndexRoute
-  '/dashboard/freelancer-profile/$userId': typeof DashboardFreelancerProfileUserIdIndexRoute
+  '/client-hunter': typeof ClientHunterIndexRoute
+  '/freelancer': typeof FreelancerIndexRoute
+  '/client-hunter/chat-history': typeof ClientHunterChatHistoryIndexRoute
+  '/client-hunter/profile': typeof ClientHunterProfileIndexRoute
+  '/freelancer/chat-history': typeof FreelancerChatHistoryIndexRoute
+  '/client-hunter/chat/$freelancerId': typeof ClientHunterChatFreelancerIdIndexRoute
+  '/client-hunter/freelancer/$userId': typeof ClientHunterFreelancerUserIdIndexRoute
+  '/freelancer/chat/$clientHunterId': typeof FreelancerChatClientHunterIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/dashboard/chat-history': typeof DashboardChatHistoryRoute
-  '/dashboard/profile': typeof DashboardProfileRoute
-  '/dashboard/': typeof DashboardIndexRoute
-  '/chat/$freelancerId/': typeof ChatFreelancerIdIndexRoute
-  '/dashboard/freelancer-profile/$userId/': typeof DashboardFreelancerProfileUserIdIndexRoute
+  '/client-hunter/': typeof ClientHunterIndexRoute
+  '/freelancer/': typeof FreelancerIndexRoute
+  '/client-hunter/chat-history/': typeof ClientHunterChatHistoryIndexRoute
+  '/client-hunter/profile/': typeof ClientHunterProfileIndexRoute
+  '/freelancer/chat-history/': typeof FreelancerChatHistoryIndexRoute
+  '/client-hunter/chat/$freelancerId/': typeof ClientHunterChatFreelancerIdIndexRoute
+  '/client-hunter/freelancer/$userId/': typeof ClientHunterFreelancerUserIdIndexRoute
+  '/freelancer/chat/$clientHunterId/': typeof FreelancerChatClientHunterIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/dashboard/chat-history'
-    | '/dashboard/profile'
-    | '/dashboard'
-    | '/chat/$freelancerId'
-    | '/dashboard/freelancer-profile/$userId'
+    | '/client-hunter'
+    | '/freelancer'
+    | '/client-hunter/chat-history'
+    | '/client-hunter/profile'
+    | '/freelancer/chat-history'
+    | '/client-hunter/chat/$freelancerId'
+    | '/client-hunter/freelancer/$userId'
+    | '/freelancer/chat/$clientHunterId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/dashboard/chat-history'
-    | '/dashboard/profile'
-    | '/dashboard'
-    | '/chat/$freelancerId'
-    | '/dashboard/freelancer-profile/$userId'
+    | '/client-hunter'
+    | '/freelancer'
+    | '/client-hunter/chat-history'
+    | '/client-hunter/profile'
+    | '/freelancer/chat-history'
+    | '/client-hunter/chat/$freelancerId'
+    | '/client-hunter/freelancer/$userId'
+    | '/freelancer/chat/$clientHunterId'
   id:
     | '__root__'
     | '/'
-    | '/dashboard/chat-history'
-    | '/dashboard/profile'
-    | '/dashboard/'
-    | '/chat/$freelancerId/'
-    | '/dashboard/freelancer-profile/$userId/'
+    | '/client-hunter/'
+    | '/freelancer/'
+    | '/client-hunter/chat-history/'
+    | '/client-hunter/profile/'
+    | '/freelancer/chat-history/'
+    | '/client-hunter/chat/$freelancerId/'
+    | '/client-hunter/freelancer/$userId/'
+    | '/freelancer/chat/$clientHunterId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  DashboardChatHistoryRoute: typeof DashboardChatHistoryRoute
-  DashboardProfileRoute: typeof DashboardProfileRoute
-  DashboardIndexRoute: typeof DashboardIndexRoute
-  ChatFreelancerIdIndexRoute: typeof ChatFreelancerIdIndexRoute
-  DashboardFreelancerProfileUserIdIndexRoute: typeof DashboardFreelancerProfileUserIdIndexRoute
+  ClientHunterIndexRoute: typeof ClientHunterIndexRoute
+  FreelancerIndexRoute: typeof FreelancerIndexRoute
+  ClientHunterChatHistoryIndexRoute: typeof ClientHunterChatHistoryIndexRoute
+  ClientHunterProfileIndexRoute: typeof ClientHunterProfileIndexRoute
+  FreelancerChatHistoryIndexRoute: typeof FreelancerChatHistoryIndexRoute
+  ClientHunterChatFreelancerIdIndexRoute: typeof ClientHunterChatFreelancerIdIndexRoute
+  ClientHunterFreelancerUserIdIndexRoute: typeof ClientHunterFreelancerUserIdIndexRoute
+  FreelancerChatClientHunterIdIndexRoute: typeof FreelancerChatClientHunterIdIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -118,39 +162,60 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/dashboard/': {
-      id: '/dashboard/'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof DashboardIndexRouteImport
+    '/freelancer/': {
+      id: '/freelancer/'
+      path: '/freelancer'
+      fullPath: '/freelancer'
+      preLoaderRoute: typeof FreelancerIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/dashboard/profile': {
-      id: '/dashboard/profile'
-      path: '/dashboard/profile'
-      fullPath: '/dashboard/profile'
-      preLoaderRoute: typeof DashboardProfileRouteImport
+    '/client-hunter/': {
+      id: '/client-hunter/'
+      path: '/client-hunter'
+      fullPath: '/client-hunter'
+      preLoaderRoute: typeof ClientHunterIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/dashboard/chat-history': {
-      id: '/dashboard/chat-history'
-      path: '/dashboard/chat-history'
-      fullPath: '/dashboard/chat-history'
-      preLoaderRoute: typeof DashboardChatHistoryRouteImport
+    '/freelancer/chat-history/': {
+      id: '/freelancer/chat-history/'
+      path: '/freelancer/chat-history'
+      fullPath: '/freelancer/chat-history'
+      preLoaderRoute: typeof FreelancerChatHistoryIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/chat/$freelancerId/': {
-      id: '/chat/$freelancerId/'
-      path: '/chat/$freelancerId'
-      fullPath: '/chat/$freelancerId'
-      preLoaderRoute: typeof ChatFreelancerIdIndexRouteImport
+    '/client-hunter/profile/': {
+      id: '/client-hunter/profile/'
+      path: '/client-hunter/profile'
+      fullPath: '/client-hunter/profile'
+      preLoaderRoute: typeof ClientHunterProfileIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/dashboard/freelancer-profile/$userId/': {
-      id: '/dashboard/freelancer-profile/$userId/'
-      path: '/dashboard/freelancer-profile/$userId'
-      fullPath: '/dashboard/freelancer-profile/$userId'
-      preLoaderRoute: typeof DashboardFreelancerProfileUserIdIndexRouteImport
+    '/client-hunter/chat-history/': {
+      id: '/client-hunter/chat-history/'
+      path: '/client-hunter/chat-history'
+      fullPath: '/client-hunter/chat-history'
+      preLoaderRoute: typeof ClientHunterChatHistoryIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/freelancer/chat/$clientHunterId/': {
+      id: '/freelancer/chat/$clientHunterId/'
+      path: '/freelancer/chat/$clientHunterId'
+      fullPath: '/freelancer/chat/$clientHunterId'
+      preLoaderRoute: typeof FreelancerChatClientHunterIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/client-hunter/freelancer/$userId/': {
+      id: '/client-hunter/freelancer/$userId/'
+      path: '/client-hunter/freelancer/$userId'
+      fullPath: '/client-hunter/freelancer/$userId'
+      preLoaderRoute: typeof ClientHunterFreelancerUserIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/client-hunter/chat/$freelancerId/': {
+      id: '/client-hunter/chat/$freelancerId/'
+      path: '/client-hunter/chat/$freelancerId'
+      fullPath: '/client-hunter/chat/$freelancerId'
+      preLoaderRoute: typeof ClientHunterChatFreelancerIdIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -158,12 +223,17 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  DashboardChatHistoryRoute: DashboardChatHistoryRoute,
-  DashboardProfileRoute: DashboardProfileRoute,
-  DashboardIndexRoute: DashboardIndexRoute,
-  ChatFreelancerIdIndexRoute: ChatFreelancerIdIndexRoute,
-  DashboardFreelancerProfileUserIdIndexRoute:
-    DashboardFreelancerProfileUserIdIndexRoute,
+  ClientHunterIndexRoute: ClientHunterIndexRoute,
+  FreelancerIndexRoute: FreelancerIndexRoute,
+  ClientHunterChatHistoryIndexRoute: ClientHunterChatHistoryIndexRoute,
+  ClientHunterProfileIndexRoute: ClientHunterProfileIndexRoute,
+  FreelancerChatHistoryIndexRoute: FreelancerChatHistoryIndexRoute,
+  ClientHunterChatFreelancerIdIndexRoute:
+    ClientHunterChatFreelancerIdIndexRoute,
+  ClientHunterFreelancerUserIdIndexRoute:
+    ClientHunterFreelancerUserIdIndexRoute,
+  FreelancerChatClientHunterIdIndexRoute:
+    FreelancerChatClientHunterIdIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

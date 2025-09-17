@@ -38,7 +38,9 @@ function LoginForm({ setIsLogin }: LoginFormProps) {
       dispatch(setUser(response.user));
       dispatch(setToken(response.access_token));
 
-      navigate({ to: "/dashboard" });
+      // Redirect based on user role
+      const redirectPath = response.user.user_type === "freelancer" ? "/freelancer" : "/client-hunter";
+      navigate({ to: redirectPath });
       toast.success("Login successful!");
     } catch (_error) {
       toast.error("Login failed. Please check your credentials.");

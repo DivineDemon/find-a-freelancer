@@ -17,10 +17,31 @@ function Navbar() {
     navigate({ to: "/" });
   };
 
+  const getDashboardLink = () => {
+    if (user?.user_type === "freelancer") {
+      return "/freelancer";
+    }
+    return "/client-hunter";
+  };
+
+  const getChatHistoryLink = () => {
+    if (user?.user_type === "freelancer") {
+      return "/freelancer/chat-history";
+    }
+    return "/client-hunter/chat-history";
+  };
+
+  const getProfileLink = () => {
+    if (user?.user_type === "freelancer") {
+      return "/freelancer";
+    }
+    return "/client-hunter/profile";
+  };
+
   return (
     <nav className="h-16 w-full border-b py-3">
       <MaxWidthWrapper className="flex items-center justify-between">
-        <Link to="/dashboard">
+        <Link to={getDashboardLink()}>
           <img src={Logo} alt="logo-img" className="size-9 rounded-md" />
         </Link>
         <div className="flex items-center justify-center gap-2.5">
@@ -43,13 +64,13 @@ function Navbar() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem>
-                <Link to="/dashboard/profile" className="flex items-center gap-2">
+                <Link to={getProfileLink()} className="flex items-center gap-2">
                   <User2 />
                   Profile
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem>
-                <Link to="/dashboard/chat-history" className="flex items-center gap-2">
+                <Link to={getChatHistoryLink()} className="flex items-center gap-2">
                   <MessageSquare />
                   Chat History
                 </Link>

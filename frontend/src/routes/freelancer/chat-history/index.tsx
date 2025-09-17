@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Archive, ArchiveRestore, CircleX, Search } from "lucide-react";
 import { useState } from "react";
 import { useSelector } from "react-redux";
-import { ChatListItem } from "@/components/chat/chat-list-item";
+import ChatListItem from "@/components/chat/chat-list-item";
 import MaxWidthWrapper from "@/components/max-width-wrapper";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,14 +10,14 @@ import { requireAuth } from "@/lib/route-guard";
 import type { RootState } from "@/store";
 import { useListUserChatsChatsGetQuery } from "@/store/services/apis";
 
-export const Route = createFileRoute("/dashboard/chat-history")({
-  component: Chats,
+export const Route = createFileRoute("/freelancer/chat-history/")({
+  component: FreelancerChatHistory,
   beforeLoad: async () => {
     await requireAuth();
   },
 });
 
-function Chats() {
+function FreelancerChatHistory() {
   const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const [showArchived, setShowArchived] = useState(false);
@@ -53,8 +53,10 @@ function Chats() {
       <div className="h-[calc(100vh-64px)] w-full">
         <MaxWidthWrapper className="flex flex-col items-start justify-start gap-5">
           <div className="flex w-full flex-col items-center justify-center gap-2">
-            <span className="w-full text-left font-bold text-[30px] leading-[30px]">Chats</span>
-            <span className="w-full text-left text-[16px] text-muted-foreground leading-[16px]">Manage your chats</span>
+            <span className="w-full text-left font-bold text-[30px] leading-[30px]">My Chats</span>
+            <span className="w-full text-left text-[16px] text-muted-foreground leading-[16px]">
+              Manage your conversations
+            </span>
           </div>
           <div className="flex h-full w-full flex-col items-center justify-center">
             <div className="text-lg">Loading chats...</div>
@@ -69,8 +71,10 @@ function Chats() {
       <div className="h-[calc(100vh-64px)] w-full">
         <MaxWidthWrapper className="flex flex-col items-start justify-start gap-5">
           <div className="flex w-full flex-col items-center justify-center gap-2">
-            <span className="w-full text-left font-bold text-[30px] leading-[30px]">Chats</span>
-            <span className="w-full text-left text-[16px] text-muted-foreground leading-[16px]">Manage your chats</span>
+            <span className="w-full text-left font-bold text-[30px] leading-[30px]">My Chats</span>
+            <span className="w-full text-left text-[16px] text-muted-foreground leading-[16px]">
+              Manage your conversations
+            </span>
           </div>
           <div className="flex h-full w-full flex-col items-center justify-center">
             <CircleX className="mb-5 size-20 text-destructive" />
@@ -86,8 +90,10 @@ function Chats() {
     <div className="h-[calc(100vh-64px)] w-full">
       <MaxWidthWrapper className="flex flex-col items-start justify-start gap-5">
         <div className="flex w-full flex-col items-center justify-center gap-2">
-          <span className="w-full text-left font-bold text-[30px] leading-[30px]">Chats</span>
-          <span className="w-full text-left text-[16px] text-muted-foreground leading-[16px]">Manage your chats</span>
+          <span className="w-full text-left font-bold text-[30px] leading-[30px]">My Chats</span>
+          <span className="w-full text-left text-[16px] text-muted-foreground leading-[16px]">
+            Manage your conversations
+          </span>
         </div>
         <div className="flex w-full items-center gap-2">
           <div className="flex flex-1 items-center justify-center gap-2.5 rounded-lg border bg-muted pl-4 shadow">
@@ -112,14 +118,14 @@ function Chats() {
           <div className="flex h-full w-full flex-col items-center justify-center">
             <CircleX className="mb-5 size-20 text-destructive" />
             <span className="font-semibold text-xl">
-              {searchQuery ? "No chats found" : showArchived ? "No archived chats" : "No chats found"}
+              {searchQuery ? "No chats found" : showArchived ? "No archived chats" : "No chats yet"}
             </span>
             <span className="font-medium text-muted-foreground">
               {searchQuery
                 ? "Try adjusting your search terms."
                 : showArchived
                   ? "Archive chats to see them here."
-                  : "Initiate a chat to get started."}
+                  : "You'll see chats here when clients contact you."}
             </span>
           </div>
         ) : (

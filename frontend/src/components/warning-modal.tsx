@@ -12,13 +12,13 @@ interface WarningModalProps {
   setOpen: Dispatch<SetStateAction<boolean>>;
 }
 
-function WarningModal({ cta, open, text, title, setOpen, isLoading }: WarningModalProps) {
+const WarningModal = ({ cta, open, text, title, setOpen, isLoading }: WarningModalProps) => {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="sm:max-w-[425px]">
         <div className="flex flex-col items-center justify-center py-10">
           <div className="size-20 rounded-full bg-destructive/20 p-3">
-            <TriangleAlert size="100%" color="#FF0000" className="size-full" />
+            <TriangleAlert className="size-full text-destructive" />
           </div>
           <span className="mt-7 mb-2.5 w-full text-center font-semibold text-[24px] leading-[24px] tracking-tight">
             {title}
@@ -42,12 +42,12 @@ function WarningModal({ cta, open, text, title, setOpen, isLoading }: WarningMod
             variant="destructive"
             className="cursor-pointer"
           >
-            {isLoading ? <Loader2 className="size-5 animate-spin" /> : "Confirm"}
+            {isLoading ? <Loader2 className="animate-spin text-primary" /> : "Confirm"}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
-}
+};
 
 export default WarningModal;

@@ -36,6 +36,10 @@ class ProjectRead(ProjectBase):
     class Config:
         from_attributes = True
 
+
+class ProjectDeleteResponse(BaseModel):
+    message: str
+
 class FreelancerBase(BaseModel):
     
     title: str
@@ -55,6 +59,26 @@ class FreelancerCreate(FreelancerBase):
 
 class FreelancerUpdate(BaseModel):
     
+    title: Optional[str] = None
+    bio: Optional[str] = None
+    hourly_rate: Optional[float] = None
+    years_of_experience: Optional[int] = None
+    skills: Optional[List[str]] = None
+    portfolio_url: Optional[HttpUrl] = None
+    github_url: Optional[HttpUrl] = None
+    linkedin_url: Optional[HttpUrl] = None
+    is_available: Optional[bool] = None
+    country: Optional[str] = None
+
+
+class FreelancerCompleteUpdate(BaseModel):
+    email: Optional[EmailStr] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    phone: Optional[str] = None
+    profile_picture: Optional[str] = None
+    is_active: Optional[bool] = None
+
     title: Optional[str] = None
     bio: Optional[str] = None
     hourly_rate: Optional[float] = None

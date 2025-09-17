@@ -2,9 +2,12 @@ import { api } from "./core";
 export const addTagTypes = [
   "Authentication",
   "User Management",
+  "Client Hunter Management",
+  "Freelancer Management",
+  "Project",
   "Chat Management",
   "Message Management",
-  "payments",
+  "Payments",
 ] as const;
 const injectedRtkApi = api
   .enhanceEndpoints({
@@ -34,56 +37,85 @@ const injectedRtkApi = api
         }),
         invalidatesTags: ["Authentication"],
       }),
-      getCurrentUserProfileAuthMeGet: build.query<
-        GetCurrentUserProfileAuthMeGetApiResponse,
-        GetCurrentUserProfileAuthMeGetApiArg
+      getCurrentUserProfileUserMeGet: build.query<
+        GetCurrentUserProfileUserMeGetApiResponse,
+        GetCurrentUserProfileUserMeGetApiArg
       >({
-        query: () => ({ url: `/auth/me` }),
-        providesTags: ["Authentication"],
+        query: () => ({ url: `/user/me` }),
+        providesTags: ["User Management"],
       }),
-      updateCurrentUserProfileAuthMePut: build.mutation<
-        UpdateCurrentUserProfileAuthMePutApiResponse,
-        UpdateCurrentUserProfileAuthMePutApiArg
+      updateCurrentUserProfileUserMePut: build.mutation<
+        UpdateCurrentUserProfileUserMePutApiResponse,
+        UpdateCurrentUserProfileUserMePutApiArg
       >({
         query: (queryArg) => ({
-          url: `/auth/me`,
+          url: `/user/me`,
           method: "PUT",
           body: queryArg.userUpdate,
         }),
-        invalidatesTags: ["Authentication"],
+        invalidatesTags: ["User Management"],
       }),
-      refreshAccessTokenAuthRefreshPost: build.mutation<
-        RefreshAccessTokenAuthRefreshPostApiResponse,
-        RefreshAccessTokenAuthRefreshPostApiArg
+      refreshAccessTokenUserRefreshPost: build.mutation<
+        RefreshAccessTokenUserRefreshPostApiResponse,
+        RefreshAccessTokenUserRefreshPostApiArg
       >({
-        query: () => ({ url: `/auth/refresh`, method: "POST" }),
-        invalidatesTags: ["Authentication"],
+        query: () => ({ url: `/user/refresh`, method: "POST" }),
+        invalidatesTags: ["User Management"],
       }),
-      changePasswordAuthChangePasswordPost: build.mutation<
-        ChangePasswordAuthChangePasswordPostApiResponse,
-        ChangePasswordAuthChangePasswordPostApiArg
+      changePasswordUserChangePasswordPost: build.mutation<
+        ChangePasswordUserChangePasswordPostApiResponse,
+        ChangePasswordUserChangePasswordPostApiArg
       >({
         query: (queryArg) => ({
-          url: `/auth/change-password`,
+          url: `/user/change-password`,
           method: "POST",
           body: queryArg.passwordChange,
         }),
-        invalidatesTags: ["Authentication"],
+        invalidatesTags: ["User Management"],
       }),
-      getCurrentUserInfoUsersMeGet: build.query<
-        GetCurrentUserInfoUsersMeGetApiResponse,
-        GetCurrentUserInfoUsersMeGetApiArg
+      getClientHunterClientHunterClientHunterIdGet: build.query<
+        GetClientHunterClientHunterClientHunterIdGetApiResponse,
+        GetClientHunterClientHunterClientHunterIdGetApiArg
       >({
-        query: () => ({ url: `/users/me` }),
-        providesTags: ["User Management"],
-      }),
-      getUserUsersUserIdGet: build.query<GetUserUsersUserIdGetApiResponse, GetUserUsersUserIdGetApiArg>({
-        query: (queryArg) => ({ url: `/users/${queryArg.userId}` }),
-        providesTags: ["User Management"],
-      }),
-      listUsersUsersGet: build.query<ListUsersUsersGetApiResponse, ListUsersUsersGetApiArg>({
         query: (queryArg) => ({
-          url: `/users`,
+          url: `/client_hunter/${queryArg.clientHunterId}`,
+        }),
+        providesTags: ["Client Hunter Management"],
+      }),
+      updateClientHunterClientHunterClientHunterIdPut: build.mutation<
+        UpdateClientHunterClientHunterClientHunterIdPutApiResponse,
+        UpdateClientHunterClientHunterClientHunterIdPutApiArg
+      >({
+        query: (queryArg) => ({
+          url: `/client_hunter/${queryArg.clientHunterId}`,
+          method: "PUT",
+          body: queryArg.userUpdate,
+        }),
+        invalidatesTags: ["Client Hunter Management"],
+      }),
+      toggleClientHunterStatusClientHunterToggleStatusClientHunterIdPatch: build.mutation<
+        ToggleClientHunterStatusClientHunterToggleStatusClientHunterIdPatchApiResponse,
+        ToggleClientHunterStatusClientHunterToggleStatusClientHunterIdPatchApiArg
+      >({
+        query: (queryArg) => ({
+          url: `/client_hunter/toggle_status/${queryArg.clientHunterId}`,
+          method: "PATCH",
+        }),
+        invalidatesTags: ["Client Hunter Management"],
+      }),
+      getClientHunterStatsClientHunterStatsSummaryGet: build.query<
+        GetClientHunterStatsClientHunterStatsSummaryGetApiResponse,
+        GetClientHunterStatsClientHunterStatsSummaryGetApiArg
+      >({
+        query: () => ({ url: `/client_hunter/stats/summary` }),
+        providesTags: ["Client Hunter Management"],
+      }),
+      getAllFreelancersFreelancerAllGet: build.query<
+        GetAllFreelancersFreelancerAllGetApiResponse,
+        GetAllFreelancersFreelancerAllGetApiArg
+      >({
+        query: (queryArg) => ({
+          url: `/freelancer/all`,
           params: {
             skip: queryArg.skip,
             limit: queryArg.limit,
@@ -95,21 +127,96 @@ const injectedRtkApi = api
             search_query: queryArg.searchQuery,
           },
         }),
-        providesTags: ["User Management"],
+        providesTags: ["Freelancer Management"],
       }),
-      getFilterOptionsUsersFiltersOptionsGet: build.query<
-        GetFilterOptionsUsersFiltersOptionsGetApiResponse,
-        GetFilterOptionsUsersFiltersOptionsGetApiArg
+      getFreelancerFreelancerFreelancerIdGet: build.query<
+        GetFreelancerFreelancerFreelancerIdGetApiResponse,
+        GetFreelancerFreelancerFreelancerIdGetApiArg
       >({
-        query: () => ({ url: `/users/filters/options` }),
-        providesTags: ["User Management"],
+        query: (queryArg) => ({ url: `/freelancer/${queryArg.freelancerId}` }),
+        providesTags: ["Freelancer Management"],
       }),
-      getUserStatsUsersStatsSummaryGet: build.query<
-        GetUserStatsUsersStatsSummaryGetApiResponse,
-        GetUserStatsUsersStatsSummaryGetApiArg
+      updateFreelancerFreelancerFreelancerIdPut: build.mutation<
+        UpdateFreelancerFreelancerFreelancerIdPutApiResponse,
+        UpdateFreelancerFreelancerFreelancerIdPutApiArg
       >({
-        query: () => ({ url: `/users/stats/summary` }),
-        providesTags: ["User Management"],
+        query: (queryArg) => ({
+          url: `/freelancer/${queryArg.freelancerId}`,
+          method: "PUT",
+          body: queryArg.freelancerCompleteUpdate,
+        }),
+        invalidatesTags: ["Freelancer Management"],
+      }),
+      toggleFreelancerStatusFreelancerToggleStatusFreelancerIdPatch: build.mutation<
+        ToggleFreelancerStatusFreelancerToggleStatusFreelancerIdPatchApiResponse,
+        ToggleFreelancerStatusFreelancerToggleStatusFreelancerIdPatchApiArg
+      >({
+        query: (queryArg) => ({
+          url: `/freelancer/toggle_status/${queryArg.freelancerId}`,
+          method: "PATCH",
+        }),
+        invalidatesTags: ["Freelancer Management"],
+      }),
+      getFilterOptionsFreelancerFiltersOptionsGet: build.query<
+        GetFilterOptionsFreelancerFiltersOptionsGetApiResponse,
+        GetFilterOptionsFreelancerFiltersOptionsGetApiArg
+      >({
+        query: () => ({ url: `/freelancer/filters/options` }),
+        providesTags: ["Freelancer Management"],
+      }),
+      getFreelancerStatsFreelancerStatsSummaryGet: build.query<
+        GetFreelancerStatsFreelancerStatsSummaryGetApiResponse,
+        GetFreelancerStatsFreelancerStatsSummaryGetApiArg
+      >({
+        query: () => ({ url: `/freelancer/stats/summary` }),
+        providesTags: ["Freelancer Management"],
+      }),
+      getAllProjectsProjectsGet: build.query<GetAllProjectsProjectsGetApiResponse, GetAllProjectsProjectsGetApiArg>({
+        query: (queryArg) => ({
+          url: `/projects/`,
+          params: {
+            skip: queryArg.skip,
+            limit: queryArg.limit,
+            freelancer_id: queryArg.freelancerId,
+          },
+        }),
+        providesTags: ["Project"],
+      }),
+      createProjectProjectsPost: build.mutation<CreateProjectProjectsPostApiResponse, CreateProjectProjectsPostApiArg>({
+        query: (queryArg) => ({
+          url: `/projects/`,
+          method: "POST",
+          body: queryArg.projectCreate,
+        }),
+        invalidatesTags: ["Project"],
+      }),
+      getProjectByIdProjectsProjectIdGet: build.query<
+        GetProjectByIdProjectsProjectIdGetApiResponse,
+        GetProjectByIdProjectsProjectIdGetApiArg
+      >({
+        query: (queryArg) => ({ url: `/projects/${queryArg.projectId}` }),
+        providesTags: ["Project"],
+      }),
+      updateProjectProjectsProjectIdPut: build.mutation<
+        UpdateProjectProjectsProjectIdPutApiResponse,
+        UpdateProjectProjectsProjectIdPutApiArg
+      >({
+        query: (queryArg) => ({
+          url: `/projects/${queryArg.projectId}`,
+          method: "PUT",
+          body: queryArg.projectUpdate,
+        }),
+        invalidatesTags: ["Project"],
+      }),
+      deleteProjectProjectsProjectIdDelete: build.mutation<
+        DeleteProjectProjectsProjectIdDeleteApiResponse,
+        DeleteProjectProjectsProjectIdDeleteApiArg
+      >({
+        query: (queryArg) => ({
+          url: `/projects/${queryArg.projectId}`,
+          method: "DELETE",
+        }),
+        invalidatesTags: ["Project"],
       }),
       createChatChatsPost: build.mutation<CreateChatChatsPostApiResponse, CreateChatChatsPostApiArg>({
         query: (queryArg) => ({
@@ -143,23 +250,13 @@ const injectedRtkApi = api
         }),
         invalidatesTags: ["Chat Management"],
       }),
-      archiveChatChatsChatIdArchivePost: build.mutation<
-        ArchiveChatChatsChatIdArchivePostApiResponse,
-        ArchiveChatChatsChatIdArchivePostApiArg
+      toggleChatArchiveChatsChatIdToggleArchivePatch: build.mutation<
+        ToggleChatArchiveChatsChatIdToggleArchivePatchApiResponse,
+        ToggleChatArchiveChatsChatIdToggleArchivePatchApiArg
       >({
         query: (queryArg) => ({
-          url: `/chats/${queryArg.chatId}/archive`,
-          method: "POST",
-        }),
-        invalidatesTags: ["Chat Management"],
-      }),
-      unarchiveChatChatsChatIdUnarchivePost: build.mutation<
-        UnarchiveChatChatsChatIdUnarchivePostApiResponse,
-        UnarchiveChatChatsChatIdUnarchivePostApiArg
-      >({
-        query: (queryArg) => ({
-          url: `/chats/${queryArg.chatId}/unarchive`,
-          method: "POST",
+          url: `/chats/${queryArg.chatId}/toggle-archive`,
+          method: "PATCH",
         }),
         invalidatesTags: ["Chat Management"],
       }),
@@ -223,7 +320,7 @@ const injectedRtkApi = api
           method: "POST",
           body: queryArg.paymentIntentCreate,
         }),
-        invalidatesTags: ["payments"],
+        invalidatesTags: ["Payments"],
       }),
       getPaymentIntentPaymentsPaymentIntentPaymentIntentIdGet: build.query<
         GetPaymentIntentPaymentsPaymentIntentPaymentIntentIdGetApiResponse,
@@ -232,21 +329,21 @@ const injectedRtkApi = api
         query: (queryArg) => ({
           url: `/payments/payment-intent/${queryArg.paymentIntentId}`,
         }),
-        providesTags: ["payments"],
+        providesTags: ["Payments"],
       }),
       getUserPaymentsPaymentsUserPaymentsGet: build.query<
         GetUserPaymentsPaymentsUserPaymentsGetApiResponse,
         GetUserPaymentsPaymentsUserPaymentsGetApiArg
       >({
         query: () => ({ url: `/payments/user-payments` }),
-        providesTags: ["payments"],
+        providesTags: ["Payments"],
       }),
       stripeWebhookPaymentsWebhookPost: build.mutation<
         StripeWebhookPaymentsWebhookPostApiResponse,
         StripeWebhookPaymentsWebhookPostApiArg
       >({
         query: () => ({ url: `/payments/webhook`, method: "POST" }),
-        invalidatesTags: ["payments"],
+        invalidatesTags: ["Payments"],
       }),
       getReceiptUrlPaymentsReceiptPaymentIdGet: build.query<
         GetReceiptUrlPaymentsReceiptPaymentIdGetApiResponse,
@@ -255,14 +352,14 @@ const injectedRtkApi = api
         query: (queryArg) => ({
           url: `/payments/receipt/${queryArg.paymentId}`,
         }),
-        providesTags: ["payments"],
+        providesTags: ["Payments"],
       }),
       getPaymentConfigPaymentsConfigGet: build.query<
         GetPaymentConfigPaymentsConfigGetApiResponse,
         GetPaymentConfigPaymentsConfigGetApiArg
       >({
         query: () => ({ url: `/payments/config` }),
-        providesTags: ["payments"],
+        providesTags: ["Payments"],
       }),
       checkPaymentStatusPaymentsCheckPaymentStatusPost: build.mutation<
         CheckPaymentStatusPaymentsCheckPaymentStatusPostApiResponse,
@@ -272,7 +369,7 @@ const injectedRtkApi = api
           url: `/payments/check-payment-status`,
           method: "POST",
         }),
-        invalidatesTags: ["payments"],
+        invalidatesTags: ["Payments"],
       }),
       manualPaymentUpdatePaymentsManualPaymentUpdatePaymentIntentIdPost: build.mutation<
         ManualPaymentUpdatePaymentsManualPaymentUpdatePaymentIntentIdPostApiResponse,
@@ -282,7 +379,7 @@ const injectedRtkApi = api
           url: `/payments/manual-payment-update/${queryArg.paymentIntentId}`,
           method: "POST",
         }),
-        invalidatesTags: ["payments"],
+        invalidatesTags: ["Payments"],
       }),
       getChatStatusWsStatusChatIdGet: build.query<
         GetChatStatusWsStatusChatIdGetApiResponse,
@@ -304,26 +401,39 @@ export type LoginUserAuthLoginPostApiResponse = /** status 200 Successful Respon
 export type LoginUserAuthLoginPostApiArg = {
   userLogin: UserLogin;
 };
-export type GetCurrentUserProfileAuthMeGetApiResponse = /** status 200 Successful Response */ UserRead;
-export type GetCurrentUserProfileAuthMeGetApiArg = void;
-export type UpdateCurrentUserProfileAuthMePutApiResponse = /** status 200 Successful Response */ UserRead;
-export type UpdateCurrentUserProfileAuthMePutApiArg = {
+export type GetCurrentUserProfileUserMeGetApiResponse = /** status 200 Successful Response */ UserRead;
+export type GetCurrentUserProfileUserMeGetApiArg = void;
+export type UpdateCurrentUserProfileUserMePutApiResponse = /** status 200 Successful Response */ UserRead;
+export type UpdateCurrentUserProfileUserMePutApiArg = {
   userUpdate: UserUpdate;
 };
-export type RefreshAccessTokenAuthRefreshPostApiResponse = /** status 200 Successful Response */ UserWithToken;
-export type RefreshAccessTokenAuthRefreshPostApiArg = void;
-export type ChangePasswordAuthChangePasswordPostApiResponse = /** status 200 Successful Response */ object;
-export type ChangePasswordAuthChangePasswordPostApiArg = {
+export type RefreshAccessTokenUserRefreshPostApiResponse = /** status 200 Successful Response */ UserWithToken;
+export type RefreshAccessTokenUserRefreshPostApiArg = void;
+export type ChangePasswordUserChangePasswordPostApiResponse = /** status 200 Successful Response */ object;
+export type ChangePasswordUserChangePasswordPostApiArg = {
   passwordChange: PasswordChange;
 };
-export type GetCurrentUserInfoUsersMeGetApiResponse = /** status 200 Successful Response */ UserRead;
-export type GetCurrentUserInfoUsersMeGetApiArg = void;
-export type GetUserUsersUserIdGetApiResponse = /** status 200 Successful Response */ ComprehensiveUserResponse;
-export type GetUserUsersUserIdGetApiArg = {
-  userId: number;
+export type GetClientHunterClientHunterClientHunterIdGetApiResponse =
+  /** status 200 Successful Response */ ComprehensiveUserResponse;
+export type GetClientHunterClientHunterClientHunterIdGetApiArg = {
+  clientHunterId: number;
 };
-export type ListUsersUsersGetApiResponse = /** status 200 Successful Response */ DashboardFreelancerResponse[];
-export type ListUsersUsersGetApiArg = {
+export type UpdateClientHunterClientHunterClientHunterIdPutApiResponse = /** status 200 Successful Response */ UserRead;
+export type UpdateClientHunterClientHunterClientHunterIdPutApiArg = {
+  clientHunterId: number;
+  userUpdate: UserUpdate;
+};
+export type ToggleClientHunterStatusClientHunterToggleStatusClientHunterIdPatchApiResponse =
+  /** status 200 Successful Response */ StatusToggleResponse;
+export type ToggleClientHunterStatusClientHunterToggleStatusClientHunterIdPatchApiArg = {
+  clientHunterId: number;
+};
+export type GetClientHunterStatsClientHunterStatsSummaryGetApiResponse =
+  /** status 200 Successful Response */ ClientHunterStatsResponse;
+export type GetClientHunterStatsClientHunterStatsSummaryGetApiArg = void;
+export type GetAllFreelancersFreelancerAllGetApiResponse =
+  /** status 200 Successful Response */ DashboardFreelancerResponse[];
+export type GetAllFreelancersFreelancerAllGetApiArg = {
   skip?: number;
   limit?: number;
   minHourlyRate?: number | null;
@@ -333,11 +443,55 @@ export type ListUsersUsersGetApiArg = {
   skills?: string | null;
   searchQuery?: string | null;
 };
-export type GetFilterOptionsUsersFiltersOptionsGetApiResponse =
+export type GetFreelancerFreelancerFreelancerIdGetApiResponse =
+  /** status 200 Successful Response */ ComprehensiveUserResponse;
+export type GetFreelancerFreelancerFreelancerIdGetApiArg = {
+  freelancerId: number;
+};
+export type UpdateFreelancerFreelancerFreelancerIdPutApiResponse =
+  /** status 200 Successful Response */ FreelancerProfileSummary;
+export type UpdateFreelancerFreelancerFreelancerIdPutApiArg = {
+  freelancerId: number;
+  freelancerCompleteUpdate: FreelancerCompleteUpdate;
+};
+export type ToggleFreelancerStatusFreelancerToggleStatusFreelancerIdPatchApiResponse =
+  /** status 200 Successful Response */ StatusToggleResponse;
+export type ToggleFreelancerStatusFreelancerToggleStatusFreelancerIdPatchApiArg = {
+  freelancerId: number;
+};
+export type GetFilterOptionsFreelancerFiltersOptionsGetApiResponse =
   /** status 200 Successful Response */ FilterOptionsResponse;
-export type GetFilterOptionsUsersFiltersOptionsGetApiArg = void;
-export type GetUserStatsUsersStatsSummaryGetApiResponse = /** status 200 Successful Response */ UserStatsResponse;
-export type GetUserStatsUsersStatsSummaryGetApiArg = void;
+export type GetFilterOptionsFreelancerFiltersOptionsGetApiArg = void;
+export type GetFreelancerStatsFreelancerStatsSummaryGetApiResponse =
+  /** status 200 Successful Response */ FreelancerStatsResponse;
+export type GetFreelancerStatsFreelancerStatsSummaryGetApiArg = void;
+export type GetAllProjectsProjectsGetApiResponse = /** status 200 Successful Response */ ProjectRead[];
+export type GetAllProjectsProjectsGetApiArg = {
+  /** Number of projects to skip */
+  skip?: number;
+  /** Number of projects to return */
+  limit?: number;
+  /** Filter by freelancer ID */
+  freelancerId?: number | null;
+};
+export type CreateProjectProjectsPostApiResponse = /** status 200 Successful Response */ ProjectRead;
+export type CreateProjectProjectsPostApiArg = {
+  projectCreate: ProjectCreate;
+};
+export type GetProjectByIdProjectsProjectIdGetApiResponse = /** status 200 Successful Response */ ProjectRead;
+export type GetProjectByIdProjectsProjectIdGetApiArg = {
+  projectId: number;
+};
+export type UpdateProjectProjectsProjectIdPutApiResponse = /** status 200 Successful Response */ ProjectRead;
+export type UpdateProjectProjectsProjectIdPutApiArg = {
+  projectId: number;
+  projectUpdate: ProjectUpdate;
+};
+export type DeleteProjectProjectsProjectIdDeleteApiResponse =
+  /** status 200 Successful Response */ ProjectDeleteResponse;
+export type DeleteProjectProjectsProjectIdDeleteApiArg = {
+  projectId: number;
+};
 export type CreateChatChatsPostApiResponse = /** status 201 Successful Response */ ChatRead;
 export type CreateChatChatsPostApiArg = {
   chatCreate: ChatCreate;
@@ -362,12 +516,8 @@ export type UpdateChatChatsChatIdPutApiArg = {
   chatId: number;
   chatUpdate: ChatUpdate;
 };
-export type ArchiveChatChatsChatIdArchivePostApiResponse = /** status 200 Successful Response */ ChatRead;
-export type ArchiveChatChatsChatIdArchivePostApiArg = {
-  chatId: number;
-};
-export type UnarchiveChatChatsChatIdUnarchivePostApiResponse = /** status 200 Successful Response */ ChatRead;
-export type UnarchiveChatChatsChatIdUnarchivePostApiArg = {
+export type ToggleChatArchiveChatsChatIdToggleArchivePatchApiResponse = /** status 200 Successful Response */ ChatRead;
+export type ToggleChatArchiveChatsChatIdToggleArchivePatchApiArg = {
   chatId: number;
 };
 export type GetChatStatsChatsStatsSummaryGetApiResponse = /** status 200 Successful Response */ ChatStats;
@@ -560,6 +710,15 @@ export type ComprehensiveUserResponse = {
   client_hunter_profile?: ClientHunterProfileSummary | null;
   projects?: ProjectSummary[] | null;
 };
+export type StatusToggleResponse = {
+  message: string;
+  is_active: boolean;
+};
+export type ClientHunterStatsResponse = {
+  total_client_hunters: number;
+  active_client_hunters: number;
+  paid_client_hunters: number;
+};
 export type DashboardFreelancerResponse = {
   freelancer_image?: string | null;
   freelancer_position: string;
@@ -571,16 +730,64 @@ export type DashboardFreelancerResponse = {
   freelancer_first_name: string;
   freelancer_last_name: string;
 };
+export type FreelancerCompleteUpdate = {
+  email?: string | null;
+  first_name?: string | null;
+  last_name?: string | null;
+  phone?: string | null;
+  profile_picture?: string | null;
+  is_active?: boolean | null;
+  title?: string | null;
+  bio?: string | null;
+  hourly_rate?: number | null;
+  years_of_experience?: number | null;
+  skills?: string[] | null;
+  portfolio_url?: string | null;
+  github_url?: string | null;
+  linkedin_url?: string | null;
+  is_available?: boolean | null;
+  country?: string | null;
+};
 export type FilterOptionsResponse = {
   skills: string[];
   hourly_rate_range: object;
   experience_range: object;
 };
-export type UserStatsResponse = {
-  total_users: number;
-  client_hunters: number;
-  freelancers: number;
-  active_users: number;
+export type FreelancerStatsResponse = {
+  total_freelancers: number;
+  active_freelancers: number;
+  available_freelancers: number;
+};
+export type ProjectRead = {
+  title: string;
+  description?: string | null;
+  url?: string | null;
+  cover_image?: string | null;
+  earned: number;
+  time_taken?: string | null;
+  id: number;
+  freelancer_id: number;
+  created_at: string;
+  updated_at: string;
+};
+export type ProjectCreate = {
+  title: string;
+  description?: string | null;
+  url?: string | null;
+  cover_image?: string | null;
+  earned: number;
+  time_taken?: string | null;
+};
+export type ProjectUpdate = {
+  title?: string | null;
+  description?: string | null;
+  url?: string | null;
+  cover_image?: string | null;
+  earned?: number | null;
+  time_taken?: string | null;
+};
+export type ProjectDeleteResponse = {
+  message: string;
 };
 export type ChatRead = {
   /** Project title */
@@ -758,21 +965,30 @@ export const {
   useHealthCheckGetQuery,
   useRegisterUserAuthRegisterPostMutation,
   useLoginUserAuthLoginPostMutation,
-  useGetCurrentUserProfileAuthMeGetQuery,
-  useUpdateCurrentUserProfileAuthMePutMutation,
-  useRefreshAccessTokenAuthRefreshPostMutation,
-  useChangePasswordAuthChangePasswordPostMutation,
-  useGetCurrentUserInfoUsersMeGetQuery,
-  useGetUserUsersUserIdGetQuery,
-  useListUsersUsersGetQuery,
-  useGetFilterOptionsUsersFiltersOptionsGetQuery,
-  useGetUserStatsUsersStatsSummaryGetQuery,
+  useGetCurrentUserProfileUserMeGetQuery,
+  useUpdateCurrentUserProfileUserMePutMutation,
+  useRefreshAccessTokenUserRefreshPostMutation,
+  useChangePasswordUserChangePasswordPostMutation,
+  useGetClientHunterClientHunterClientHunterIdGetQuery,
+  useUpdateClientHunterClientHunterClientHunterIdPutMutation,
+  useToggleClientHunterStatusClientHunterToggleStatusClientHunterIdPatchMutation,
+  useGetClientHunterStatsClientHunterStatsSummaryGetQuery,
+  useGetAllFreelancersFreelancerAllGetQuery,
+  useGetFreelancerFreelancerFreelancerIdGetQuery,
+  useUpdateFreelancerFreelancerFreelancerIdPutMutation,
+  useToggleFreelancerStatusFreelancerToggleStatusFreelancerIdPatchMutation,
+  useGetFilterOptionsFreelancerFiltersOptionsGetQuery,
+  useGetFreelancerStatsFreelancerStatsSummaryGetQuery,
+  useGetAllProjectsProjectsGetQuery,
+  useCreateProjectProjectsPostMutation,
+  useGetProjectByIdProjectsProjectIdGetQuery,
+  useUpdateProjectProjectsProjectIdPutMutation,
+  useDeleteProjectProjectsProjectIdDeleteMutation,
   useCreateChatChatsPostMutation,
   useListUserChatsChatsGetQuery,
   useGetChatChatsChatIdGetQuery,
   useUpdateChatChatsChatIdPutMutation,
-  useArchiveChatChatsChatIdArchivePostMutation,
-  useUnarchiveChatChatsChatIdUnarchivePostMutation,
+  useToggleChatArchiveChatsChatIdToggleArchivePatchMutation,
   useGetChatStatsChatsStatsSummaryGetQuery,
   useSendMessageMessagesPostMutation,
   useGetChatMessagesMessagesChatChatIdGetQuery,

@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 
 import os
 import subprocess
@@ -17,7 +16,7 @@ def run_command(command, description):
             command, shell=True, check=True, capture_output=True, text=True
         )
         if result.stdout:
-            print(result.stdout)  # noqa: T201
+            logger.info(result.stdout)
         return True
     except subprocess.CalledProcessError as e:
         logger.error(f"{description} failed: {e}")
@@ -28,20 +27,20 @@ def run_command(command, description):
 
 def main():
     if len(sys.argv) < 2:
-        print("Usage: python3 manage_migrations.py <command>")  # noqa: T201
-        print("\nAvailable commands:")  # noqa: T201
-        print("  init          - Initialize Alembic (already done)")  # noqa: T201
-        print("  current       - Show current migration revision")  # noqa: T201
-        print("  history       - Show migration history")  # noqa: T201
-        print("  create <msg>  - Create a new migration")  # noqa: T201
-        print("  upgrade       - Apply pending migrations")  # noqa: T201
-        print("  downgrade     - Revert last migration")  # noqa: T201
-        print("  stamp <rev>   - Mark database as at specific revision")  # noqa: T201
-        print("  check         - Check if database is up to date")  # noqa: T201
-        print("\nExamples:")  # noqa: T201
-        print("  python3 manage_migrations.py create 'add new table'")  # noqa: T201
-        print("  python3 manage_migrations.py upgrade")  # noqa: T201
-        print("  python3 manage_migrations.py current")  # noqa: T201
+        logger.info("Usage: python3 manage_migrations.py <command>")
+        logger.info("\nAvailable commands:")
+        logger.info("  init          - Initialize Alembic (already done)")
+        logger.info("  current       - Show current migration revision")
+        logger.info("  history       - Show migration history")
+        logger.info("  create <msg>  - Create a new migration")
+        logger.info("  upgrade       - Apply pending migrations")
+        logger.info("  downgrade     - Revert last migration")
+        logger.info("  stamp <rev>   - Mark database as at specific revision")
+        logger.info("  check         - Check if database is up to date")
+        logger.info("\nExamples:")
+        logger.info("  python3 manage_migrations.py create 'add new table'")
+        logger.info("  python3 manage_migrations.py upgrade")
+        logger.info("  python3 manage_migrations.py current")
         return
 
     command = sys.argv[1].lower()
@@ -76,11 +75,13 @@ def main():
         run_command("alembic check", "Checking if database is up to date")
     
     elif command == "init":
-        print("Alembic is already initialized. Use 'create' to make new migrations.")  # noqa: T201
+        logger.info(
+            "Alembic is already initialized. Use 'create' to make new migrations."
+        )
     
     else:
         logger.error(f"Unknown command: {command}")
-        print("Run without arguments to see available commands.")  # noqa: T201
+        logger.info("Run without arguments to see available commands.")
 
 
 if __name__ == "__main__":

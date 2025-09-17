@@ -6,16 +6,16 @@ import FreelancerCard from "@/components/dashboard/freelancer-card";
 import MaxWidthWrapper from "@/components/max-width-wrapper";
 import { Button } from "@/components/ui/button";
 import { requireAuth } from "@/lib/route-guard";
-import { type DashboardFreelancerResponse, useListUsersUsersGetQuery } from "@/store/services/apis";
+import { type DashboardFreelancerResponse, useGetAllFreelancersFreelancerAllGetQuery } from "@/store/services/apis";
 
-export const Route = createFileRoute("/dashboard/")({
-  component: Index,
+export const Route = createFileRoute("/client-hunter/")({
+  component: ClientHunterDashboard,
   beforeLoad: async () => {
     await requireAuth();
   },
 });
 
-function Index() {
+function ClientHunterDashboard() {
   const [filters, setFilters] = useState({
     minHourlyRate: 0,
     maxHourlyRate: 0,
@@ -29,7 +29,7 @@ function Index() {
   const [hasNextPage, setHasNextPage] = useState<boolean>(true);
   const [freelancers, setFreelancers] = useState<DashboardFreelancerResponse[]>([]);
 
-  const { data, isLoading } = useListUsersUsersGetQuery({
+  const { data, isLoading } = useGetAllFreelancersFreelancerAllGetQuery({
     limit: 8,
     skip: (page - 1) * 8,
     minHourlyRate: filters.minHourlyRate || undefined,

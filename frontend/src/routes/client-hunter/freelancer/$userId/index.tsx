@@ -8,18 +8,22 @@ import ProjectCard from "@/components/dashboard/project-card";
 import MaxWidthWrapper from "@/components/max-width-wrapper";
 import { useTheme } from "@/components/theme-provider";
 import { Badge } from "@/components/ui/badge";
+import { requireAuth } from "@/lib/route-guard";
 import { cn } from "@/lib/utils";
-import { useGetUserUsersUserIdGetQuery } from "@/store/services/apis";
+import { useGetFreelancerFreelancerFreelancerIdGetQuery } from "@/store/services/apis";
 
-export const Route = createFileRoute("/dashboard/freelancer-profile/$userId/")({
-  component: FreelancerProfilePage,
+export const Route = createFileRoute("/client-hunter/freelancer/$userId/")({
+  component: ClientHunterFreelancerProfile,
+  beforeLoad: async () => {
+    await requireAuth();
+  },
 });
 
-function FreelancerProfilePage() {
+function ClientHunterFreelancerProfile() {
   const { theme } = useTheme();
   const { userId } = Route.useParams();
-  const { data, isLoading } = useGetUserUsersUserIdGetQuery(
-    { userId: parseInt(userId) },
+  const { data, isLoading } = useGetFreelancerFreelancerFreelancerIdGetQuery(
+    { freelancerId: parseInt(userId) },
     { skip: !userId, refetchOnMountOrArgChange: true },
   );
 

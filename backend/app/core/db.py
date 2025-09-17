@@ -21,21 +21,31 @@ connection_string = settings.DATABASE_URL
 if not connection_string:
     raise RuntimeError("DATABASE_URL is not set in the environment variables.")
 
-engine = create_async_engine(connection_string, echo=True, future=True)
+engine = create_async_engine(
+    connection_string,
+    echo=True,
+    future=True,
+    pool_pre_ping=True,
+)
+
 AsyncSessionLocal = async_sessionmaker(
     autocommit=False,
     autoflush=False,
+    expire_on_commit=False,
     bind=engine,
     class_=AsyncSession
 )
 
 
 async def get_db():
-    db = AsyncSessionLocal()
-    try:
-        yield db
-    finally:
-        await db.close()
+    async with AsyncSessionLocal() as db:
+        try:
+            yield db
+        except Exception:
+            await db.rollback()
+            raise
+        finally:
+            await db.close()
 
 
 async def init_db(engine: AsyncEngine) -> None:
@@ -68,7 +78,6 @@ async def reset_db(engine: AsyncEngine) -> None:
 async def create_tables():
     try:
         await init_db(engine)
-        logger.info("Database tables created successfully")
         return True
     except Exception as e:
         logger.error(f"Error creating tables: {e}")
@@ -84,7 +93,6 @@ async def reset_database():
             return False
 
         await reset_db(engine)
-        logger.info("Database reset successfully")
         return True
     except Exception as e:
         logger.error(f"Error resetting database: {e}")
@@ -115,12 +123,10 @@ async def main():
 if __name__ == "__main__":
     sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-    logger.info("Database Management Utility")
-
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        logger.warning("Operation cancelled by user")
+        pass
     except Exception as e:
         logger.error(f"Unexpected error: {e}")
         sys.exit(1)

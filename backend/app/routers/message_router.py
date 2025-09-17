@@ -10,8 +10,8 @@ from app.core.db import get_db
 from app.models.chat import Chat
 from app.models.message import Message
 from app.models.user import User, UserType
-from app.routers.auth_router import get_current_user
 from app.routers.chat_router import get_chat_participant
+from app.routers.user_management_router import get_current_user
 from app.schemas.message_schema import (
     MessageCreate,
     MessageList,

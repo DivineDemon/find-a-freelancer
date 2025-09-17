@@ -1,7 +1,9 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { MessageCircleMore } from "lucide-react";
+import { useSelector } from "react-redux";
 import { hasUserPaid, triggerPaymentModal } from "@/lib/route-guard";
 import { cn } from "@/lib/utils";
+import type { RootState } from "@/store";
 import type { DashboardFreelancerResponse } from "@/store/services/apis";
 import { Button, buttonVariants } from "../ui/button";
 
@@ -11,16 +13,26 @@ interface FreelancerCardProps {
 
 function FreelancerCard({ freelancer }: FreelancerCardProps) {
   const navigate = useNavigate();
+  const { user } = useSelector((state: RootState) => state.global);
 
   const handleChatClick = () => {
     if (!hasUserPaid()) {
       triggerPaymentModal();
     } else {
-      navigate({
-        to: "/chat/$freelancerId",
-        params: { freelancerId: `${freelancer.user_id}` },
-      });
+      if (user?.user_type === "client_hunter") {
+        navigate({
+          to: "/client-hunter/chat/$freelancerId",
+          params: { freelancerId: `${freelancer.user_id}` },
+        });
+      }
     }
+  };
+
+  const getProfileLink = () => {
+    if (user?.user_type === "client_hunter") {
+      return "/client-hunter/freelancer/$userId";
+    }
+    return "/dashboard/freelancer-profile/$userId";
   };
 
   return (
@@ -62,16 +74,18 @@ function FreelancerCard({ freelancer }: FreelancerCardProps) {
       </div>
       <div className="flex w-full items-end justify-end gap-2">
         <Link
-          to="/dashboard/freelancer-profile/$userId"
+          to={getProfileLink()}
           params={{ userId: `${freelancer.user_id}` }}
           className={cn(buttonVariants({ size: "sm", variant: "default" }))}
         >
           Visit Profile
         </Link>
-        <Button size="sm" variant="default" onClick={handleChatClick}>
-          <MessageCircleMore />
-          Chat
-        </Button>
+        {user?.user_type === "client_hunter" && (
+          <Button size="sm" variant="default" onClick={handleChatClick}>
+            <MessageCircleMore />
+            Chat
+          </Button>
+        )}
       </div>
     </div>
   );

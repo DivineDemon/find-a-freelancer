@@ -10,7 +10,7 @@ from app.core.db import get_db
 from app.models.chat import Chat
 from app.models.message import Message
 from app.models.user import User, UserType
-from app.routers.auth_router import get_current_user
+from app.routers.user_management_router import get_current_user
 from app.schemas.chat_schema import (
     ChatCreate,
     ChatList,
@@ -253,35 +253,17 @@ async def update_chat(
 
     return chat
 
-@router.post("/{chat_id}/archive", response_model=ChatRead)
-async def archive_chat(
+
+@router.patch("/{chat_id}/toggle-archive", response_model=ChatRead)
+async def toggle_chat_archive(
     chat: Annotated[Chat, Depends(get_chat_participant)],
     current_user: Annotated[User, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_db)]
 ):
     if chat.initiator_id == current_user.id:
-        chat.is_archived_by_initiator = True
+        chat.is_archived_by_initiator = not chat.is_archived_by_initiator
     else:
-        chat.is_archived_by_participant = True
-
-    chat.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
-
-    session.add(chat)
-    await session.commit()
-    await session.refresh(chat)
-
-    return chat
-
-@router.post("/{chat_id}/unarchive", response_model=ChatRead)
-async def unarchive_chat(
-    chat: Annotated[Chat, Depends(get_chat_participant)],
-    current_user: Annotated[User, Depends(get_current_user)],
-    session: Annotated[AsyncSession, Depends(get_db)]
-):
-    if chat.initiator_id == current_user.id:
-        chat.is_archived_by_initiator = False
-    else:
-        chat.is_archived_by_participant = False
+        chat.is_archived_by_participant = not chat.is_archived_by_participant
 
     chat.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
 

@@ -28,7 +28,7 @@ from app.utils.stripe_service import StripeService
 
 logger = get_logger(__name__)
 
-router = APIRouter(prefix="/payments", tags=["payments"])
+router = APIRouter(prefix="/payments", tags=["Payments"])
 
 @router.post("/create-payment-intent", response_model=PaymentIntentResponse)
 async def create_payment_intent(

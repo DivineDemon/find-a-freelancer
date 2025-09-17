@@ -11,7 +11,16 @@ export async function requireAuth() {
 }
 
 export function checkPaymentRequired(pathname: string): boolean {
-  const paymentRequiredRoutes = ["/dashboard", "/dashboard/profile", "/dashboard/chat-history"];
+  const paymentRequiredRoutes = [
+    "/client-hunter",
+    "/client-hunter/profile",
+    "/client-hunter/chat-history",
+    "/client-hunter/freelancer",
+    "/client-hunter/chat",
+    "/freelancer",
+    "/freelancer/chat-history",
+    "/freelancer/chat",
+  ];
   return paymentRequiredRoutes.some((route) => pathname.startsWith(route));
 }
 

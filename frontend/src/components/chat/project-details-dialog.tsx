@@ -26,7 +26,7 @@ export interface ProjectDetails {
   project_budget: string;
 }
 
-export function ProjectDetailsDialog({
+function ProjectDetailsDialog({
   open,
   onOpenChange,
   onSubmit,
@@ -107,3 +107,5 @@ export function ProjectDetailsDialog({
     </Dialog>
   );
 }
+
+export default ProjectDetailsDialog;

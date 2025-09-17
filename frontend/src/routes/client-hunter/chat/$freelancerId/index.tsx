@@ -3,25 +3,29 @@ import { Image, Send, Wifi, WifiOff } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import { toast } from "sonner";
-import { type ProjectDetails, ProjectDetailsDialog } from "@/components/chat/project-details-dialog";
+import ProjectDetailsDialog, { type ProjectDetails } from "@/components/chat/project-details-dialog";
 import MaxWidthWrapper from "@/components/max-width-wrapper";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useWebSocket } from "@/hooks/use-web-socket";
+import { requireAuth } from "@/lib/route-guard";
 import { cn, uploadToImgbb } from "@/lib/utils";
 import type { RootState } from "@/store";
 import {
   type MessageWithSender,
   useCreateChatChatsPostMutation,
-  useGetUserUsersUserIdGetQuery,
+  useGetFreelancerFreelancerFreelancerIdGetQuery,
   useListUserChatsChatsGetQuery,
 } from "@/store/services/apis";
 
-export const Route = createFileRoute("/chat/$freelancerId/")({
-  component: RouteComponent,
+export const Route = createFileRoute("/client-hunter/chat/$freelancerId/")({
+  component: ClientHunterChatInterface,
+  beforeLoad: async () => {
+    await requireAuth();
+  },
 });
 
-function RouteComponent() {
+function ClientHunterChatInterface() {
   const { freelancerId } = Route.useParams();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -36,8 +40,8 @@ function RouteComponent() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [createChat, { isLoading: isCreatingChat }] = useCreateChatChatsPostMutation();
 
-  const { data: freelancerData, isLoading: isLoadingFreelancer } = useGetUserUsersUserIdGetQuery(
-    { userId: Number(freelancerId) },
+  const { data: freelancerData, isLoading: isLoadingFreelancer } = useGetFreelancerFreelancerFreelancerIdGetQuery(
+    { freelancerId: Number(freelancerId) },
     { skip: !freelancerId },
   );
 
@@ -57,7 +61,7 @@ function RouteComponent() {
       const transformedMessage: MessageWithSender = {
         ...messageData,
         updated_at: messageData.created_at,
-        sender_type: "freelancer" as const,
+        sender_type: "client_hunter" as const,
         sender_avatar: messageData.sender_avatar ?? null,
       };
 
@@ -75,7 +79,7 @@ function RouteComponent() {
       const transformedMessages: MessageWithSender[] = messagesData.map((messageData) => ({
         ...messageData,
         updated_at: messageData.created_at,
-        sender_type: "freelancer" as const,
+        sender_type: "client_hunter" as const,
         sender_avatar: messageData.sender_avatar ?? null,
       }));
 

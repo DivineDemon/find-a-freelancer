@@ -14,7 +14,7 @@ function Index() {
   return (
     <div className="grid h-screen w-full grid-cols-2 items-center justify-center overflow-hidden">
       <div className="col-span-1 h-full w-full">
-        <img src={LoginBG} alt="login-background" className="h-full w-full object-cover" />
+        <img src={LoginBG} alt="login-background" className="h-full w-full object-cover antialiased" />
       </div>
       <div className="flex w-full items-center justify-center">
         {isLogin ? <LoginForm setIsLogin={setIsLogin} /> : <RegisterForm setIsLogin={setIsLogin} />}

@@ -19,7 +19,8 @@ from app.schemas.generic import UserJWT
 from app.utils.auth_utils import get_current_user
 
 logger = get_logger(__name__)
-router = APIRouter(prefix="/projects", tags=["Project"])
+router = APIRouter(prefix="/projects",
+                   tags=["Project", "Freelancer Management"])
 
 
 @router.get("/", response_model=List[ProjectRead])

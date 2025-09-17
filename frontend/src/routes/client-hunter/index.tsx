@@ -16,7 +16,13 @@ export const Route = createFileRoute("/client-hunter/")({
 });
 
 function ClientHunterDashboard() {
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState<{
+    skills: string[];
+    minHourlyRate: number;
+    maxHourlyRate: number;
+    minExperience: number;
+    maxExperience: number;
+  }>({
     minHourlyRate: 0,
     maxHourlyRate: 0,
     minExperience: 0,

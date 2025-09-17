@@ -2,7 +2,7 @@ import { Loader2, X } from "lucide-react";
 import type { Dispatch, SetStateAction } from "react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { useGetFilterOptionsUsersFiltersOptionsGetQuery } from "@/store/services/apis";
+import { useGetFilterOptionsFreelancerFiltersOptionsGetQuery } from "@/store/services/apis";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -37,7 +37,7 @@ function FilterSheet({ open, onOpenChange, filters, onFiltersChange, onApplyFilt
     minExperience: number;
     maxExperience: number;
   }>(filters);
-  const { data, isLoading } = useGetFilterOptionsUsersFiltersOptionsGetQuery();
+  const { data, isLoading } = useGetFilterOptionsFreelancerFiltersOptionsGetQuery();
 
   const handleSkillToggle = (skill: string) => {
     const newSkills = localFilters.skills.includes(skill)

@@ -31,11 +31,11 @@ export interface UseWebSocketReturn {
 }
 
 export const useWebSocket = (options: UseWebSocketOptions): UseWebSocketReturn => {
-  const { chatId, onMessage, onTyping, onUserStatus, onChatHistory, onError } = options;
-  const token = useSelector((state: RootState) => state.global.access_token);
-  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>("disconnected");
-  const [isConnected, setIsConnected] = useState(false);
   const callbacksRef = useRef<WebSocketCallbacks>({});
+  const [isConnected, setIsConnected] = useState<boolean>(false);
+  const token = useSelector((state: RootState) => state.global.access_token);
+  const { chatId, onMessage, onTyping, onUserStatus, onChatHistory, onError } = options;
+  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>("disconnected");
 
   const updateConnectionStatus = useCallback((status: ConnectionStatus) => {
     setConnectionStatus(status);

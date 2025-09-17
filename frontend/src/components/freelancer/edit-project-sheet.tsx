@@ -1,11 +1,13 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
 import type { Dispatch, SetStateAction } from "react";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 import { projectSchema } from "@/lib/form-schemas";
-import { useCreateProjectProjectsPostMutation } from "@/store/services/apis";
+import type { ProjectSummary } from "@/store/services/apis";
+import { useUpdateProjectProjectsProjectIdPutMutation } from "@/store/services/apis";
 import { Button } from "../ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "../ui/form";
 import ImageUploader from "../ui/image-uploader";
@@ -13,13 +15,14 @@ import { Input } from "../ui/input";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "../ui/sheet";
 import { Textarea } from "../ui/textarea";
 
-interface ProjectSheetProps {
+interface EditProjectSheetProps {
   open: boolean;
   onOpenChange: Dispatch<SetStateAction<boolean>>;
+  project: ProjectSummary | null;
 }
 
-function ProjectSheet({ open, onOpenChange }: ProjectSheetProps) {
-  const [createProject, { isLoading }] = useCreateProjectProjectsPostMutation();
+function EditProjectSheet({ open, onOpenChange, project }: EditProjectSheetProps) {
+  const [updateProject, { isLoading }] = useUpdateProjectProjectsProjectIdPutMutation();
 
   const form = useForm<z.infer<typeof projectSchema>>({
     resolver: zodResolver(projectSchema),
@@ -33,7 +36,22 @@ function ProjectSheet({ open, onOpenChange }: ProjectSheetProps) {
     },
   });
 
+  useEffect(() => {
+    if (project && open) {
+      form.reset({
+        title: project.title || "",
+        description: project.description || "",
+        url: project.url || "",
+        cover_image: project.cover_image || "",
+        earned: project.earned || 0,
+        time_taken: project.time_taken || "",
+      });
+    }
+  }, [project, open, form]);
+
   const onSubmit = async (data: z.infer<typeof projectSchema>) => {
+    if (!project) return;
+
     try {
       const projectData = {
         title: data.title,
@@ -44,15 +62,18 @@ function ProjectSheet({ open, onOpenChange }: ProjectSheetProps) {
         time_taken: data.time_taken && data.time_taken.trim() !== "" ? data.time_taken : null,
       };
 
-      await createProject({ projectCreate: projectData }).unwrap();
-      toast.success("Project added successfully!");
+      await updateProject({
+        projectId: project.id,
+        projectUpdate: projectData,
+      }).unwrap();
+
+      toast.success("Project updated successfully!");
       onOpenChange(false);
-      form.reset();
     } catch (error: unknown) {
       const errorMessage =
         (error as { data?: { detail?: string }; message?: string })?.data?.detail ||
         (error as { message?: string })?.message ||
-        "Failed to add project. Please try again.";
+        "Failed to update project. Please try again.";
       toast.error(errorMessage);
     }
   };
@@ -61,8 +82,8 @@ function ProjectSheet({ open, onOpenChange }: ProjectSheetProps) {
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="gap-0">
         <SheetHeader className="border-b pb-4">
-          <SheetTitle>Add a Project</SheetTitle>
-          <SheetDescription>Add a project to your portfolio</SheetDescription>
+          <SheetTitle>Edit Project</SheetTitle>
+          <SheetDescription>Update your project details</SheetDescription>
         </SheetHeader>
         <Form {...form}>
           <form
@@ -162,7 +183,7 @@ function ProjectSheet({ open, onOpenChange }: ProjectSheetProps) {
               </Button>
               <Button type="submit" disabled={isLoading}>
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Add Project
+                Update Project
               </Button>
             </div>
           </form>
@@ -172,4 +193,4 @@ function ProjectSheet({ open, onOpenChange }: ProjectSheetProps) {
   );
 }
 
-export default ProjectSheet;
+export default EditProjectSheet;

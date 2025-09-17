@@ -180,7 +180,7 @@ const injectedRtkApi = api
             freelancer_id: queryArg.freelancerId,
           },
         }),
-        providesTags: ["Project"],
+        providesTags: ["Project", "Freelancer Management"],
       }),
       createProjectProjectsPost: build.mutation<CreateProjectProjectsPostApiResponse, CreateProjectProjectsPostApiArg>({
         query: (queryArg) => ({
@@ -188,14 +188,14 @@ const injectedRtkApi = api
           method: "POST",
           body: queryArg.projectCreate,
         }),
-        invalidatesTags: ["Project"],
+        invalidatesTags: ["Project", "Freelancer Management"],
       }),
       getProjectByIdProjectsProjectIdGet: build.query<
         GetProjectByIdProjectsProjectIdGetApiResponse,
         GetProjectByIdProjectsProjectIdGetApiArg
       >({
         query: (queryArg) => ({ url: `/projects/${queryArg.projectId}` }),
-        providesTags: ["Project"],
+        providesTags: ["Project", "Freelancer Management"],
       }),
       updateProjectProjectsProjectIdPut: build.mutation<
         UpdateProjectProjectsProjectIdPutApiResponse,
@@ -206,7 +206,7 @@ const injectedRtkApi = api
           method: "PUT",
           body: queryArg.projectUpdate,
         }),
-        invalidatesTags: ["Project"],
+        invalidatesTags: ["Project", "Freelancer Management"],
       }),
       deleteProjectProjectsProjectIdDelete: build.mutation<
         DeleteProjectProjectsProjectIdDeleteApiResponse,
@@ -216,7 +216,7 @@ const injectedRtkApi = api
           url: `/projects/${queryArg.projectId}`,
           method: "DELETE",
         }),
-        invalidatesTags: ["Project"],
+        invalidatesTags: ["Project", "Freelancer Management"],
       }),
       createChatChatsPost: build.mutation<CreateChatChatsPostApiResponse, CreateChatChatsPostApiArg>({
         query: (queryArg) => ({
@@ -467,11 +467,8 @@ export type GetFreelancerStatsFreelancerStatsSummaryGetApiResponse =
 export type GetFreelancerStatsFreelancerStatsSummaryGetApiArg = void;
 export type GetAllProjectsProjectsGetApiResponse = /** status 200 Successful Response */ ProjectRead[];
 export type GetAllProjectsProjectsGetApiArg = {
-  /** Number of projects to skip */
   skip?: number;
-  /** Number of projects to return */
   limit?: number;
-  /** Filter by freelancer ID */
   freelancerId?: number | null;
 };
 export type CreateProjectProjectsPostApiResponse = /** status 200 Successful Response */ ProjectRead;

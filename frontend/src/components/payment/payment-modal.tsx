@@ -19,7 +19,7 @@ function PaymentModal({ amount, description }: PaymentModalProps) {
   const { theme } = useTheme();
   const elements = useElements();
   const dispatch = useDispatch();
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const { showModal, pendingAction } = useSelector((state: RootState) => state.payment);
   const [createPaymentIntent] = useCreatePaymentIntentPaymentsCreatePaymentIntentPostMutation();

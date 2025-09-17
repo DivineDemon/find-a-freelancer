@@ -16,10 +16,6 @@ interface ImageUploaderProps<TFieldValues extends FieldValues, TName extends Fie
   maxFiles?: number;
 }
 
-/**
- * ImageUploader component that automatically uploads images to ImgBB and returns URLs.
- * The field value will be a string (URL) for single mode or string[] (URLs) for multiple mode.
- */
 const ImageUploader = <TFieldValues extends FieldValues, TName extends FieldPath<TFieldValues>>({
   field,
   error,
@@ -29,7 +25,7 @@ const ImageUploader = <TFieldValues extends FieldValues, TName extends FieldPath
   maxFiles = 5,
 }: ImageUploaderProps<TFieldValues, TName>) => {
   const { value: files, onChange, onBlur } = field;
-  const [isUploading, setIsUploading] = useState(false);
+  const [isUploading, setIsUploading] = useState<boolean>(false);
 
   const normalizedFiles = multiple
     ? Array.isArray(files)
@@ -112,7 +108,7 @@ const ImageUploader = <TFieldValues extends FieldValues, TName extends FieldPath
       <FormLabel>{label}</FormLabel>
       <div
         {...getRootProps()}
-        className="flex w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed bg-muted/50 px-10 py-8 backdrop-blur-sm"
+        className="flex h-[176px] w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed bg-muted/50 px-10 py-8 backdrop-blur-sm"
         onClick={open}
       >
         <input {...getInputProps()} onBlur={onBlur} />

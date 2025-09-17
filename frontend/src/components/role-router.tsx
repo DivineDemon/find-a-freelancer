@@ -1,6 +1,7 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useSelector } from "react-redux";
+import { toast } from "sonner";
 import type { RootState } from "@/store";
 
 interface RoleRouterProps {
@@ -8,13 +9,19 @@ interface RoleRouterProps {
 }
 
 function RoleRouter({ children }: RoleRouterProps) {
-  const { user } = useSelector((state: RootState) => state.global);
   const navigate = useNavigate();
+  const { user, access_token } = useSelector((state: RootState) => state.global);
 
   useEffect(() => {
-    if (!user) return;
-
     const currentPath = window.location.pathname;
+
+    if (!access_token || !user) {
+      if (currentPath !== "/") {
+        toast.error("Please Login to Access Resources");
+        navigate({ to: "/" });
+      }
+      return;
+    }
 
     if (user.user_type === "freelancer") {
       if (currentPath.startsWith("/dashboard") || currentPath.startsWith("/chat")) {
@@ -55,7 +62,7 @@ function RoleRouter({ children }: RoleRouterProps) {
         }
       }
     }
-  }, [user, navigate]);
+  }, [user, navigate, access_token]);
 
   return <>{children}</>;
 }

@@ -14,7 +14,7 @@ interface PaymentGuardProps {
 function PaymentGuard({ children }: PaymentGuardProps) {
   const user = useSelector((state: RootState) => state.global.user);
   const { data: config } = useGetPaymentConfigPaymentsConfigGetQuery();
-  const [currentPath, setCurrentPath] = useState(window.location.pathname);
+  const [currentPath, setCurrentPath] = useState<string>(window.location.pathname);
   const accessToken = useSelector((state: RootState) => state.global.access_token);
   const [stripePromise, setStripePromise] = useState<Promise<Stripe | null> | null>(null);
 
@@ -22,7 +22,10 @@ function PaymentGuard({ children }: PaymentGuardProps) {
     const handleRouteChange = () => {
       const newPath = window.location.pathname;
       setCurrentPath(newPath);
-      checkPaymentAndRedirect(newPath);
+
+      if (accessToken && user) {
+        checkPaymentAndRedirect(newPath);
+      }
     };
 
     window.addEventListener("popstate", handleRouteChange);
@@ -40,14 +43,16 @@ function PaymentGuard({ children }: PaymentGuardProps) {
       setTimeout(handleRouteChange, 0);
     };
 
-    handleRouteChange();
+    if (accessToken && user) {
+      handleRouteChange();
+    }
 
     return () => {
       window.removeEventListener("popstate", handleRouteChange);
       history.pushState = originalPushState;
       history.replaceState = originalReplaceState;
     };
-  }, []);
+  }, [accessToken, user]);
 
   useEffect(() => {
     if (accessToken && user) {

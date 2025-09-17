@@ -1,19 +1,25 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { LogOut, MessageSquare, User2 } from "lucide-react";
-import { useSelector } from "react-redux";
+import { useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import Logo from "@/assets/img/logo.png";
 import type { RootState } from "@/store";
+import { logout as logoutAction } from "@/store/slices/global";
 import MaxWidthWrapper from "./max-width-wrapper";
 import ModeToggle from "./mode-toggle";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu";
+import WarningModal from "./warning-modal";
 
 function Navbar() {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const [warn, setWarn] = useState<boolean>(false);
   const { user } = useSelector((state: RootState) => state.global);
 
   const logout = () => {
     localStorage.clear();
+    dispatch(logoutAction());
     navigate({ to: "/" });
   };
 
@@ -39,51 +45,56 @@ function Navbar() {
   };
 
   return (
-    <nav className="h-16 w-full border-b py-3">
-      <MaxWidthWrapper className="flex items-center justify-between">
-        <Link to={getDashboardLink()}>
-          <img src={Logo} alt="logo-img" className="size-9 rounded-md" />
-        </Link>
-        <div className="flex items-center justify-center gap-2.5">
-          <ModeToggle />
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Avatar className="bg-muted">
-                <AvatarImage alt="profile-picture" src={user?.image_url ?? ""} />
-                <AvatarFallback className="p-2">
-                  {user ? (
-                    <span className="font-medium text-sm">
-                      {user.first_name?.[0]}
-                      {user.last_name?.[0]}
-                    </span>
-                  ) : (
-                    <User2 />
-                  )}
-                </AvatarFallback>
-              </Avatar>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem>
-                <Link to={getProfileLink()} className="flex items-center gap-2">
-                  <User2 />
-                  Profile
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Link to={getChatHistoryLink()} className="flex items-center gap-2">
-                  <MessageSquare />
-                  Chat History
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="text-destructive" onClick={logout}>
-                <LogOut />
-                Logout
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </MaxWidthWrapper>
-    </nav>
+    <>
+      <nav className="h-16 w-full border-b py-3">
+        <MaxWidthWrapper className="flex items-center justify-between">
+          <Link to={getDashboardLink()}>
+            <img src={Logo} alt="logo-img" className="size-9 rounded-md" />
+          </Link>
+          <div className="flex items-center justify-center gap-2.5">
+            <ModeToggle />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Avatar className="bg-muted">
+                  <AvatarImage alt="profile-picture" src={user?.image_url ?? ""} />
+                  <AvatarFallback className="p-2">
+                    {user ? (
+                      <span className="font-medium text-sm">
+                        {user.first_name?.[0]}
+                        {user.last_name?.[0]}
+                      </span>
+                    ) : (
+                      <User2 />
+                    )}
+                  </AvatarFallback>
+                </Avatar>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {user.user_type !== "freelancer" && (
+                  <DropdownMenuItem>
+                    <Link to={getProfileLink()} className="flex items-center gap-2">
+                      <User2 />
+                      Profile
+                    </Link>
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem>
+                  <Link to={getChatHistoryLink()} className="flex items-center gap-2">
+                    <MessageSquare />
+                    Chat History
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem className="text-destructive" onClick={() => setWarn(true)}>
+                  <LogOut />
+                  Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </MaxWidthWrapper>
+      </nav>
+      <WarningModal open={warn} title="Logout" text="Are you sure you want to logout?" setOpen={setWarn} cta={logout} />
+    </>
   );
 }
 

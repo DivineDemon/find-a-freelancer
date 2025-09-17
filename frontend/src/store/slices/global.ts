@@ -26,8 +26,12 @@ const globalSlice = createSlice({
     setToken: (state, action) => {
       state.access_token = action.payload;
     },
+    logout: (state) => {
+      state.user = initialState.user;
+      state.access_token = "";
+    },
   },
 });
 
-export const { setUser, setToken } = globalSlice.actions;
+export const { setUser, setToken, logout } = globalSlice.actions;
 export default globalSlice.reducer;

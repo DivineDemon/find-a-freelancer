@@ -27,14 +27,14 @@ function FreelancerChatInterface() {
   const { clientHunterId } = Route.useParams();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [messageInput, setMessageInput] = useState("");
   const lastTempMessageId = useRef<number | null>(null);
   const [chatId, setChatId] = useState<number | null>(null);
-  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [messageInput, setMessageInput] = useState<string>("");
   const { user } = useSelector((state: RootState) => state.global);
   const [messages, setMessages] = useState<MessageWithSender[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState<boolean>(false);
 
   const { data: clientHunterData, isLoading: isLoadingClientHunter } =
     useGetClientHunterClientHunterClientHunterIdGetQuery(

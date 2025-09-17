@@ -1,4 +1,5 @@
 import { redirect } from "@tanstack/react-router";
+import { toast } from "sonner";
 import store from "@/store";
 import { showModal } from "@/store/slices/payment";
 
@@ -6,6 +7,7 @@ export async function requireAuth() {
   const state = store.getState();
 
   if (!state.global.access_token) {
+    toast.error("Please Login to Access Resources");
     throw redirect({ to: "/" });
   }
 }
@@ -38,6 +40,12 @@ export function triggerPaymentModal(action?: () => void): void {
 }
 
 export function checkPaymentAndRedirect(pathname: string): boolean {
+  const state = store.getState();
+
+  if (!state.global.access_token || !state.global.user) {
+    return false;
+  }
+
   if (checkPaymentRequired(pathname) && !hasUserPaid()) {
     triggerPaymentModal();
     return true;

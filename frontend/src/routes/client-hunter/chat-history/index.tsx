@@ -18,9 +18,9 @@ export const Route = createFileRoute("/client-hunter/chat-history/")({
 });
 
 function ClientHunterChatHistory() {
-  const [page, setPage] = useState(1);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [showArchived, setShowArchived] = useState(false);
+  const [page, setPage] = useState<number>(1);
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [showArchived, setShowArchived] = useState<boolean>(false);
   const { user } = useSelector((state: RootState) => state.global);
 
   const {

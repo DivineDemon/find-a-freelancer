@@ -187,7 +187,7 @@ function ClientHunterProfile() {
 
   if (!user || isLoadingProfile) {
     return (
-      <div className="h-[calc(100vh-64px)] w-full">
+      <div className="h-[calc(100dvh-64px)] w-full">
         <MaxWidthWrapper className="flex flex-col items-center justify-center gap-5">
           <Loader2 className="size-20 animate-spin" />
         </MaxWidthWrapper>
@@ -200,7 +200,7 @@ function ClientHunterProfile() {
 
   return (
     <>
-      <div className="h-[calc(100vh-84px)] w-full overflow-y-auto md:h-full">
+      <div className="h-[calc(100dvh-84px)] w-full overflow-y-auto md:h-full">
         <MaxWidthWrapper className="grid grid-cols-1 items-start justify-start gap-5 md:grid-cols-2">
           <Form {...profileForm}>
             <form

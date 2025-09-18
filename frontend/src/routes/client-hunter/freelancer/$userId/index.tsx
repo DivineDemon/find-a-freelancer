@@ -28,14 +28,14 @@ function ClientHunterFreelancerProfile() {
   );
 
   return (
-    <div className="h-[calc(100vh-64px)] w-full">
+    <div className="h-[calc(100dvh-64px)] w-full">
       <MaxWidthWrapper className="flex flex-col items-start justify-start gap-5 p-0">
         {isLoading ? (
           <div className="flex h-full w-full items-center justify-center">
             <Loader2 className="size-20 animate-spin" />
           </div>
         ) : (
-          <div className="flex h-[calc(100vh-104px)] w-full flex-col items-start justify-start overflow-y-auto">
+          <div className="flex h-[calc(100dvh-104px)] w-full flex-col items-start justify-start overflow-y-auto">
             <div className="relative h-48 w-full shrink-0 bg-gradient-to-tr from-blue-700 via-blue-800 to-gray-900 md:h-72">
               <img
                 src={data?.profile_picture ?? ""}

@@ -15,7 +15,7 @@ function RootComponent() {
     <RoleRouter>
       <div className="flex h-screen w-full flex-col items-start justify-start overflow-hidden">
         {!isAuthPage && <Navbar />}
-        <div className={`w-full ${isAuthPage ? "h-full" : "h-[calc(100vh-64px)]"}`}>
+        <div className={`w-full ${isAuthPage ? "h-full" : "h-[calc(100dvh-64px)]"}`}>
           <Outlet />
         </div>
         <TanStackRouterDevtools />

@@ -50,7 +50,7 @@ function FreelancerChatHistory() {
 
   if (isLoading) {
     return (
-      <div className="h-[calc(100vh-64px)] w-full">
+      <div className="h-[calc(100dvh-64px)] w-full">
         <MaxWidthWrapper className="flex flex-col items-start justify-start gap-5">
           <div className="flex w-full flex-col items-center justify-center gap-2">
             <span className="w-full text-left font-bold text-[30px] leading-[30px]">My Chats</span>
@@ -68,7 +68,7 @@ function FreelancerChatHistory() {
 
   if (error) {
     return (
-      <div className="h-[calc(100vh-64px)] w-full">
+      <div className="h-[calc(100dvh-64px)] w-full">
         <MaxWidthWrapper className="flex flex-col items-start justify-start gap-5">
           <div className="flex w-full flex-col items-center justify-center gap-2">
             <span className="w-full text-left font-bold text-[30px] leading-[30px]">My Chats</span>
@@ -87,7 +87,7 @@ function FreelancerChatHistory() {
   }
 
   return (
-    <div className="h-[calc(100vh-64px)] w-full">
+    <div className="h-[calc(100dvh-64px)] w-full">
       <MaxWidthWrapper className="flex flex-col items-start justify-start gap-5">
         <div className="flex w-full flex-col items-center justify-center gap-2">
           <span className="w-full text-left font-bold text-[30px] leading-[30px]">My Chats</span>

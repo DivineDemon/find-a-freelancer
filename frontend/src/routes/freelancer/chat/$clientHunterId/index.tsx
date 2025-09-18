@@ -272,7 +272,7 @@ function FreelancerChatInterface() {
 
   if (isLoadingClientHunter || isLoadingChats) {
     return (
-      <div className="h-[calc(100vh-64px)] w-full">
+      <div className="h-[calc(100dvh-64px)] w-full">
         <MaxWidthWrapper className="flex flex-col items-center justify-center gap-5">
           <div className="text-lg">Loading chat details...</div>
         </MaxWidthWrapper>
@@ -282,7 +282,7 @@ function FreelancerChatInterface() {
 
   if (!clientHunterId) {
     return (
-      <div className="h-[calc(100vh-64px)] w-full">
+      <div className="h-[calc(100dvh-64px)] w-full">
         <MaxWidthWrapper className="flex flex-col items-center justify-center gap-5">
           <div className="text-lg">No client hunter selected</div>
           <div className="text-muted-foreground">Please select a client hunter to start chatting</div>
@@ -293,7 +293,7 @@ function FreelancerChatInterface() {
 
   if (!clientHunterData) {
     return (
-      <div className="h-[calc(100vh-64px)] w-full">
+      <div className="h-[calc(100dvh-64px)] w-full">
         <MaxWidthWrapper className="flex flex-col items-center justify-center gap-5">
           <div className="text-lg">Client hunter not found</div>
           <div className="text-muted-foreground">The client hunter you're looking for doesn't exist</div>
@@ -304,7 +304,7 @@ function FreelancerChatInterface() {
 
   if (!chatId) {
     return (
-      <div className="h-[calc(100vh-64px)] w-full">
+      <div className="h-[calc(100dvh-64px)] w-full">
         <MaxWidthWrapper className="flex flex-col items-center justify-center gap-5">
           <div className="text-lg">No active chat</div>
           <div className="text-muted-foreground">You can only reply to existing chats as a freelancer</div>
@@ -314,14 +314,14 @@ function FreelancerChatInterface() {
   }
 
   return (
-    <div className="h-[calc(100vh-64px)] w-full">
+    <div className="h-[calc(100dvh-64px)] w-full">
       <MaxWidthWrapper className="flex flex-col items-start justify-start gap-5">
-        <div className="flex h-[calc(100vh-104px)] w-full flex-col items-start justify-start gap-5">
+        <div className="flex h-[calc(100dvh-104px)] w-full flex-col items-start justify-start gap-5">
           <div
             id="messages-container"
             ref={messagesContainerRef}
             className={cn(
-              "flex h-[calc(100vh-160px)] w-full flex-col items-start justify-start gap-5 rounded-xl border p-5 shadow",
+              "flex h-[calc(100dvh-160px)] w-full flex-col items-start justify-start gap-5 rounded-xl border p-5 shadow",
               imagePreview ? "overflow-hidden" : "overflow-y-auto",
             )}
           >

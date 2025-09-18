@@ -301,7 +301,7 @@ function ClientHunterChatInterface() {
 
   if (isLoadingFreelancer || isLoadingChats) {
     return (
-      <div className="h-[calc(100vh-64px)] w-full">
+      <div className="h-[calc(100dvh-64px)] w-full">
         <MaxWidthWrapper className="flex flex-col items-center justify-center gap-5">
           <Loader2 className="size-20 animate-spin" />
         </MaxWidthWrapper>
@@ -311,7 +311,7 @@ function ClientHunterChatInterface() {
 
   if (!freelancerId) {
     return (
-      <div className="h-[calc(100vh-64px)] w-full">
+      <div className="h-[calc(100dvh-64px)] w-full">
         <MaxWidthWrapper className="flex flex-col items-center justify-center gap-5">
           <div className="text-lg">No freelancer selected</div>
           <div className="text-muted-foreground">Please select a freelancer to start chatting</div>
@@ -322,7 +322,7 @@ function ClientHunterChatInterface() {
 
   if (!freelancerData) {
     return (
-      <div className="h-[calc(100vh-64px)] w-full">
+      <div className="h-[calc(100dvh-64px)] w-full">
         <MaxWidthWrapper className="flex flex-col items-center justify-center gap-5">
           <div className="text-lg">Freelancer not found</div>
           <div className="text-muted-foreground">The freelancer you're looking for doesn't exist</div>
@@ -340,14 +340,14 @@ function ClientHunterChatInterface() {
         freelancerName={`${freelancerData.first_name} ${freelancerData.last_name}`}
         isLoading={isCreatingChat}
       />
-      <div className="h-[calc(100vh-64px)] w-full">
+      <div className="h-[calc(100dvh-64px)] w-full">
         <MaxWidthWrapper className="flex flex-col items-start justify-start gap-5">
-          <div className="flex h-[calc(100vh-104px)] w-full flex-col items-start justify-start gap-5">
+          <div className="flex h-[calc(100dvh-104px)] w-full flex-col items-start justify-start gap-5">
             <div
               id="messages-container"
               ref={messagesContainerRef}
               className={cn(
-                "relative flex h-[calc(100vh-160px)] w-full flex-col items-start justify-start gap-5 rounded-xl border p-5 shadow",
+                "relative flex h-[calc(100dvh-160px)] w-full flex-col items-start justify-start gap-5 rounded-xl border p-5 shadow",
                 imagePreview ? "overflow-hidden" : "overflow-y-auto",
               )}
             >

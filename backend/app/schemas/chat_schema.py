@@ -58,6 +58,8 @@ class ChatWithParticipants(ChatRead):
     participant_name: str
     initiator_type: UserType
     participant_type: UserType
+    initiator_profile_picture: Optional[str] = None
+    participant_profile_picture: Optional[str] = None
     unread_count: int = 0
     last_message_preview: Optional[str] = None
 

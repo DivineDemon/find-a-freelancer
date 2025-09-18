@@ -142,8 +142,8 @@ class WebSocketService {
           break;
         default:
       }
-    } catch (_error) {
-      this.callbacks.onError?.("Failed to parse message");
+    } catch (error) {
+      this.callbacks.onError?.(`An error occurred while parsing message. ${error}`);
     }
   }
 

@@ -73,8 +73,8 @@ const ImageUploader = <TFieldValues extends FieldValues, TName extends FieldPath
         }
 
         toast.success(`${acceptedFiles.length} image(s) uploaded successfully!`);
-      } catch (_error) {
-        toast.error("Failed to upload image(s). Please try again.");
+      } catch (error) {
+        toast.error(`An error occurred while uploading image(s). ${error}`);
       } finally {
         setIsUploading(false);
       }

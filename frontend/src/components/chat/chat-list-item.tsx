@@ -15,14 +15,12 @@ interface ChatListItemProps {
 }
 
 function ChatListItem({ chat }: ChatListItemProps) {
-  const otherUserAvatar = "";
-  const otherUserPosition = "";
   const { user } = useSelector((state: RootState) => state.global);
 
   const isInitiator = chat.initiator_id === user.user_id;
   const otherUserName = isInitiator ? chat.participant_name : chat.initiator_name;
+  const otherUserProfilePicture = isInitiator ? chat.participant_profile_picture : chat.initiator_profile_picture;
   const isArchived = isInitiator ? chat.is_archived_by_initiator : chat.is_archived_by_participant;
-
   const [toggleArchive, { isLoading: isToggling }] = useToggleChatArchiveChatsChatIdToggleArchivePatchMutation();
 
   const handleArchiveToggle = async (e: React.MouseEvent) => {
@@ -33,8 +31,8 @@ function ChatListItem({ chat }: ChatListItemProps) {
       await toggleArchive({ chatId: chat.id }).unwrap();
       const action = isArchived ? "unarchived" : "archived";
       toast.success(`Chat ${action} successfully`);
-    } catch (_error) {
-      toast.error("Failed to update chat status");
+    } catch (error) {
+      toast.error(`An error occurred while updating chat status. ${error}`);
     }
   };
 
@@ -74,20 +72,17 @@ function ChatListItem({ chat }: ChatListItemProps) {
 
   return (
     <Link to={getChatLink()} params={getParams()} className="block">
-      <div className="flex w-full items-center gap-3 rounded-lg border bg-card p-4 shadow-sm transition-colors hover:bg-muted/50">
-        <div className="relative">
-          <Avatar className="size-12">
-            <AvatarImage src={otherUserAvatar} alt={otherUserName} />
-            <AvatarFallback className="text-sm">
-              {otherUserName
-                .split(" ")
-                .map((n) => n[0])
-                .join("")
-                .toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
-          <div className="-bottom-1 -right-1 absolute size-4 rounded-full border-2 border-background bg-green-500" />
-        </div>
+      <div className="flex w-full items-center gap-3 border-b p-4 transition-colors hover:bg-muted/50">
+        <Avatar className="size-12">
+          <AvatarImage src={otherUserProfilePicture ?? ""} />
+          <AvatarFallback className="text-sm">
+            {otherUserName
+              .split(" ")
+              .map((n) => n[0])
+              .join("")
+              .toUpperCase()}
+          </AvatarFallback>
+        </Avatar>
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -98,12 +93,13 @@ function ChatListItem({ chat }: ChatListItemProps) {
                 </span>
               )}
             </div>
-            <span className="text-[12px] text-muted-foreground leading-[12px]">
-              {formatLastMessageTime(chat.last_message_at)}
-            </span>
+            <span className="text-[12px] text-muted-foreground leading-[12px]"></span>
           </div>
-          <p className="mt-1 truncate text-muted-foreground text-xs">{otherUserPosition}</p>
-          {chat.project_title && <p className="mt-1 truncate font-medium text-primary text-xs">{chat.project_title}</p>}
+          {chat.project_title && (
+            <p className="mt-1 truncate font-medium text-muted-foreground text-xs">
+              {formatLastMessageTime(chat.last_message_at)}
+            </p>
+          )}
         </div>
         <Button variant="ghost" size="icon" onClick={handleArchiveToggle} disabled={isToggling} className="size-8">
           {isArchived ? <ArchiveRestore className="size-4" /> : <Archive className="size-4" />}

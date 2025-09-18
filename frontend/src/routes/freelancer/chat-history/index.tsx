@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Archive, ArchiveRestore, CircleX, Search } from "lucide-react";
+import { Archive, ArchiveRestore, CircleX, Loader2, Search } from "lucide-react";
 import { useState } from "react";
 import { useSelector } from "react-redux";
 import ChatListItem from "@/components/chat/chat-list-item";
@@ -59,7 +59,7 @@ function FreelancerChatHistory() {
             </span>
           </div>
           <div className="flex h-full w-full flex-col items-center justify-center">
-            <div className="text-lg">Loading chats...</div>
+            <Loader2 className="size-20 animate-spin" />
           </div>
         </MaxWidthWrapper>
       </div>

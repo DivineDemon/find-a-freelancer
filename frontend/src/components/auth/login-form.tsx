@@ -41,8 +41,8 @@ function LoginForm({ setIsLogin }: LoginFormProps) {
       const redirectPath = response.user.user_type === "freelancer" ? "/freelancer" : "/client-hunter";
       navigate({ to: redirectPath });
       toast.success("Login successful!");
-    } catch (_error) {
-      toast.error("Login failed. Please check your credentials.");
+    } catch (error) {
+      toast.error(`An error occurred while logging in. ${error}`);
     }
   };
 

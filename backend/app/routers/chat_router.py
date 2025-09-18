@@ -195,6 +195,10 @@ async def list_user_chats(
             participant_name=participant_name,
             initiator_type=initiator_type,
             participant_type=participant_type,
+            initiator_profile_picture=chat.initiator.\
+                profile_picture if chat.initiator else None,
+            participant_profile_picture=chat.participant.\
+                profile_picture if chat.participant else None,
             unread_count=unread_count,
             last_message_preview=message_preview
         )
@@ -232,6 +236,10 @@ async def get_chat(
         participant_name=participant_name,
         initiator_type=initiator_type,
         participant_type=participant_type,
+        initiator_profile_picture=chat.initiator.\
+            profile_picture if chat.initiator else None,
+        participant_profile_picture=chat.participant.\
+            profile_picture if chat.participant else None,
         unread_count=0,
         last_message_preview=None
     )

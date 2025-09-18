@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Image, Send, Wifi, WifiOff } from "lucide-react";
+import { Image, Loader2, Send, Wifi, WifiOff, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import { toast } from "sonner";
@@ -29,6 +29,7 @@ function ClientHunterChatInterface() {
   const { freelancerId } = Route.useParams();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const lastTempMessageId = useRef<number | null>(null);
   const [chatId, setChatId] = useState<number | null>(null);
   const [messageInput, setMessageInput] = useState<string>("");
@@ -38,6 +39,7 @@ function ClientHunterChatInterface() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isUploadingImage, setIsUploadingImage] = useState<boolean>(false);
   const [showProjectDialog, setShowProjectDialog] = useState<boolean>(false);
+  const [savedScrollPosition, setSavedScrollPosition] = useState<number>(0);
   const [createChat, { isLoading: isCreatingChat }] = useCreateChatChatsPostMutation();
 
   const { data: freelancerData, isLoading: isLoadingFreelancer } = useGetFreelancerFreelancerFreelancerIdGetQuery(
@@ -114,8 +116,8 @@ function ClientHunterChatInterface() {
         setChatId(result.id);
         setShowProjectDialog(false);
         toast.success("Chat created successfully!");
-      } catch (_error) {
-        toast.error("Failed to create chat. Please try again.");
+      } catch (error) {
+        toast.error(`An error occurred while creating chat. ${error}`);
       }
     },
     [freelancerId, createChat],
@@ -132,6 +134,8 @@ function ClientHunterChatInterface() {
 
     const reader = new FileReader();
     reader.onload = (e) => {
+      saveScrollPosition();
+      scrollToTop();
       setImagePreview(e.target?.result as string);
     };
     reader.readAsDataURL(file);
@@ -146,6 +150,24 @@ function ClientHunterChatInterface() {
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, []);
+
+  const saveScrollPosition = useCallback(() => {
+    if (messagesContainerRef.current) {
+      setSavedScrollPosition(messagesContainerRef.current.scrollTop);
+    }
+  }, []);
+
+  const restoreScrollPosition = useCallback(() => {
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = savedScrollPosition;
+    }
+  }, [savedScrollPosition]);
+
+  const scrollToTop = useCallback(() => {
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = 0;
+    }
   }, []);
 
   const renderMessageContent = (message: MessageWithSender) => {
@@ -235,8 +257,8 @@ function ClientHunterChatInterface() {
 
       setMessages((prev) => [...prev, tempMessage]);
       sendWebSocketMessage(messageContent, contentType);
-    } catch (_error) {
-      toast.error("Failed to send message");
+    } catch (error) {
+      toast.error(`An error occurred while sending message. ${error}`);
     } finally {
       setIsUploadingImage(false);
     }
@@ -264,7 +286,7 @@ function ClientHunterChatInterface() {
 
   useEffect(() => {
     if (isConnected && chatId) {
-      requestChatHistory(1, 20);
+      requestChatHistory(1, 1000); // Load more messages initially
     }
   }, [isConnected, chatId, requestChatHistory]);
 
@@ -281,7 +303,7 @@ function ClientHunterChatInterface() {
     return (
       <div className="h-[calc(100vh-64px)] w-full">
         <MaxWidthWrapper className="flex flex-col items-center justify-center gap-5">
-          <div className="text-lg">Loading chat details...</div>
+          <Loader2 className="size-20 animate-spin" />
         </MaxWidthWrapper>
       </div>
     );
@@ -321,12 +343,20 @@ function ClientHunterChatInterface() {
       <div className="h-[calc(100vh-64px)] w-full">
         <MaxWidthWrapper className="flex flex-col items-start justify-start gap-5">
           <div className="flex h-[calc(100vh-104px)] w-full flex-col items-start justify-start gap-5">
-            <div className="flex h-[calc(100vh-160px)] w-full flex-col items-start justify-start gap-5 overflow-y-auto rounded-xl border p-5 shadow">
+            <div
+              id="messages-container"
+              ref={messagesContainerRef}
+              className={cn(
+                "relative flex h-[calc(100vh-160px)] w-full flex-col items-start justify-start gap-5 rounded-xl border p-5 shadow",
+                imagePreview ? "overflow-hidden" : "overflow-y-auto",
+              )}
+            >
               {messages.length === 0 ? (
                 <div className="flex h-full w-full flex-col items-center justify-center gap-4 text-muted-foreground">
                   <div className="text-center">
                     <div className="font-semibold text-foreground text-lg">
-                      Chat with {freelancerData.first_name} {freelancerData.last_name}
+                      Chat with {freelancerData.first_name}&nbsp;
+                      {freelancerData.last_name}
                     </div>
                     <div className="text-sm">Start a conversation</div>
                   </div>
@@ -398,6 +428,31 @@ function ClientHunterChatInterface() {
                 })
               )}
               <div ref={messagesEndRef} />
+
+              {/* Image Preview Overlay */}
+              {imagePreview && (
+                <div className="absolute inset-0 z-50 flex items-center justify-center rounded-xl bg-black/80 backdrop-blur-sm">
+                  <div className="relative max-h-[80vh] max-w-2xl p-4">
+                    <img
+                      src={imagePreview}
+                      alt="Preview"
+                      className="max-h-full max-w-full rounded-lg object-contain shadow-2xl"
+                    />
+                    <Button
+                      variant="destructive"
+                      size="icon"
+                      className="-right-2 -top-2 absolute h-8 w-8"
+                      onClick={() => {
+                        setImagePreview(null);
+                        setSelectedFile(null);
+                        restoreScrollPosition();
+                      }}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
             {chatId && (
               <div className="flex w-full items-center justify-center gap-2 text-sm">
@@ -419,24 +474,6 @@ function ClientHunterChatInterface() {
                         ? "Connecting..."
                         : "Disconnected"}
                   </span>
-                </div>
-              </div>
-            )}
-            {imagePreview && (
-              <div className="flex w-full items-center justify-center">
-                <div className="relative max-w-xs">
-                  <img src={imagePreview} alt="Preview" className="rounded-lg" />
-                  <Button
-                    variant="destructive"
-                    size="icon"
-                    className="-right-2 -top-2 absolute h-6 w-6"
-                    onClick={() => {
-                      setImagePreview(null);
-                      setSelectedFile(null);
-                    }}
-                  >
-                    ×
-                  </Button>
                 </div>
               </div>
             )}

@@ -1,21 +1,20 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createFileRoute } from "@tanstack/react-router";
-import { Download, Edit, Eye, EyeOff, Loader2, RefreshCw, Shield, User2 } from "lucide-react";
+import { DollarSign, Download, Loader2, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { toast } from "sonner";
 import { z } from "zod";
 import MaxWidthWrapper from "@/components/max-width-wrapper";
-import { Badge } from "@/components/ui/badge";
+import PaymentModal from "@/components/payment/payment-modal";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import ImageUploader from "@/components/ui/image-uploader";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
 import { requireAuth } from "@/lib/route-guard";
+import { cn } from "@/lib/utils";
 import type { RootState } from "@/store";
 import {
   useChangePasswordUserChangePasswordPostMutation,
@@ -26,6 +25,7 @@ import {
   useToggleClientHunterStatusClientHunterToggleStatusClientHunterIdPatchMutation,
   useUpdateClientHunterClientHunterClientHunterIdPutMutation,
 } from "@/store/services/apis";
+import { showModal } from "@/store/slices/payment";
 
 const profileSchema = z.object({
   first_name: z.string().min(1, "First name is required"),
@@ -54,18 +54,9 @@ export const Route = createFileRoute("/client-hunter/profile/")({
 });
 
 function ClientHunterProfile() {
+  const dispatch = useDispatch();
   const { user } = useSelector((state: RootState) => state.global);
-  const [isEditing, setIsEditing] = useState<boolean>(false);
-  const [showPasswordForm, setShowPasswordForm] = useState<boolean>(false);
-  const [showPasswords, setShowPasswords] = useState<{
-    current: boolean;
-    new: boolean;
-    confirm: boolean;
-  }>({
-    current: false,
-    new: false,
-    confirm: false,
-  });
+  const [selectedPaymentId, setSelectedPaymentId] = useState<number | null>(null);
 
   const {
     data: clientHunterData,
@@ -76,20 +67,14 @@ function ClientHunterProfile() {
     { skip: !user?.user_id },
   );
 
-  const { data: payments, refetch: refetchPayments } = useGetUserPaymentsPaymentsUserPaymentsGetQuery();
-
   const [updateProfile, { isLoading: isUpdatingProfile }] =
     useUpdateClientHunterClientHunterClientHunterIdPutMutation();
-
-  const [changePassword, { isLoading: isChangingPassword }] = useChangePasswordUserChangePasswordPostMutation();
-
   const [checkPaymentStatus, { isLoading: isCheckingPayment }] =
     useCheckPaymentStatusPaymentsCheckPaymentStatusPostMutation();
+  const { data: payments, refetch: refetchPayments } = useGetUserPaymentsPaymentsUserPaymentsGetQuery();
+  const [changePassword, { isLoading: isChangingPassword }] = useChangePasswordUserChangePasswordPostMutation();
+  const [toggleAccountStatus] = useToggleClientHunterStatusClientHunterToggleStatusClientHunterIdPatchMutation();
 
-  const [toggleAccountStatus, { isLoading: isTogglingStatus }] =
-    useToggleClientHunterStatusClientHunterToggleStatusClientHunterIdPatchMutation();
-
-  const [selectedPaymentId, setSelectedPaymentId] = useState<number | null>(null);
   const { data: receiptData } = useGetReceiptUrlPaymentsReceiptPaymentIdGetQuery(
     { paymentId: selectedPaymentId! },
     { skip: !selectedPaymentId },
@@ -98,11 +83,11 @@ function ClientHunterProfile() {
   const profileForm = useForm<z.infer<typeof profileSchema>>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
-      first_name: "",
-      last_name: "",
-      email: "",
-      phone: "",
-      profile_picture: "",
+      first_name: user.first_name,
+      last_name: user.last_name,
+      email: user.email,
+      phone: user.phone ?? "",
+      profile_picture: user.image_url ?? "",
     },
   });
 
@@ -114,18 +99,6 @@ function ClientHunterProfile() {
       confirm_password: "",
     },
   });
-
-  useEffect(() => {
-    if (clientHunterData) {
-      profileForm.reset({
-        first_name: clientHunterData.first_name || "",
-        last_name: clientHunterData.last_name || "",
-        email: clientHunterData.email || "",
-        phone: clientHunterData.phone || "",
-        profile_picture: clientHunterData.profile_picture || "",
-      });
-    }
-  }, [clientHunterData, profileForm]);
 
   const onProfileSubmit = async (data: z.infer<typeof profileSchema>) => {
     try {
@@ -141,7 +114,6 @@ function ClientHunterProfile() {
       }).unwrap();
 
       toast.success("Profile updated successfully!");
-      setIsEditing(false);
       refetchProfile();
     } catch (error: unknown) {
       const errorMessage = (error as { data?: { detail?: string } })?.data?.detail || "Failed to update profile";
@@ -159,7 +131,6 @@ function ClientHunterProfile() {
       }).unwrap();
 
       toast.success("Password changed successfully!");
-      setShowPasswordForm(false);
       passwordForm.reset();
     } catch (error: unknown) {
       const errorMessage = (error as { data?: { detail?: string } })?.data?.detail || "Failed to change password";
@@ -190,11 +161,21 @@ function ClientHunterProfile() {
     } catch (error: unknown) {
       const errorMessage = (error as { data?: { detail?: string } })?.data?.detail || "Failed to update account status";
       toast.error(errorMessage);
+      refetchProfile();
     }
   };
 
   const handleDownloadReceipt = (paymentId: number) => {
     setSelectedPaymentId(paymentId);
+  };
+
+  const handlePayNow = () => {
+    dispatch(
+      showModal({
+        amount: 5000,
+        description: "Premium Access - Find a Freelancer Platform",
+      }),
+    );
   };
 
   useEffect(() => {
@@ -218,308 +199,200 @@ function ClientHunterProfile() {
   const paymentStatus = user.payment_status || "unpaid";
 
   return (
-    <div className="h-[calc(100vh-64px)] w-full overflow-y-auto">
-      <MaxWidthWrapper className="flex flex-col items-start justify-start gap-6 py-6">
-        <div className="flex w-full items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex size-16 items-center justify-center rounded-full bg-muted">
-              {clientHunterData?.profile_picture ? (
-                <img
-                  src={clientHunterData.profile_picture}
-                  alt="Profile"
-                  className="size-16 rounded-full object-cover"
-                />
-              ) : (
-                <User2 className="size-8" />
-              )}
+    <>
+      <div className="h-[calc(100vh-84px)] w-full overflow-y-auto md:h-full">
+        <MaxWidthWrapper className="grid grid-cols-1 items-start justify-start gap-5 md:grid-cols-2">
+          <Form {...profileForm}>
+            <form
+              onSubmit={profileForm.handleSubmit(onProfileSubmit)}
+              className="grid w-full grid-cols-1 items-start justify-start gap-5 rounded-lg border bg-card p-5 shadow md:grid-cols-2"
+            >
+              <div className="col-span-1 flex w-full flex-col items-center justify-center gap-2 border-b pb-5 md:col-span-2">
+                <span className="w-full text-left font-bold text-[20px] leading-[20px]">Profile Settings</span>
+                <span className="hidden w-full text-left text-[14px] text-muted-foreground leading-[14px] md:flex">
+                  Manage your account information and preferences
+                </span>
+              </div>
+              <FormField
+                control={profileForm.control}
+                name="first_name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>First Name</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={profileForm.control}
+                name="last_name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Last Name</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={profileForm.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input type="email" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={profileForm.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phone</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={profileForm.control}
+                name="profile_picture"
+                render={({ field }) => (
+                  <FormItem className="col-span-1 w-full md:col-span-2">
+                    <FormControl>
+                      <ImageUploader label="Profile Picture" field={field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <Button type="submit" disabled={isUpdatingProfile} className="col-span-1 w-full md:col-span-2">
+                {isUpdatingProfile ? <Loader2 className="mr-2 size-4 animate-spin" /> : "Save Changes"}
+              </Button>
+            </form>
+          </Form>
+          <div className="flex w-full flex-col items-start justify-start gap-5 rounded-lg border bg-card p-5 shadow">
+            <div className="col-span-2 flex w-full flex-col items-center justify-center gap-2 border-b pb-5">
+              <span className="w-full text-left font-bold text-[20px] leading-[20px]">Account Security & Payment</span>
+              <span className="hidden w-full text-left text-[14px] text-muted-foreground leading-[14px] md:flex">
+                Manage your account security and payment information
+              </span>
             </div>
-            <div>
-              <h1 className="font-bold text-2xl">Profile Settings</h1>
-              <p className="text-muted-foreground">Manage your account information and preferences</p>
-            </div>
-          </div>
-          <Button
-            variant={isEditing ? "default" : "outline"}
-            onClick={() => setIsEditing(!isEditing)}
-            disabled={isUpdatingProfile}
-          >
-            <Edit className="mr-2 size-4" />
-            {isEditing ? "Cancel" : "Edit Profile"}
-          </Button>
-        </div>
-
-        <div className="grid w-full grid-cols-1 gap-6 lg:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User2 className="size-5" />
-                Profile Information
-              </CardTitle>
-              <CardDescription>Update your personal information and profile picture</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Form {...profileForm}>
-                <form onSubmit={profileForm.handleSubmit(onProfileSubmit)} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={profileForm.control}
-                      name="first_name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>First Name</FormLabel>
-                          <FormControl>
-                            <Input {...field} disabled={!isEditing} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={profileForm.control}
-                      name="last_name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Last Name</FormLabel>
-                          <FormControl>
-                            <Input {...field} disabled={!isEditing} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <FormField
-                    control={profileForm.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                          <Input type="email" {...field} disabled={!isEditing} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={profileForm.control}
-                    name="phone"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Phone</FormLabel>
-                        <FormControl>
-                          <Input {...field} disabled={!isEditing} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={profileForm.control}
-                    name="profile_picture"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormControl>
-                          <ImageUploader label="Profile Picture" field={field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {isEditing && (
-                    <div className="flex gap-2">
-                      <Button type="submit" disabled={isUpdatingProfile}>
-                        {isUpdatingProfile && <Loader2 className="mr-2 size-4 animate-spin" />}
-                        Save Changes
-                      </Button>
-                      <Button type="button" variant="outline" onClick={() => setIsEditing(false)}>
-                        Cancel
-                      </Button>
-                    </div>
+            <Form {...passwordForm}>
+              <form
+                onSubmit={passwordForm.handleSubmit(onPasswordSubmit)}
+                className="grid w-full grid-cols-1 items-start justify-start gap-5 md:grid-cols-2"
+              >
+                <FormField
+                  control={passwordForm.control}
+                  name="current_password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Current Password</FormLabel>
+                      <FormControl>
+                        <Input {...field} type="password" placeholder="• • • • • • • •" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
                   )}
-                </form>
-              </Form>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Shield className="size-5" />
-                Account Status & Payment
-              </CardTitle>
-              <CardDescription>View your account status and payment information</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>Account Status</Label>
-                <div className="flex items-center gap-2">
-                  <Badge variant={clientHunterData?.is_active ? "default" : "destructive"}>
-                    {clientHunterData?.is_active ? "Active" : "Inactive"}
-                  </Badge>
-                  <Button size="sm" variant="outline" onClick={handleToggleAccountStatus} disabled={isTogglingStatus}>
-                    {isTogglingStatus && <Loader2 className="mr-2 size-4 animate-spin" />}
-                    {clientHunterData?.is_active ? "Deactivate" : "Activate"}
-                  </Button>
-                </div>
+                />
+                <FormField
+                  control={passwordForm.control}
+                  name="new_password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>New Password</FormLabel>
+                      <FormControl>
+                        <Input {...field} type="password" placeholder="• • • • • • • •" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={passwordForm.control}
+                  name="confirm_password"
+                  render={({ field }) => (
+                    <FormItem className="col-span-1 w-full md:col-span-2">
+                      <FormLabel>Confirm New Password</FormLabel>
+                      <FormControl>
+                        <Input {...field} type="password" placeholder="• • • • • • • •" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <Button type="submit" disabled={isChangingPassword} className="col-span-1 w-full md:col-span-2">
+                  {isChangingPassword ? <Loader2 className="mr-2 size-4 animate-spin" /> : "Save Changes"}
+                </Button>
+              </form>
+            </Form>
+            <div className="flex w-full items-center justify-center rounded-lg border p-5">
+              <span className="flex-1 text-left font-medium text-[14px] leading-[14px]">Account Status</span>
+              <Switch checked={clientHunterData?.is_active} onCheckedChange={handleToggleAccountStatus} />
+            </div>
+            <div className="flex w-full flex-col items-center justify-center gap-5 rounded-lg border p-5">
+              <div className="flex w-full items-center justify-center">
+                <span className="flex-1 text-left font-medium text-[14px] leading-[14px]">Payment Status</span>
+                <span
+                  className={cn("rounded-full px-4 py-2 font-medium text-[12px] capitalize leading-[12px]", {
+                    "bg-green-500/20 text-green-500": paymentStatus === "paid",
+                    "bg-red-500/20 text-red-500": paymentStatus === "unpaid",
+                  })}
+                >
+                  {paymentStatus}
+                </span>
               </div>
-
-              <div className="space-y-2">
-                <Label>Payment Status</Label>
-                <div className="flex items-center gap-2">
-                  <Badge variant={paymentStatus === "paid" ? "default" : "secondary"}>
-                    {paymentStatus === "paid" ? "Paid" : "Unpaid"}
-                  </Badge>
-                  <Button size="sm" variant="outline" onClick={handleRefreshPaymentStatus} disabled={isCheckingPayment}>
-                    <RefreshCw className={`mr-2 size-4 ${isCheckingPayment ? "animate-spin" : ""}`} />
-                    Refresh
+              <div className="grid w-full grid-cols-2 items-center justify-center gap-2.5">
+                {paymentStatus === "paid" ? (
+                  <Button
+                    size="sm"
+                    variant="default"
+                    className="w-full"
+                    onClick={() => handleDownloadReceipt(latestPayment?.id ?? 0)}
+                  >
+                    <Download />
+                    <span className="hidden lg:block">Download Receipt</span>
                   </Button>
-                </div>
-              </div>
-
-              {latestPayment && (
-                <div className="space-y-2">
-                  <Label>Latest Payment</Label>
-                  <div className="rounded-lg border p-3">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium">${(latestPayment.amount / 100).toFixed(2)}</p>
-                        <p className="text-muted-foreground text-sm">
-                          {new Date(latestPayment.paid_at || latestPayment.created_at).toLocaleDateString()}
-                        </p>
-                      </div>
-                      <Button size="sm" variant="outline" onClick={() => handleDownloadReceipt(latestPayment.id)}>
-                        <Download className="mr-2 size-4" />
-                        Receipt
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <Separator />
-
-              <div className="space-y-2">
-                <Label>Change Password</Label>
-                <Button variant="outline" onClick={() => setShowPasswordForm(!showPasswordForm)}>
-                  <Shield className="mr-2 size-4" />
-                  {showPasswordForm ? "Cancel" : "Change Password"}
+                ) : (
+                  <Button size="sm" variant="default" className="w-full" onClick={handlePayNow}>
+                    <DollarSign />
+                    Pay Now
+                  </Button>
+                )}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-full"
+                  disabled={isCheckingPayment}
+                  onClick={handleRefreshPaymentStatus}
+                >
+                  {isCheckingPayment ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <>
+                      <RefreshCw />
+                      <span className="hidden lg:block">Refresh</span>
+                    </>
+                  )}
                 </Button>
               </div>
-
-              {showPasswordForm && (
-                <Form {...passwordForm}>
-                  <form onSubmit={passwordForm.handleSubmit(onPasswordSubmit)} className="space-y-4">
-                    <FormField
-                      control={passwordForm.control}
-                      name="current_password"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Current Password</FormLabel>
-                          <FormControl>
-                            <div className="relative">
-                              <Input type={showPasswords.current ? "text" : "password"} {...field} />
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-transparent"
-                                onClick={() =>
-                                  setShowPasswords((prev) => ({
-                                    ...prev,
-                                    current: !prev.current,
-                                  }))
-                                }
-                              >
-                                {showPasswords.current ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                              </Button>
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={passwordForm.control}
-                      name="new_password"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>New Password</FormLabel>
-                          <FormControl>
-                            <div className="relative">
-                              <Input type={showPasswords.new ? "text" : "password"} {...field} />
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-transparent"
-                                onClick={() =>
-                                  setShowPasswords((prev) => ({
-                                    ...prev,
-                                    new: !prev.new,
-                                  }))
-                                }
-                              >
-                                {showPasswords.new ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                              </Button>
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={passwordForm.control}
-                      name="confirm_password"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Confirm New Password</FormLabel>
-                          <FormControl>
-                            <div className="relative">
-                              <Input type={showPasswords.confirm ? "text" : "password"} {...field} />
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-transparent"
-                                onClick={() =>
-                                  setShowPasswords((prev) => ({
-                                    ...prev,
-                                    confirm: !prev.confirm,
-                                  }))
-                                }
-                              >
-                                {showPasswords.confirm ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                              </Button>
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <div className="flex gap-2">
-                      <Button type="submit" disabled={isChangingPassword}>
-                        {isChangingPassword && <Loader2 className="mr-2 size-4 animate-spin" />}
-                        Change Password
-                      </Button>
-                      <Button type="button" variant="outline" onClick={() => setShowPasswordForm(false)}>
-                        Cancel
-                      </Button>
-                    </div>
-                  </form>
-                </Form>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </MaxWidthWrapper>
-    </div>
+            </div>
+          </div>
+        </MaxWidthWrapper>
+      </div>
+      <PaymentModal amount={5000} description="Premium Access - Find a Freelancer Platform" />
+    </>
   );
 }

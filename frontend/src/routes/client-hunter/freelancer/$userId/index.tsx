@@ -29,22 +29,22 @@ function ClientHunterFreelancerProfile() {
 
   return (
     <div className="h-[calc(100vh-64px)] w-full">
-      <MaxWidthWrapper className="flex flex-col items-start justify-start gap-5">
+      <MaxWidthWrapper className="flex flex-col items-start justify-start gap-5 p-0">
         {isLoading ? (
           <div className="flex h-full w-full items-center justify-center">
             <Loader2 className="size-20 animate-spin" />
           </div>
         ) : (
           <div className="flex h-[calc(100vh-104px)] w-full flex-col items-start justify-start overflow-y-auto">
-            <div className="relative h-72 w-full shrink-0 bg-gradient-to-tr from-blue-700 via-blue-800 to-gray-900">
+            <div className="relative h-48 w-full shrink-0 bg-gradient-to-tr from-blue-700 via-blue-800 to-gray-900 md:h-72">
               <img
                 src={data?.profile_picture ?? ""}
                 alt="profile-picture"
-                className="-bottom-22 absolute left-10 size-44 rounded-full border-2 border-white object-cover shadow"
+                className="-bottom-12 md:-bottom-22 absolute left-5 size-24 rounded-full border-2 border-white object-cover shadow md:left-10 md:size-44"
               />
             </div>
-            <div className="flex w-full flex-col items-center justify-end gap-2 py-5 pl-60">
-              <div className="flex w-full items-center justify-start gap-2 text-left font-bold text-[24px] text-white leading-[24px]">
+            <div className="flex w-full flex-col items-center justify-end gap-1 py-2 pl-32 md:gap-2 md:py-5 md:pl-60">
+              <div className="flex w-full items-center justify-start gap-2 text-left font-bold text-[16px] leading-[16px] md:text-[24px] md:leading-[24px]">
                 <div
                   className={cn("size-2 rounded-full", {
                     "bg-green-500": data?.is_active,
@@ -65,11 +65,11 @@ function ClientHunterFreelancerProfile() {
                   {data?.user_type.replace("_", " ")}
                 </Badge>
               </div>
-              <span className="w-full text-left font-medium text-[16px] text-muted-foreground leading-[16px]">
+              <span className="w-full text-left font-medium text-[14px] text-muted-foreground leading-[14px] md:text-[16px] md:leading-[16px]">
                 {data?.freelancer_profile?.title}
               </span>
             </div>
-            <div className="mt-10 grid w-full grid-cols-3 gap-5">
+            <div className="mt-0 grid w-full grid-cols-1 gap-5 p-5 md:mt-5 lg:grid-cols-3">
               <div className="col-span-1 flex h-fit flex-col items-start justify-start divide-y rounded-lg border bg-card shadow">
                 <span className="w-full text-pretty p-5 text-left font-medium text-[16px] text-muted-foreground leading-[20px]">
                   {data?.freelancer_profile?.bio}
@@ -128,7 +128,7 @@ function ClientHunterFreelancerProfile() {
                   </Link>
                 </div>
               </div>
-              <div className="col-span-2 grid grid-cols-2 items-start justify-start gap-5">
+              <div className="col-span-1 grid grid-cols-1 items-start justify-start gap-5 md:col-span-2 md:grid-cols-2">
                 {data?.projects?.map((project) => (
                   <ProjectCard key={project.id} project={project} />
                 ))}

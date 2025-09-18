@@ -97,7 +97,7 @@ function ClientHunterDashboard() {
           <div className="flex w-full items-center justify-center">
             <div className="flex flex-1 flex-col items-center justify-center gap-2">
               <span className="w-full text-left font-bold text-[30px] leading-[30px]">Discover</span>
-              <span className="w-full text-left text-[16px] text-muted-foreground leading-[16px]">
+              <span className="hidden w-full text-left text-[16px] text-muted-foreground leading-[16px] md:flex">
                 Find talented freelancers with ease.
               </span>
             </div>
@@ -119,11 +119,11 @@ function ClientHunterDashboard() {
             </Button>
           </div>
           {isLoading || freelancers.length === 0 ? (
-            <div className="col-span-2 flex h-full w-full items-center justify-center">
+            <div className="flex h-full w-full items-center justify-center">
               <Loader2 className="size-20 animate-spin" />
             </div>
           ) : (
-            <div className="grid max-h-[calc(100vh-210px)] w-full grid-cols-2 items-start justify-start gap-5 overflow-y-auto">
+            <div className="grid max-h-[calc(100vh-210px)] w-full grid-cols-1 items-start justify-start gap-5 overflow-y-auto md:grid-cols-2">
               {freelancers?.map((freelancer) => (
                 <FreelancerCard key={freelancer.freelancer_id} freelancer={freelancer} />
               ))}

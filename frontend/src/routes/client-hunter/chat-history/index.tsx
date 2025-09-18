@@ -1,11 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Archive, ArchiveRestore, CircleX, Search } from "lucide-react";
+import { Archive, ArchiveRestore, CircleX, Loader2, Search } from "lucide-react";
 import { useState } from "react";
 import { useSelector } from "react-redux";
 import ChatListItem from "@/components/chat/chat-list-item";
 import MaxWidthWrapper from "@/components/max-width-wrapper";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { requireAuth } from "@/lib/route-guard";
 import type { RootState } from "@/store";
 import { useListUserChatsChatsGetQuery } from "@/store/services/apis";
@@ -57,7 +58,7 @@ function ClientHunterChatHistory() {
             <span className="w-full text-left text-[16px] text-muted-foreground leading-[16px]">Manage your chats</span>
           </div>
           <div className="flex h-full w-full flex-col items-center justify-center">
-            <div className="text-lg">Loading chats...</div>
+            <Loader2 className="size-20 animate-spin" />
           </div>
         </MaxWidthWrapper>
       </div>
@@ -99,14 +100,19 @@ function ClientHunterChatHistory() {
               className="border-none bg-transparent shadow-none focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 dark:bg-transparent"
             />
           </div>
-          <Button
-            variant={showArchived ? "default" : "outline"}
-            size="icon"
-            onClick={() => setShowArchived(!showArchived)}
-            className="size-10"
-          >
-            {showArchived ? <ArchiveRestore className="size-4" /> : <Archive className="size-4" />}
-          </Button>
+          <Tooltip>
+            <TooltipTrigger>
+              <Button
+                variant={showArchived ? "default" : "outline"}
+                size="icon"
+                onClick={() => setShowArchived(!showArchived)}
+                className="size-10"
+              >
+                {showArchived ? <ArchiveRestore className="size-4" /> : <Archive className="size-4" />}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Show Archived Chats</TooltipContent>
+          </Tooltip>
         </div>
         {filteredChats.length === 0 ? (
           <div className="flex h-full w-full flex-col items-center justify-center">
@@ -123,7 +129,7 @@ function ClientHunterChatHistory() {
             </span>
           </div>
         ) : (
-          <div className="flex w-full flex-col gap-3">
+          <div className="flex w-full flex-col gap-3 border-t">
             {filteredChats.map((chat) => (
               <ChatListItem key={chat.id} chat={chat} />
             ))}

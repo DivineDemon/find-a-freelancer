@@ -832,6 +832,8 @@ export type ChatWithParticipants = {
   participant_name: string;
   initiator_type: UserType;
   participant_type: UserType;
+  initiator_profile_picture?: string | null;
+  participant_profile_picture?: string | null;
   unread_count?: number;
   last_message_preview?: string | null;
 };
